@@ -7,8 +7,8 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <div class="app-shell">
-      <main class="app-canvas">
+    <div class="page-shell">
+      <main class="app-stage">
         <section class="phone-frame">
           <div class="phone-screen">
             <header class="status-bar">
@@ -20,697 +20,800 @@
               </div>
             </header>
 
-            <section class="screen screen--active" data-screen="home">
-              <header class="screen-top">
-                <div class="screen-title">
-                  <h1>白鸽慧译</h1>
-                </div>
-                <button class="device-pill device-pill--ok" type="button">
+            <section class="app-view app-view--active" data-view="home">
+              <header class="home-header">
+                <h1>白鸽慧译</h1>
+                <button class="device-status device-status--ok" id="device-status" type="button">
                   <span></span>
                   设备正常
                 </button>
               </header>
 
-              <section class="recorder-stage panel">
-                <div class="recorder-time" id="home-time">00:00:18</div>
-                <div class="recorder-state" id="home-state">点击开始录音</div>
+              <section class="recorder-home panel" id="recorder-card">
+                <div class="timer-display" id="timer-value">00:00:00</div>
 
-                <div class="voice-lens voice-lens--idle" id="voice-lens" aria-hidden="true">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <button class="record-button" id="record-toggle" type="button" aria-label="开始录音">
-                    <span class="record-button__icon" aria-hidden="true"></span>
-                    <span class="record-button__label" id="record-toggle-label">开始录音</span>
+                <div class="voice-stage voice-stage--idle" id="voice-stage" aria-hidden="true">
+                  <span class="voice-ring voice-ring--a"></span>
+                  <span class="voice-ring voice-ring--b"></span>
+                  <span class="voice-ring voice-ring--c"></span>
+                  <button class="record-orb" id="start-recording" type="button">
+                    <span class="orb-icon"></span>
+                    开始录音
                   </button>
                 </div>
 
-                <div class="record-actions record-actions--hidden" id="record-actions">
-                  <button class="action-button action-button--pause" id="pause-button" type="button">
-                    <span class="action-button__icon action-button__icon--pause" aria-hidden="true"></span>
-                    <span class="action-button__label" id="pause-button-label">暂停</span>
-                  </button>
-                  <button class="action-button action-button--end" id="end-button" type="button">
-                    <span class="action-button__icon action-button__icon--end" aria-hidden="true"></span>
-                    <span class="action-button__label">结束</span>
-                  </button>
+                <div class="recorder-actions recorder-actions--hidden" id="recording-actions">
+                  <button class="action-button action-button--pause" id="pause-recording" type="button">暂停</button>
+                  <button class="action-button action-button--primary" id="finish-recording" type="button">结束</button>
                 </div>
               </section>
             </section>
 
-            <section class="screen" data-screen="history">
-              <header class="screen-top">
-                <div class="screen-title">
+            <section class="app-view" data-view="history">
+              <header class="screen-header">
+                <div>
                   <h2>历史记录</h2>
                 </div>
               </header>
 
-              <section class="search-bar panel">
-                <input id="history-search" type="search" placeholder="搜索会议标题、日期" aria-label="搜索会议标题或日期" />
-                <button class="search-button" type="button">搜索</button>
+              <section class="search-row panel">
+                <input id="history-search" type="search" placeholder="搜索会议标题、日期" aria-label="搜索历史会议" />
+                <button class="search-button" type="button">搜</button>
               </section>
 
-              <section class="history-list" id="history-list"></section>
+              <section class="history-list" id="history-list">
+                <button class="history-item" type="button" data-title="05-25 保险科技与AI模型应用" data-meta="椰苏 05-29 15:30 · 标准会议纪要 · 44:53">
+                  <span class="file-icon"></span>
+                  <span class="history-main">
+                    <strong>05-25 保险科技与AI模型应用</strong>
+                    <small>椰苏 05-29 15:30 · 标准会议纪要 · 44:53</small>
+                  </span>
+                  <span class="dot-menu"></span>
+                </button>
+                <button class="history-item" type="button" data-title="05-28 文件名前带日期" data-meta="椰苏 05-29 15:30 · 图文纪要 · 44:53">
+                  <span class="file-icon"></span>
+                  <span class="history-main">
+                    <strong>05-28 文件名前带日期</strong>
+                    <small>椰苏 05-29 15:30 · 图文纪要 · 44:53</small>
+                  </span>
+                  <span class="dot-menu"></span>
+                </button>
+                <button class="history-item" type="button" data-title="05-28 时间倒序" data-meta="椰苏 05-29 15:30 · 头脑风暴 · 44:53">
+                  <span class="file-icon"></span>
+                  <span class="history-main">
+                    <strong>05-28 时间倒序</strong>
+                    <small>椰苏 05-29 15:30 · 头脑风暴 · 44:53</small>
+                  </span>
+                  <span class="dot-menu"></span>
+                </button>
+                <button class="history-item" type="button" data-title="05-27 不允许为空" data-meta="椰苏 05-29 15:30 · 标准会议纪要 · 44:53">
+                  <span class="file-icon"></span>
+                  <span class="history-main">
+                    <strong>05-27 不允许为空</strong>
+                    <small>椰苏 05-29 15:30 · 标准会议纪要 · 44:53</small>
+                  </span>
+                  <span class="dot-menu"></span>
+                </button>
+                <button class="history-item" type="button" data-title="05-26 可信数据空间合作框架" data-meta="余雪薇 05-26 15:00 · 图文纪要 · 01:22:01">
+                  <span class="file-icon"></span>
+                  <span class="history-main">
+                    <strong>05-26 可信数据空间合作框架</strong>
+                    <small>余雪薇 05-26 15:00 · 图文纪要 · 01:22:01</small>
+                  </span>
+                  <span class="dot-menu"></span>
+                </button>
+                <button class="history-item" type="button" data-title="05-24 项目例会行动项确认" data-meta="林舟 05-24 10:30 · 标准会议纪要 · 38:12">
+                  <span class="file-icon"></span>
+                  <span class="history-main">
+                    <strong>05-24 项目例会行动项确认</strong>
+                    <small>林舟 05-24 10:30 · 标准会议纪要 · 38:12</small>
+                  </span>
+                  <span class="dot-menu"></span>
+                </button>
+                <button class="history-item" type="button" data-title="05-23 数据资产入表讨论" data-meta="周敏 05-23 16:20 · 标准会议纪要 · 52:08">
+                  <span class="file-icon"></span>
+                  <span class="history-main">
+                    <strong>05-23 数据资产入表讨论</strong>
+                    <small>周敏 05-23 16:20 · 标准会议纪要 · 52:08</small>
+                  </span>
+                  <span class="dot-menu"></span>
+                </button>
+                <button class="history-item" type="button" data-title="05-22 产品体验走查" data-meta="许念 05-22 19:10 · 图文纪要 · 29:46">
+                  <span class="file-icon"></span>
+                  <span class="history-main">
+                    <strong>05-22 产品体验走查</strong>
+                    <small>许念 05-22 19:10 · 图文纪要 · 29:46</small>
+                  </span>
+                  <span class="dot-menu"></span>
+                </button>
+                <button class="history-item" type="button" data-title="05-21 跨部门需求同步" data-meta="唐易 05-21 09:45 · 标准会议纪要 · 41:25">
+                  <span class="file-icon"></span>
+                  <span class="history-main">
+                    <strong>05-21 跨部门需求同步</strong>
+                    <small>唐易 05-21 09:45 · 标准会议纪要 · 41:25</small>
+                  </span>
+                  <span class="dot-menu"></span>
+                </button>
+                <button class="history-item" type="button" data-title="05-20 营销方案头脑风暴" data-meta="秦露 05-20 14:00 · 头脑风暴 · 01:05:32">
+                  <span class="file-icon"></span>
+                  <span class="history-main">
+                    <strong>05-20 营销方案头脑风暴</strong>
+                    <small>秦露 05-20 14:00 · 头脑风暴 · 01:05:32</small>
+                  </span>
+                  <span class="dot-menu"></span>
+                </button>
+                <button class="history-item" type="button" data-title="05-19 交付风险复盘" data-meta="纪然 05-19 17:30 · 标准会议纪要 · 36:18">
+                  <span class="file-icon"></span>
+                  <span class="history-main">
+                    <strong>05-19 交付风险复盘</strong>
+                    <small>纪然 05-19 17:30 · 标准会议纪要 · 36:18</small>
+                  </span>
+                  <span class="dot-menu"></span>
+                </button>
+                <button class="history-item" type="button" data-title="05-18 客户访谈整理" data-meta="沈砚 05-18 11:00 · 图文纪要 · 47:59">
+                  <span class="file-icon"></span>
+                  <span class="history-main">
+                    <strong>05-18 客户访谈整理</strong>
+                    <small>沈砚 05-18 11:00 · 图文纪要 · 47:59</small>
+                  </span>
+                  <span class="dot-menu"></span>
+                </button>
+                <button class="history-item" type="button" data-title="05-17 研发排期评审" data-meta="罗清 05-17 15:40 · 标准会议纪要 · 58:20">
+                  <span class="file-icon"></span>
+                  <span class="history-main">
+                    <strong>05-17 研发排期评审</strong>
+                    <small>罗清 05-17 15:40 · 标准会议纪要 · 58:20</small>
+                  </span>
+                  <span class="dot-menu"></span>
+                </button>
+                <button class="history-item" type="button" data-title="05-16 预算调整讨论" data-meta="孟澜 05-16 13:20 · 标准会议纪要 · 33:04">
+                  <span class="file-icon"></span>
+                  <span class="history-main">
+                    <strong>05-16 预算调整讨论</strong>
+                    <small>孟澜 05-16 13:20 · 标准会议纪要 · 33:04</small>
+                  </span>
+                  <span class="dot-menu"></span>
+                </button>
+                <button class="history-item" type="button" data-title="05-15 可信数据空间二期讨论" data-meta="余雪薇 05-15 18:10 · 头脑风暴 · 49:37">
+                  <span class="file-icon"></span>
+                  <span class="history-main">
+                    <strong>05-15 可信数据空间二期讨论</strong>
+                    <small>余雪薇 05-15 18:10 · 头脑风暴 · 49:37</small>
+                  </span>
+                  <span class="dot-menu"></span>
+                </button>
+                <button class="history-item" type="button" data-title="05-14 合作伙伴沟通会" data-meta="陈序 05-14 16:00 · 图文纪要 · 45:16">
+                  <span class="file-icon"></span>
+                  <span class="history-main">
+                    <strong>05-14 合作伙伴沟通会</strong>
+                    <small>陈序 05-14 16:00 · 图文纪要 · 45:16</small>
+                  </span>
+                  <span class="dot-menu"></span>
+                </button>
+                <button class="history-item" type="button" data-title="05-13 数据合规评审" data-meta="顾遥 05-13 10:00 · 标准会议纪要 · 01:03:44">
+                  <span class="file-icon"></span>
+                  <span class="history-main">
+                    <strong>05-13 数据合规评审</strong>
+                    <small>顾遥 05-13 10:00 · 标准会议纪要 · 01:03:44</small>
+                  </span>
+                  <span class="dot-menu"></span>
+                </button>
+                <button class="history-item" type="button" data-title="05-12 数据产品目录梳理" data-meta="贺闻 05-12 09:20 · 标准会议纪要 · 42:11">
+                  <span class="file-icon"></span>
+                  <span class="history-main">
+                    <strong>05-12 数据产品目录梳理</strong>
+                    <small>贺闻 05-12 09:20 · 标准会议纪要 · 42:11</small>
+                  </span>
+                  <span class="dot-menu"></span>
+                </button>
+                <button class="history-item" type="button" data-title="05-11 金融风控专区共创会" data-meta="余雪薇 05-11 15:30 · 图文纪要 · 56:43">
+                  <span class="file-icon"></span>
+                  <span class="history-main">
+                    <strong>05-11 金融风控专区共创会</strong>
+                    <small>余雪薇 05-11 15:30 · 图文纪要 · 56:43</small>
+                  </span>
+                  <span class="dot-menu"></span>
+                </button>
+                <button class="history-item" type="button" data-title="05-10 周会行动项回顾" data-meta="尹禾 05-10 18:00 · 标准会议纪要 · 31:28">
+                  <span class="file-icon"></span>
+                  <span class="history-main">
+                    <strong>05-10 周会行动项回顾</strong>
+                    <small>尹禾 05-10 18:00 · 标准会议纪要 · 31:28</small>
+                  </span>
+                  <span class="dot-menu"></span>
+                </button>
+                <button class="history-item" type="button" data-title="05-09 用户访谈问题池" data-meta="邵予 05-09 11:40 · 头脑风暴 · 50:12">
+                  <span class="file-icon"></span>
+                  <span class="history-main">
+                    <strong>05-09 用户访谈问题池</strong>
+                    <small>邵予 05-09 11:40 · 头脑风暴 · 50:12</small>
+                  </span>
+                  <span class="dot-menu"></span>
+                </button>
+                <button class="history-item" type="button" data-title="05-08 数据授权运营复盘" data-meta="程砚 05-08 16:10 · 标准会议纪要 · 01:08:06">
+                  <span class="file-icon"></span>
+                  <span class="history-main">
+                    <strong>05-08 数据授权运营复盘</strong>
+                    <small>程砚 05-08 16:10 · 标准会议纪要 · 01:08:06</small>
+                  </span>
+                  <span class="dot-menu"></span>
+                </button>
+              </section>
 
-              <button class="more-button panel" id="more-history" type="button">查看更多</button>
               <p class="empty-state" id="history-empty">没有找到相关会议</p>
+              <button class="load-more-button panel" id="load-more-history" type="button">查看更多</button>
             </section>
 
-            <section class="screen" data-screen="detail">
-              <header class="detail-top">
-                <button class="back-button" id="detail-back" type="button" aria-label="返回"></button>
+            <section class="app-view" data-view="detail">
+              <header class="detail-header">
+                <button class="back-button" id="detail-back" type="button" aria-label="返回">‹</button>
                 <div class="detail-tools">
-                  <button class="icon-button" type="button" aria-label="更多"></button>
+                  <button class="more-button" type="button">...</button>
                 </div>
               </header>
 
-              <section class="detail-header">
-                <h2 id="detail-title">可信数据空间合作框架同步会</h2>
-                <p id="detail-meta">余雪薇 · 06-16 14:20</p>
-              </section>
-
-              <section class="audio-panel panel">
-                <div class="audio-times">
-                  <strong>12:38</strong>
-                  <span>/ 72:08</span>
-                </div>
-                <div class="audio-track">
-                  <span class="audio-track__progress"></span>
-                </div>
-                <div class="audio-controls">
-                  <button class="player-key" type="button">15</button>
-                  <button class="player-key player-key--play" type="button" aria-label="播放"></button>
-                  <button class="player-key" type="button">15</button>
-                  <button class="speed-chip" type="button">1.25x</button>
-                </div>
-              </section>
-
-              <section class="tabs">
-                <button class="tab-chip" data-tab="transcript">转写</button>
-                <button class="tab-chip tab-chip--active" data-tab="summary">AI纪要</button>
-                <button class="tab-chip" data-tab="chapter">章节</button>
-                <button class="tab-chip" data-tab="analysis">分析</button>
-              </section>
-
-              <section class="summary-tab tab-panel tab-panel--active" data-panel="summary">
-                <div class="template-chip-row">
-                  <button class="template-chip" id="template-trigger" type="button">图文纪要</button>
+              <section class="detail-card">
+                <div class="detail-title-row">
+                  <div>
+                    <h3 id="detail-title">05-25 保险科技与AI模型应用</h3>
+                    <p id="detail-meta">椰苏 05-29 15:30 · 标准会议纪要 · 44:53</p>
+                  </div>
                 </div>
 
-                <article class="summary-leading">
-                  <p class="summary-kicker">主题：厦门可信数据空间合作推进</p>
-                  <h3 id="summary-headline">厦门城市可信数据空间建设背景</h3>
-                  <p id="summary-body">时间：2026-05-26 15:00:04<br />参与人：余雪薇</p>
-                </article>
+                <div class="audio-player">
+                  <div class="audio-time">
+                    <span>00:00</span>
+                    <span>1:44:55</span>
+                  </div>
+                  <div class="progress-track">
+                    <span class="progress-value"></span>
+                  </div>
+                  <div class="audio-controls">
+                    <button type="button">15</button>
+                    <button class="play-button" type="button" aria-label="播放"></button>
+                    <button type="button">15</button>
+                    <span>1.0x</span>
+                  </div>
+                </div>
 
-                <section class="summary-preview-card">
-                  <div class="preview-toolbar">
-                    <span>会议信息摘要图</span>
-                    <div class="preview-actions">
-                      <button class="icon-mini" id="edit-poster" type="button" aria-label="修改摘要图"></button>
-                      <button class="icon-mini icon-mini--zoom" id="zoom-poster" type="button" aria-label="放大摘要图"></button>
+                <div class="tabs" role="tablist" aria-label="纪要详情标签">
+                  <button class="tab-button" type="button" data-detail-tab="transcript">转写</button>
+                  <button class="tab-button tab-button--active" type="button" data-detail-tab="summary">AI纪要</button>
+                </div>
+
+                <div class="detail-panel detail-panel--active" data-panel="summary">
+                  <div class="template-switch template-switch--dropdown">
+                    <button class="template-chip template-chip--active" id="summary-template-trigger" type="button" data-current-template="visual">图文纪要</button>
+                  </div>
+
+                  <div class="summary-loading" id="summary-loading">
+                    <div class="skeleton-card">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
                     </div>
+                    <p>正在生成纪要...</p>
+                    <div class="ai-question">1300 多个数据产品有没有覆盖金融...</div>
                   </div>
 
-                  <div class="summary-image summary-image--embedded">
-                    <div class="summary-image__header">
-                      <strong id="poster-title">可信数据空间合作框架同步会</strong>
-                      <span id="poster-subtitle">以一期最小闭环验证录音、转写和 AI 纪要链路</span>
+                  <article class="summary-template" data-template-panel="standard">
+                    <div class="summary-section">
+                      <strong>一、会议摘要</strong>
+                      <p>本次会议围绕厦门可信数据空间合作推进展开，重点讨论建设背景、平台架构、关键运营数据、合作模式与下一步行动。</p>
                     </div>
-                    <div class="summary-image__grid" id="poster-grid">
-                      <article>
-                        <span>01</span>
-                        <strong>背景与目标</strong>
-                        <p>首页聚焦录音，降低学习成本，用户进入即可开始。</p>
-                      </article>
-                      <article>
-                        <span>02</span>
-                        <strong>核心问题</strong>
-                        <p>蓝牙连接状态、模板切换反馈和摘要图渲染需统一处理。</p>
-                      </article>
-                      <article>
-                        <span>03</span>
-                        <strong>关键结论</strong>
-                        <p>详情页只保留转写与 AI 纪要双 Tab，默认进入 AI 纪要。</p>
-                      </article>
-                      <article>
-                        <span>04</span>
-                        <strong>行动计划</strong>
-                        <p>先落一期原型，再联调阿里云转写、通义千问和渲染引擎。</p>
-                      </article>
+                    <div class="summary-section">
+                      <strong>二、会议结论</strong>
+                      <p>各方初步认可通过产业共创专区、私有化专区与独立行业数据空间三类模式推进合作。</p>
                     </div>
-                    <div class="summary-image__footer">内容由 AI 生成，仅供参考</div>
-                  </div>
-                </section>
-
-                <section class="summary-loading" id="summary-loading">
-                  <div class="skeleton-sheet">
-                    <div class="skeleton-line skeleton-line--title"></div>
-                    <div class="skeleton-box"></div>
-                    <div class="skeleton-line"></div>
-                    <div class="skeleton-line"></div>
-                    <div class="skeleton-line skeleton-line--short"></div>
-                  </div>
-                  <p class="skeleton-copy">正在生成纪要...</p>
-                </section>
-
-                <section class="summary-body">
-                  <article class="summary-section">
-                    <strong>项目定位与政策支持</strong>
-                    <ul>
-                      <li>厦门城市可信数据空间是国家数据局推动全国一体化数据市场建设的新型基础设施试点，于 2025 年入选全国 13 个城市级试点城市之一，也是福建省唯一试点。</li>
-                      <li>建设主体为厦门信息集团，其全资子公司厦门大数据公司加挂“厦门市公共数据授权运营中心”牌子，负责统筹公共数据对外授权运营工作。</li>
-                    </ul>
+                    <div class="summary-section">
+                      <strong>待办事项</strong>
+                      <p>进一步梳理金融风控专区构想，明确短期行动和中长期规划的负责人。</p>
+                    </div>
                   </article>
-                  <article class="summary-section">
-                    <strong>核心目标</strong>
-                    <ul>
-                      <li>构建完整城市数据资源体系，发挥公共数据引领作用，推动公共数据与企业、个人数据融合应用。</li>
-                      <li>打造城市可信数据流通生态，通过建设产业数据专区探索跨域协同运营模式。</li>
-                      <li>推动城市群数字一体化发展，强化与其他城市数据空间互联互通，实现资源高效共享和产品服务协同。</li>
-                    </ul>
-                  </article>
-                  <article class="summary-section">
-                    <strong>平台架构与核心能力</strong>
-                    <ul>
-                      <li>平台底座集成数据采集、汇聚、传输、加工工具，融合区块链与隐私计算技术。</li>
-                      <li>支持上层行业应用场景，实现全过程可控、可溯源、可审计。</li>
-                    </ul>
-                  </article>
-                </section>
 
-                <section class="transcript-tab tab-panel" data-panel="transcript">
-                  <div class="transcript-row">
-                    <div class="speaker-meta"><span class="speaker-badge speaker-badge--blue">1</span><strong>发言人1</strong><em>00:01</em></div>
-                    <p>传统的五子棋</p>
+                  <article class="summary-template" data-template-panel="brainstorm">
+                    <div class="summary-section">
+                      <strong>讨论主题</strong>
+                      <p>AI 模型如何帮助保险业务提升服务效率。</p>
+                    </div>
+                    <div class="summary-section">
+                      <strong>灵感点汇总</strong>
+                      <p>智能核保问答、理赔材料预审、保单知识助手、销售培训陪练。</p>
+                    </div>
+                    <div class="summary-section">
+                      <strong>优选方向</strong>
+                      <p>优先验证知识助手与内部陪练，因为投入轻、反馈快。</p>
+                    </div>
+                  </article>
+
+                  <article class="summary-template summary-template--active" data-template-panel="visual">
+                    <div class="summary-meta-block">
+                      <p><strong>主题:</strong> 厦门可信数据空间合作推进</p>
+                      <p><strong>时间:</strong> 2026-05-26 15:00:04</p>
+                      <p><strong>参与人:</strong> 余雪薇</p>
+                    </div>
+
+                    <div class="poster-preview">
+                      <button class="poster-tool poster-tool--edit" type="button" aria-label="修改摘要图"></button>
+                      <button class="poster-tool poster-tool--zoom" id="open-poster-preview" type="button" aria-label="放大摘要图"></button>
+                      <div class="poster-scale-frame">
+                        <div class="visual-poster visual-poster--document">
+                          <div class="visual-poster__top">
+                            <strong>厦门可信数据空间合作推进</strong>
+                            <span>以产业共创专区为切入点，共建金融风控等数据应用生态</span>
+                          </div>
+                          <div class="poster-section poster-section--green">
+                            <b>01. 建设背景与定位</b>
+                            <div class="mini-table">
+                              <span>国家数据局全国13个城市试点之一，福建省唯一</span>
+                              <span>厦门信息集团全资子公司厦门大数据公司</span>
+                              <span>厦门市公共数据授权运营中心牌子</span>
+                            </div>
+                          </div>
+                          <div class="poster-section poster-section--blue">
+                            <b>02. 平台架构与能力</b>
+                            <p>八大核心模块，平台底座集成数据采集、汇聚、传输、加工工具，融合区块链与隐私计算技术。</p>
+                          </div>
+                          <div class="poster-section poster-section--orange">
+                            <b>03. 关键运营数据</b>
+                            <div class="metric-grid">
+                              <span>应用场景 130 个</span>
+                              <span>数据产品 1300 个</span>
+                              <span>入驻主体 400 家</span>
+                              <span>企业全景数据 747 亿条</span>
+                            </div>
+                          </div>
+                          <div class="poster-section poster-section--purple">
+                            <b>04. 三大合作模式</b>
+                            <p>产业共创专区、私有化专区空间、独立行业数据空间，并围绕金融风控专区继续细化。</p>
+                          </div>
+                          <div class="poster-section poster-section--teal">
+                            <b>05. 金融风控专区构想</b>
+                            <p>依托公共数据与白鸽模型，打造可复用的金融风控范式。</p>
+                          </div>
+                          <div class="poster-section poster-section--yellow">
+                            <b>06. 合作核心洞察</b>
+                            <p>双方合作本质是技术能力与平台公信力的深度互补。</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <section class="visual-minutes-text">
+                      <h3>厦门城市可信数据空间建设背景</h3>
+                      <div class="minutes-block">
+                        <strong>项目定位与政策支持</strong>
+                        <ul>
+                          <li>厦门城市可信数据空间是国家数据局推动全国一体化数据市场建设的新型基础设施试点，于 2025 年入选全国 13 个城市级试点城市之一，也是福建省唯一试点。</li>
+                          <li>建设主体为厦门信息集团，其全资子公司厦门大数据公司加挂“厦门市公共数据授权运营中心”牌子，负责统筹公共数据对外授权运营工作。</li>
+                        </ul>
+                      </div>
+                      <div class="minutes-block">
+                        <strong>核心目标</strong>
+                        <ul>
+                          <li>构建完整城市数据资源体系，发挥公共数据引领作用，推动公共数据与企业、个人数据融合应用。</li>
+                          <li>打造城市可信数据流通生态，通过建设产业数据专区探索跨域协同运营模式。</li>
+                          <li>推动城市群数字一体化发展，强化与其他城市数据空间互联互通，实现资源高效共享和产品服务协同。</li>
+                        </ul>
+                      </div>
+                      <h3>平台架构与核心能力</h3>
+                      <div class="minutes-block">
+                        <strong>整体架构与模块构成</strong>
+                        <ul>
+                          <li>平台底座集成数据采集、汇聚、传输、加工工具，支持上层行业应用场景，实现全过程可控、可溯源、可审计。</li>
+                        </ul>
+                      </div>
+                    </section>
+                  </article>
+                </div>
+
+                <div class="detail-panel" data-panel="transcript">
+                  <div class="transcript-line">
+                    <span class="speaker-tag speaker-tag--1">1</span>
+                    <p><strong>发言人1</strong> 00:01</p>
+                    <div>传统的五子棋</div>
                   </div>
-                  <div class="transcript-row">
-                    <div class="speaker-meta"><span class="speaker-badge speaker-badge--pink">2</span><strong>发言人2</strong><em>00:01</em></div>
-                    <p>就是五颗子连成一条线</p>
+                  <div class="transcript-line">
+                    <span class="speaker-tag speaker-tag--2">2</span>
+                    <p><strong>发言人2</strong> 00:01</p>
+                    <div>就是五颗子连成一条线</div>
                   </div>
-                  <div class="transcript-row">
-                    <div class="speaker-meta"><span class="speaker-badge speaker-badge--orange">3</span><strong>发言人3</strong><em>00:01</em></div>
-                    <p>好无趣，好无聊～</p>
+                  <div class="transcript-line">
+                    <span class="speaker-tag speaker-tag--3">3</span>
+                    <p><strong>发言人3</strong> 00:01</p>
+                    <div>好无趣，好无聊。</div>
                   </div>
-                  <div class="transcript-row">
-                    <div class="speaker-meta"><span class="speaker-badge speaker-badge--green">4</span><strong>发言人4</strong><em>00:01</em></div>
-                    <p>技能五子棋</p>
+                  <div class="transcript-line">
+                    <span class="speaker-tag speaker-tag--4">4</span>
+                    <p><strong>发言人4</strong> 00:01</p>
+                    <div>技能五子棋</div>
                   </div>
-                  <div class="transcript-row">
-                    <div class="speaker-meta"><span class="speaker-badge speaker-badge--cyan">5</span><strong>发言人5</strong><em>00:01</em></div>
-                    <p>就是在传统的五子棋上加入技能好好玩～</p>
-                  </div>
-                  <div class="transcript-row">
-                    <div class="speaker-meta"><span class="speaker-badge speaker-badge--purple">6</span><strong>发言人6</strong><em>00:01</em></div>
-                    <p>要爆了！</p>
-                  </div>
-                </section>
-                <section class="tab-panel placeholder-panel" data-panel="chapter">章节内容将在二期展示</section>
-                <section class="tab-panel placeholder-panel" data-panel="analysis">分析内容将在二期展示</section>
+                </div>
               </section>
             </section>
 
-            <section class="screen" data-screen="settings">
-              <header class="screen-top">
-                <div class="screen-title">
+            <section class="app-view" data-view="settings">
+              <header class="screen-header">
+                <div>
+                  <p class="eyebrow">Hardware Settings</p>
                   <h2>设置</h2>
                 </div>
+                <button class="ghost-button" type="button">蓝牙已连接</button>
               </header>
 
               <section class="settings-stack">
-                <article class="setting-card panel">
-                  <div class="setting-title">
-                    <span>硬件连接状态</span>
-                    <strong>已连接</strong>
+                <article class="setting-row panel">
+                  <div>
+                    <strong>硬件连接状态</strong>
+                    <p>已连接，信号良好，电量 82%</p>
                   </div>
-                  <div class="device-metrics">
-                    <article>
-                      <span>连接状态</span>
-                      <strong>绿灯 + 已连接</strong>
-                    </article>
-                    <article>
-                      <span>电量</span>
-                      <strong>82%</strong>
-                    </article>
-                    <article>
-                      <span>信号强度</span>
-                      <strong>74%</strong>
-                    </article>
-                  </div>
+                  <span class="status-badge">正常</span>
                 </article>
 
-                <article class="setting-card panel">
-                  <div class="setting-title">
-                    <span>设备名称</span>
-                    <strong>白鸽会议录音笔 A01</strong>
+                <article class="setting-row setting-row--stack panel">
+                  <div>
+                    <strong>设备名称</strong>
                   </div>
-                  <label class="name-field">
-                    <span>当前设备</span>
-                    <input type="text" value="白鸽会议录音笔 A01" />
+                  <label class="name-input">
+                    <input type="text" value="白鸽会议记录仪 A01" aria-label="设备名称" />
                   </label>
-                  <button class="save-button" type="button">保存名称</button>
                 </article>
               </section>
             </section>
 
-            <nav class="bottom-nav" aria-label="底部导航">
+            <nav class="bottom-nav panel" aria-label="底部导航">
               <button class="nav-item nav-item--active" type="button" data-target="home">
+                <span class="nav-icon nav-icon--home"></span>
                 首页
               </button>
               <button class="nav-item" type="button" data-target="history">
+                <span class="nav-icon nav-icon--history"></span>
                 历史
               </button>
               <button class="nav-item" type="button" data-target="settings">
+                <span class="nav-icon nav-icon--settings"></span>
                 设置
               </button>
             </nav>
+
+            <section class="template-modal" id="template-modal" aria-hidden="true">
+              <div class="modal-scrim" id="modal-close"></div>
+              <div class="modal-sheet panel">
+                <div class="modal-handle"></div>
+                <h3>选择纪要模板</h3>
+                <p>默认使用标准会议纪要，确认后生成会议报告。</p>
+                <div class="modal-template-list">
+                  <button class="modal-template modal-template--active" type="button" data-template-choice="standard">
+                    <strong>标准会议纪要</strong>
+                    <span>摘要、议题、结论、待办、风险</span>
+                  </button>
+                  <button class="modal-template" type="button" data-template-choice="brainstorm">
+                    <strong>头脑风暴</strong>
+                    <span>灵感点、方案归类、优选方向</span>
+                  </button>
+                  <button class="modal-template" type="button" data-template-choice="visual">
+                    <strong>图文纪要</strong>
+                    <span>适合群内同步的摘要图结构</span>
+                  </button>
+                </div>
+                <button class="confirm-button" id="confirm-template" type="button">确认生成</button>
+              </div>
+            </section>
+
+            <section class="summary-template-modal" id="summary-template-modal" aria-hidden="true">
+              <div class="modal-scrim" id="summary-template-close"></div>
+              <div class="modal-sheet panel">
+                <div class="modal-handle"></div>
+                <h3>切换纪要模板</h3>
+                <p>默认选中当前模板，选择不同模板后会重新生成报告。</p>
+                <div class="modal-template-list">
+                  <button class="modal-template summary-template-option" type="button" data-summary-template="standard">
+                    <strong>标准会议纪要</strong>
+                    <span>摘要、结论、待办和风险点</span>
+                  </button>
+                  <button class="modal-template summary-template-option" type="button" data-summary-template="visual">
+                    <strong>图文纪要</strong>
+                    <span>摘要长图 + 文字版会议纪要</span>
+                  </button>
+                  <button class="modal-template summary-template-option" type="button" data-summary-template="brainstorm">
+                    <strong>头脑风暴</strong>
+                    <span>灵感点、方案归类、优选方向</span>
+                  </button>
+                </div>
+                <button class="confirm-button" id="confirm-summary-template" type="button">确认切换</button>
+              </div>
+            </section>
+
+            <section class="poster-modal" id="poster-modal" aria-hidden="true">
+              <div class="modal-scrim" id="poster-modal-close"></div>
+              <div class="poster-modal-sheet">
+                <button class="poster-close-button" id="poster-close-button" type="button">关闭</button>
+                <div class="visual-poster visual-poster--document visual-poster--large">
+                  <div class="visual-poster__top">
+                    <strong>厦门可信数据空间合作推进</strong>
+                    <span>以产业共创专区为切入点，共建金融风控等数据应用生态</span>
+                  </div>
+                  <div class="poster-section poster-section--green">
+                    <b>01. 建设背景与定位</b>
+                    <div class="mini-table">
+                      <span>国家数据局全国13个城市试点之一，福建省唯一</span>
+                      <span>厦门信息集团全资子公司厦门大数据公司</span>
+                      <span>厦门市公共数据授权运营中心牌子</span>
+                    </div>
+                  </div>
+                  <div class="poster-section poster-section--blue">
+                    <b>02. 平台架构与能力</b>
+                    <p>八大核心模块，平台底座集成数据采集、汇聚、传输、加工工具，融合区块链与隐私计算技术。</p>
+                  </div>
+                  <div class="poster-section poster-section--orange">
+                    <b>03. 关键运营数据</b>
+                    <div class="metric-grid">
+                      <span>应用场景 130 个</span>
+                      <span>数据产品 1300 个</span>
+                      <span>入驻主体 400 家</span>
+                      <span>企业全景数据 747 亿条</span>
+                    </div>
+                  </div>
+                  <div class="poster-section poster-section--purple">
+                    <b>04. 三大合作模式</b>
+                    <p>产业共创专区、私有化专区空间、独立行业数据空间，并围绕金融风控专区继续细化。</p>
+                  </div>
+                  <div class="poster-section poster-section--teal">
+                    <b>05. 金融风控专区构想</b>
+                    <p>依托公共数据与白鸽模型，打造可复用的金融风控范式。</p>
+                  </div>
+                  <div class="poster-section poster-section--yellow">
+                    <b>06. 合作核心洞察</b>
+                    <p>双方合作本质是技术能力与平台公信力的深度互补。</p>
+                  </div>
+                </div>
+              </div>
+            </section>
           </div>
         </section>
       </main>
     </div>
 
-    <section class="modal modal--hidden" id="template-modal" aria-hidden="true">
-      <div class="modal__scrim" data-close-template-modal></div>
-      <div class="modal__sheet panel">
-        <div class="modal__handle"></div>
-        <h3>选择会议纪要模板</h3>
-        <p>结束录音后请选择生成方式，默认使用会议纪要。</p>
-        <div class="template-options">
-          <label class="template-option">
-            <input type="radio" name="detail-template" value="visual" />
-            <div>
-              <strong>图文纪要</strong>
-              <span>摘要图 + 文字纪要</span>
-            </div>
-          </label>
-          <label class="template-option template-option--active">
-            <input type="radio" name="detail-template" value="standard" checked />
-            <div>
-              <strong>会议纪要</strong>
-              <span>摘要、结论、待办、风险</span>
-            </div>
-          </label>
-          <label class="template-option">
-            <input type="radio" name="detail-template" value="brainstorm" />
-            <div>
-              <strong>头脑风暴</strong>
-              <span>发散观点、方案归类、优选方向</span>
-            </div>
-          </label>
-        </div>
-        <button class="primary-button" id="template-confirm" type="button">确认</button>
-      </div>
-    </section>
-
-    <section class="modal modal--hidden" id="poster-modal" aria-hidden="true">
-      <div class="modal__scrim" data-close-poster-modal></div>
-      <div class="poster-modal__sheet panel">
-        <button class="modal-close-button" data-close-poster-modal type="button">关闭</button>
-        <div class="summary-image summary-image--full" id="poster-full">
-          <div class="summary-image__header">
-            <strong>可信数据空间合作框架同步会</strong>
-            <span>缩略图放大后覆盖展示完整长图</span>
-          </div>
-          <div class="summary-image__grid">
-            <article>
-              <span>01</span>
-              <strong>背景与目标</strong>
-              <p>首页聚焦录音，减少不必要信息。</p>
-            </article>
-            <article>
-              <span>02</span>
-              <strong>处理阶段</strong>
-              <p>详情页根据转写中、生成中、渲染中展示不同反馈。</p>
-            </article>
-            <article>
-              <span>03</span>
-              <strong>模板约束</strong>
-              <p>相同模板不重新生成，不同模板需骨架态承接。</p>
-            </article>
-            <article>
-              <span>04</span>
-              <strong>落地重点</strong>
-              <p>图文纪要同时包含摘要图、文字纪要和修改入口。</p>
-            </article>
-          </div>
-          <div class="summary-image__footer">内容由 AI 生成，仅供参考</div>
-        </div>
-      </div>
-    </section>
-
     <script>
-      const screens = document.querySelectorAll(".screen");
       const navItems = document.querySelectorAll(".nav-item");
-      const historyList = document.querySelector("#history-list");
-      const historySearch = document.querySelector("#history-search");
-      const moreHistory = document.querySelector("#more-history");
-      const historyEmpty = document.querySelector("#history-empty");
-      const recordToggle = document.querySelector("#record-toggle");
-      const pauseButton = document.querySelector("#pause-button");
-      const endButton = document.querySelector("#end-button");
-      const recordActions = document.querySelector("#record-actions");
-      const voiceLens = document.querySelector("#voice-lens");
-      const homeTime = document.querySelector("#home-time");
-      const homeState = document.querySelector("#home-state");
-      const recordToggleLabel = document.querySelector("#record-toggle-label");
-      const pauseButtonLabel = document.querySelector("#pause-button-label");
-      const templateTrigger = document.querySelector("#template-trigger");
-      const templateModal = document.querySelector("#template-modal");
-      const templateConfirm = document.querySelector("#template-confirm");
-      const templateOptions = document.querySelectorAll(".template-option");
-      const summaryLoading = document.querySelector("#summary-loading");
-      const summaryPreview = document.querySelector(".summary-preview-card");
-      const summaryKicker = document.querySelector(".summary-kicker");
-      const summaryHeadline = document.querySelector("#summary-headline");
-      const summaryBody = document.querySelector("#summary-body");
-      const posterTitle = document.querySelector("#poster-title");
-      const posterSubtitle = document.querySelector("#poster-subtitle");
-      const posterGrid = document.querySelector("#poster-grid");
+      const views = document.querySelectorAll(".app-view");
+      const bottomNav = document.querySelector(".bottom-nav");
       const detailBack = document.querySelector("#detail-back");
-      const zoomPoster = document.querySelector("#zoom-poster");
-      const editPoster = document.querySelector("#edit-poster");
-      const posterModal = document.querySelector("#poster-modal");
-      const tabButtons = document.querySelectorAll(".tab-chip[data-tab]");
-      const tabPanels = document.querySelectorAll(".tab-panel");
       const detailTitle = document.querySelector("#detail-title");
       const detailMeta = document.querySelector("#detail-meta");
+      let previousView = "home";
+      let selectedTemplate = "standard";
 
-      const historyData = [
-        { title: "可信数据空间合作框架同步会", meta: "余雪薇 · 06-16 14:20 · 图文纪要 · 01:12:08", template: "visual" },
-        { title: "数据接入周会行动项确认", meta: "林舟 · 06-15 18:00 · 标准会议纪要 · 00:42:31", template: "standard" },
-        { title: "渠道增长创意脑暴", meta: "秦露 · 06-15 15:40 · 头脑风暴 · 00:56:14", template: "brainstorm" },
-        { title: "交付风险复盘会", meta: "纪然 · 06-14 17:30 · 标准会议纪要 · 00:36:18", template: "standard" },
-        { title: "客户访谈整理与共识沉淀", meta: "沈砚 · 06-13 11:00 · 图文纪要 · 00:47:59", template: "visual" },
-        { title: "项目例会行动项确认", meta: "余雪薇 · 06-12 14:10 · 标准会议纪要 · 00:41:25", template: "standard" },
-        { title: "金融风控专区构想", meta: "唐易 · 06-11 10:30 · 图文纪要 · 00:50:12", template: "visual" },
-        { title: "产品体验走查", meta: "许念 · 06-10 19:10 · 图文纪要 · 00:29:46", template: "visual" },
-        { title: "研发排期评审", meta: "罗清 · 06-09 15:40 · 标准会议纪要 · 00:58:20", template: "standard" },
-        { title: "预算调整讨论", meta: "孟澜 · 06-08 13:20 · 标准会议纪要 · 00:33:04", template: "standard" },
-        { title: "可信数据空间二期讨论", meta: "余雪薇 · 06-07 18:10 · 头脑风暴 · 00:49:37", template: "brainstorm" },
-        { title: "合作伙伴沟通会", meta: "陈序 · 06-06 16:00 · 图文纪要 · 00:45:16", template: "visual" },
-      ];
+      function showView(target, options = {}) {
+        views.forEach((view) => view.classList.remove("app-view--active"));
+        document.querySelector(`[data-view="${target}"]`).classList.add("app-view--active");
+        bottomNav.classList.toggle("bottom-nav--hidden", target === "detail");
 
-      const templateMaps = {
-        visual: {
-          title: "可信数据空间合作框架同步会",
-          subtitle: "以一期最小闭环验证录音、转写和 AI 纪要链路",
-          hero: "先完成一期最小闭环，再验证设备稳定性与纪要模板切换体验。",
-          body: "当前模板保留会议信息摘要、缩略摘要长图和文字版会议纪要，缩略图右上角提供修改与放大入口。",
-          poster: [
-            ["01", "背景与目标", "首页聚焦录音，降低学习成本，用户进入即可开始。"],
-            ["02", "核心问题", "蓝牙连接状态、模板切换反馈和摘要图渲染需统一处理。"],
-            ["03", "关键结论", "详情页只保留转写与 AI 纪要双 Tab，默认进入 AI 纪要。"],
-            ["04", "行动计划", "先落一期原型，再联调阿里云转写、通义千问和渲染引擎。"],
-          ],
-        },
-        standard: {
-          title: "厦门可信数据空间合作推进",
-          subtitle: "围绕城市可信数据空间建设背景、平台架构与合作模式形成一致结论",
-          hero: "本次会议围绕厦门可信数据空间合作框架展开，重点明确建设路径与下一步分工。",
-          body: "标准会议纪要保留摘要、关键议题、结论、待办与风险，适合正式同步。",
-          poster: [
-            ["01", "建设背景", "国家数据局全国 13 个城市试点之一，福建省唯一。"],
-            ["02", "平台能力", "八大核心模块，支持数据采集、汇聚、传输、加工。"],
-            ["03", "关键数据", "应用场景 130 个，数据产品 1300+ 个。"],
-            ["04", "行动计划", "围绕金融风控专区继续细化，明确负责人和时间。"],
-          ],
-        },
-        brainstorm: {
-          title: "合作框架延展方向讨论",
-          subtitle: "保留发散观点，聚焦可推进方向和待验证问题",
-          hero: "围绕合作模式展开自由讨论，优先筛出投入低、反馈快的方向。",
-          body: "头脑风暴模板更强调观点密度与分类，不强行压缩成确定结论。",
-          poster: [
-            ["01", "讨论目标", "把可信数据空间的合作路径拆成更容易推进的阶段。"],
-            ["02", "灵感池", "专区共建、授权运营、风控服务、能力输出。"],
-            ["03", "优选方向", "优先验证金融风控专区与数据产品能力协同。"],
-            ["04", "待验证", "接口边界、权限配置、后续责任人需要继续确认。"],
-          ],
-        },
-      };
+        if (target !== "detail") {
+          navItems.forEach((button) => {
+            button.classList.toggle("nav-item--active", button.dataset.target === target);
+          });
+        }
 
-      let currentScreen = "home";
-      let loadedHistoryCount = 10;
-      let currentTemplate = "visual";
-      let recordingState = "idle";
-      let templateModalSource = "detail";
-      let timerHandle = null;
-      let recordingSeconds = 0;
-
-      function formatTime(totalSeconds) {
-        const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
-        const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
-        const seconds = String(totalSeconds % 60).padStart(2, "0");
-        return `${hours}:${minutes}:${seconds}`;
+        if (options.from) {
+          previousView = options.from;
+        }
       }
 
-      function showScreen(screen) {
-        currentScreen = screen;
-        screens.forEach((node) => node.classList.toggle("screen--active", node.dataset.screen === screen));
-        navItems.forEach((button) => button.classList.toggle("nav-item--active", button.dataset.target === screen));
-      }
+      navItems.forEach((item) => {
+        item.addEventListener("click", () => showView(item.dataset.target));
+      });
 
-      function renderHistory() {
-        const keyword = historySearch.value.trim().toLowerCase();
-        const matched = historyData.filter((item) => (item.title + " " + item.meta).toLowerCase().includes(keyword));
+      const recorderCard = document.querySelector("#recorder-card");
+      const startRecording = document.querySelector("#start-recording");
+      const pauseRecording = document.querySelector("#pause-recording");
+      const finishRecording = document.querySelector("#finish-recording");
+      const recordingActions = document.querySelector("#recording-actions");
+      const timerValue = document.querySelector("#timer-value");
+      const voiceStage = document.querySelector("#voice-stage");
+      const templateModal = document.querySelector("#template-modal");
 
-        historyList.innerHTML = "";
-        matched.slice(0, loadedHistoryCount).forEach((item) => {
-          const row = document.createElement("button");
-          row.type = "button";
-          row.className = "history-row";
-          row.dataset.template = item.template;
-          row.innerHTML = `
-            <div class="history-badge ${item.template === 'standard' ? 'history-badge--plain' : item.template === 'brainstorm' ? 'history-badge--warm' : ''}">${item.template === 'visual' ? '图文纪要' : item.template === 'standard' ? '会议纪要' : '头脑风暴'}</div>
-            <div class="history-content">
-              <strong>${item.title}</strong>
-              <p>${item.meta}</p>
-            </div>
-            <span class="history-arrow"></span>
-          `;
-          row.addEventListener("click", () => openDetail(item.title, item.meta, item.template));
-          historyList.appendChild(row);
+      startRecording.addEventListener("click", () => {
+        recorderCard.classList.add("is-recording");
+        voiceStage.classList.remove("voice-stage--idle");
+        recordingActions.classList.remove("recorder-actions--hidden");
+        startRecording.classList.add("record-orb--compact");
+        timerValue.textContent = "00:00:18";
+      });
+
+      pauseRecording.addEventListener("click", () => {
+        const isPaused = recorderCard.classList.toggle("is-paused");
+        pauseRecording.textContent = isPaused ? "继续" : "暂停";
+      });
+
+      finishRecording.addEventListener("click", () => {
+        selectedTemplate = "standard";
+        document.querySelectorAll(".modal-template").forEach((item) => {
+          item.classList.toggle("modal-template--active", item.dataset.templateChoice === "standard");
         });
+        templateModal.classList.add("template-modal--open");
+        templateModal.setAttribute("aria-hidden", "false");
+      });
 
-        historyEmpty.hidden = matched.length > 0;
-        moreHistory.hidden = matched.length <= loadedHistoryCount;
+      document.querySelector("#modal-close").addEventListener("click", () => {
+        templateModal.classList.remove("template-modal--open");
+        templateModal.setAttribute("aria-hidden", "true");
+      });
+
+      document.querySelectorAll(".modal-template").forEach((button) => {
+        button.addEventListener("click", () => {
+          selectedTemplate = button.dataset.templateChoice;
+          document.querySelectorAll(".modal-template").forEach((item) => item.classList.remove("modal-template--active"));
+          button.classList.add("modal-template--active");
+        });
+      });
+
+      document.querySelector("#confirm-template").addEventListener("click", () => {
+        templateModal.classList.remove("template-modal--open");
+        templateModal.setAttribute("aria-hidden", "true");
+        openDetail({
+          title: "新会议录音",
+          meta: "刚刚 · " + templateLabel(selectedTemplate) + " · 00:00:18",
+          from: "home",
+          template: selectedTemplate,
+        });
+      });
+
+      const detailTabs = document.querySelectorAll(".tab-button[data-detail-tab]");
+      const detailPanels = document.querySelectorAll(".detail-panel");
+
+      detailTabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          const panel = tab.dataset.detailTab;
+          detailTabs.forEach((button) => button.classList.remove("tab-button--active"));
+          detailPanels.forEach((item) => item.classList.remove("detail-panel--active"));
+          tab.classList.add("tab-button--active");
+          document.querySelector(`[data-panel="${panel}"]`).classList.add("detail-panel--active");
+        });
+      });
+
+      const templatePanels = document.querySelectorAll(".summary-template");
+      const summaryLoading = document.querySelector("#summary-loading");
+      const summaryTemplateTrigger = document.querySelector("#summary-template-trigger");
+      const summaryTemplateModal = document.querySelector("#summary-template-modal");
+      const summaryTemplateOptions = document.querySelectorAll(".summary-template-option");
+      let currentSummaryTemplate = "visual";
+      let pendingSummaryTemplate = "visual";
+
+      function templateLabel(value) {
+        return {
+          standard: "标准会议纪要",
+          brainstorm: "头脑风暴",
+          visual: "图文纪要",
+        }[value];
       }
 
-      function updateRecordingUi() {
-        if (recordingState === "idle") {
-          homeState.textContent = "点击开始录音";
-          recordToggleLabel.textContent = "开始录音";
-          pauseButtonLabel.textContent = "暂停";
-          recordToggle.className = "record-button";
-          pauseButton.className = "action-button action-button--pause";
-          recordActions.classList.add("record-actions--hidden");
-          voiceLens.className = "voice-lens voice-lens--idle";
-          homeTime.textContent = "00:00:00";
+      function selectTemplate(template, options = {}) {
+        currentSummaryTemplate = template;
+        summaryTemplateTrigger.dataset.currentTemplate = template;
+        summaryTemplateTrigger.textContent = templateLabel(template);
+        if (options.skipLoading) {
+          summaryLoading.classList.remove("summary-loading--active");
+          templatePanels.forEach((panel) => panel.classList.toggle("summary-template--active", panel.dataset.templatePanel === template));
           return;
         }
 
-        recordActions.classList.remove("record-actions--hidden");
-        if (recordingState === "recording") {
-          homeState.textContent = "正在录音中";
-          recordToggleLabel.textContent = "录音中";
-          pauseButtonLabel.textContent = "暂停";
-          recordToggle.className = "record-button record-button--recording";
-          pauseButton.className = "action-button action-button--pause";
-          voiceLens.className = "voice-lens voice-lens--live";
-        } else if (recordingState === "paused") {
-          homeState.textContent = "已暂停";
-          recordToggleLabel.textContent = "已暂停";
-          pauseButtonLabel.textContent = "继续";
-          recordToggle.className = "record-button record-button--paused";
-          pauseButton.className = "action-button action-button--continue";
-          voiceLens.className = "voice-lens voice-lens--paused";
-        }
+        templatePanels.forEach((panel) => panel.classList.remove("summary-template--active"));
+        summaryLoading.classList.add("summary-loading--active");
+        window.clearTimeout(selectTemplate.loadingTimer);
+        selectTemplate.loadingTimer = window.setTimeout(() => {
+          summaryLoading.classList.remove("summary-loading--active");
+          templatePanels.forEach((panel) => panel.classList.toggle("summary-template--active", panel.dataset.templatePanel === template));
+        }, 900);
       }
 
-      function openTemplateModal() {
-        templateModal.classList.add("modal--open");
-        templateModal.setAttribute("aria-hidden", "false");
-      }
-
-      function syncTemplateOptions(templateKey) {
-        templateOptions.forEach((option) => {
-          const input = option.querySelector("input");
-          const active = input.value === templateKey;
-          option.classList.toggle("template-option--active", active);
-          input.checked = active;
+      summaryTemplateTrigger.addEventListener("click", () => {
+        pendingSummaryTemplate = currentSummaryTemplate;
+        summaryTemplateOptions.forEach((option) => {
+          option.classList.toggle("modal-template--active", option.dataset.summaryTemplate === currentSummaryTemplate);
         });
+        summaryTemplateModal.classList.add("summary-template-modal--open");
+        summaryTemplateModal.setAttribute("aria-hidden", "false");
+      });
+
+      summaryTemplateOptions.forEach((option) => {
+        option.addEventListener("click", () => {
+          pendingSummaryTemplate = option.dataset.summaryTemplate;
+          summaryTemplateOptions.forEach((item) => item.classList.remove("modal-template--active"));
+          option.classList.add("modal-template--active");
+        });
+      });
+
+      document.querySelector("#summary-template-close").addEventListener("click", () => {
+        summaryTemplateModal.classList.remove("summary-template-modal--open");
+        summaryTemplateModal.setAttribute("aria-hidden", "true");
+      });
+
+      document.querySelector("#confirm-summary-template").addEventListener("click", () => {
+        summaryTemplateModal.classList.remove("summary-template-modal--open");
+        summaryTemplateModal.setAttribute("aria-hidden", "true");
+        if (pendingSummaryTemplate !== currentSummaryTemplate) {
+          selectTemplate(pendingSummaryTemplate);
+        }
+      });
+
+      function setDetailDefaultTab() {
+        detailTabs.forEach((button) => button.classList.toggle("tab-button--active", button.dataset.detailTab === "summary"));
+        detailPanels.forEach((panel) => panel.classList.toggle("detail-panel--active", panel.dataset.panel === "summary"));
       }
 
-      function closeTemplateModal() {
-        templateModal.classList.remove("modal--open");
-        templateModal.setAttribute("aria-hidden", "true");
-      }
-
-      function openPosterModal() {
-        posterModal.classList.add("modal--open");
-        posterModal.setAttribute("aria-hidden", "false");
-      }
-
-      function closePosterModal() {
-        posterModal.classList.remove("modal--open");
-        posterModal.setAttribute("aria-hidden", "true");
-      }
-
-      function applyTemplate(templateKey) {
-        const tpl = templateMaps[templateKey];
-        currentTemplate = templateKey;
-        templateTrigger.textContent = tpl ? (templateKey === "visual" ? "图文纪要" : templateKey === "standard" ? "标准会议纪要" : "头脑风暴") : "图文纪要";
-        detailTitle.textContent = tpl.title;
-        detailMeta.textContent = templateKey === "visual" ? "余雪薇 · 06-16 14:20" : templateKey === "standard" ? "余雪薇 · 06-16 14:20" : "余雪薇 · 06-16 14:20";
-        summaryHeadline.textContent = tpl.hero;
-        summaryBody.textContent = tpl.body;
-        posterTitle.textContent = tpl.title;
-        posterSubtitle.textContent = tpl.subtitle;
-
-        posterGrid.innerHTML = tpl.poster
-          .map(
-            ([index, title, body]) => `
-              <article>
-                <span>${index}</span>
-                <strong>${title}</strong>
-                <p>${body}</p>
-              </article>
-            `
-          )
-          .join("");
-      }
-
-      function setActiveTab(tabName) {
-        tabButtons.forEach((button) => button.classList.toggle("tab-chip--active", button.dataset.tab === tabName));
-        tabPanels.forEach((panel) => panel.classList.toggle("tab-panel--active", panel.dataset.panel === tabName));
-      }
-
-      function openDetail(title, meta, templateKey) {
+      function openDetail({ title, meta, from, template = "standard" }) {
         detailTitle.textContent = title;
         detailMeta.textContent = meta;
-        applyTemplate(templateKey);
-        setActiveTab("summary");
-        showScreen("detail");
+        setDetailDefaultTab();
+        selectTemplate(template, { skipLoading: true });
+        showView("detail", { from });
       }
 
-      navItems.forEach((button) => {
-        button.addEventListener("click", () => showScreen(button.dataset.target));
-      });
+      detailBack.addEventListener("click", () => showView(previousView));
 
-      recordToggle.addEventListener("click", () => {
-        if (recordingState === "idle") {
-          recordingState = "recording";
-          updateRecordingUi();
-          if (timerHandle) clearInterval(timerHandle);
-          timerHandle = setInterval(() => {
-            recordingSeconds += 1;
-            homeTime.textContent = formatTime(recordingSeconds);
-          }, 1000);
-          return;
-        }
-        if (recordingState === "recording") {
-          recordingState = "paused";
-          updateRecordingUi();
-          clearInterval(timerHandle);
-          timerHandle = null;
-          return;
-        }
-        if (recordingState === "paused") {
-          recordingState = "recording";
-          updateRecordingUi();
-          if (!timerHandle) {
-            timerHandle = setInterval(() => {
-              recordingSeconds += 1;
-              homeTime.textContent = formatTime(recordingSeconds);
-            }, 1000);
-          }
-        }
-      });
-
-      pauseButton.addEventListener("click", () => {
-        recordingState = recordingState === "paused" ? "recording" : "paused";
-        updateRecordingUi();
-        if (recordingState === "paused") {
-          clearInterval(timerHandle);
-          timerHandle = null;
-        } else if (!timerHandle) {
-          timerHandle = setInterval(() => {
-            recordingSeconds += 1;
-            homeTime.textContent = formatTime(recordingSeconds);
-          }, 1000);
-        }
-      });
-
-      endButton.addEventListener("click", () => {
-        clearInterval(timerHandle);
-        timerHandle = null;
-        templateModalSource = "recording";
-        syncTemplateOptions("standard");
-        openTemplateModal();
-      });
-      detailBack.addEventListener("click", () => showScreen("history"));
-      document.querySelectorAll("[data-close-template-modal]").forEach((node) => node.addEventListener("click", closeTemplateModal));
-      document.querySelectorAll("[data-close-poster-modal]").forEach((node) => node.addEventListener("click", closePosterModal));
-
-      templateTrigger.addEventListener("click", () => {
-        templateModalSource = "detail";
-        syncTemplateOptions(currentTemplate);
-        openTemplateModal();
-      });
-
-      templateOptions.forEach((option) => {
-        const radio = option.querySelector("input");
-        radio.addEventListener("change", () => {
-          templateOptions.forEach((node) => node.classList.remove("template-option--active"));
-          option.classList.add("template-option--active");
+      document.querySelectorAll(".history-item").forEach((item) => {
+        item.addEventListener("click", () => {
+          openDetail({
+            title: item.dataset.title,
+            meta: item.dataset.meta,
+            from: "history",
+            template: item.dataset.meta.includes("头脑风暴") ? "brainstorm" : item.dataset.meta.includes("图文纪要") ? "visual" : "standard",
+          });
         });
       });
 
-      templateConfirm.addEventListener("click", () => {
-        const selected = document.querySelector('input[name="detail-template"]:checked').value;
-        const changed = selected !== currentTemplate;
-        closeTemplateModal();
-        if (templateModalSource === "recording") {
-          recordingState = "idle";
-          recordingSeconds = 0;
-          updateRecordingUi();
-          applyTemplate(selected);
-          setActiveTab("summary");
-          showScreen("detail");
-          templateModalSource = "detail";
-          return;
-        }
-        if (!changed) return;
-        summaryLoading.classList.add("summary-loading--open");
-        summaryPreview.classList.add("summary-preview-card--hidden");
-        window.setTimeout(() => {
-          applyTemplate(selected);
-          summaryLoading.classList.remove("summary-loading--open");
-          summaryPreview.classList.remove("summary-preview-card--hidden");
-        }, 900);
-      });
+      const historySearch = document.querySelector("#history-search");
+      const historyItems = document.querySelectorAll(".history-item");
+      const historyEmpty = document.querySelector("#history-empty");
+      const loadMoreHistory = document.querySelector("#load-more-history");
+      let shownHistoryCount = 10;
+      const posterModal = document.querySelector("#poster-modal");
+      const openPosterPreview = document.querySelector("#open-poster-preview");
+      const closePosterPreview = () => {
+        posterModal.classList.remove("poster-modal--open");
+        posterModal.setAttribute("aria-hidden", "true");
+      };
 
-      zoomPoster.addEventListener("click", openPosterModal);
-      editPoster.addEventListener("click", () => window.alert("编辑功能将在后续版本开放"));
+      function renderHistoryList() {
+        const keyword = historySearch.value.trim().toLowerCase();
+        let visibleCount = 0;
+        let matchedCount = 0;
 
-      tabButtons.forEach((button) => {
-        button.addEventListener("click", () => setActiveTab(button.dataset.tab));
-      });
+        historyItems.forEach((item, index) => {
+          const haystack = (item.dataset.title + " " + item.dataset.meta).toLowerCase();
+          const matches = haystack.includes(keyword);
+          if (matches) matchedCount += 1;
+          const visible = matches && matchedCount <= shownHistoryCount;
+          item.hidden = !visible;
+          if (visible) visibleCount += 1;
+        });
+
+        historyEmpty.classList.toggle("empty-state--visible", matchedCount === 0);
+        loadMoreHistory.hidden = matchedCount <= shownHistoryCount;
+      }
 
       historySearch.addEventListener("input", () => {
-        loadedHistoryCount = 10;
-        renderHistory();
+        shownHistoryCount = 10;
+        renderHistoryList();
       });
 
-      moreHistory.addEventListener("click", () => {
-        loadedHistoryCount += 10;
-        renderHistory();
+      loadMoreHistory.addEventListener("click", () => {
+        shownHistoryCount += 10;
+        renderHistoryList();
       });
 
-      applyTemplate("visual");
-      updateRecordingUi();
-      renderHistory();
-      showScreen("home");
+      openPosterPreview.addEventListener("click", () => {
+        posterModal.classList.add("poster-modal--open");
+        posterModal.setAttribute("aria-hidden", "false");
+      });
+
+      document.querySelector("#poster-modal-close").addEventListener("click", closePosterPreview);
+      document.querySelector("#poster-close-button").addEventListener("click", closePosterPreview);
+
+      renderHistoryList();
     </script>
   </body>
 </html>
