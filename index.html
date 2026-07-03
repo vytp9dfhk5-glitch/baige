@@ -58,14 +58,18 @@
                 <div class="timer-display" id="timer-value">00:00:00</div>
 
                 <div class="voice-stage voice-stage--idle" id="voice-stage" aria-hidden="true">
-                  <span class="voice-ring voice-ring--a"></span>
-                  <span class="voice-ring voice-ring--b"></span>
-                  <span class="voice-ring voice-ring--c"></span>
-                  <button class="record-orb" id="start-recording" type="button">
-                    <span class="orb-icon"></span>
-                    开始录音
-                  </button>
-                </div>
+	                  <span class="voice-ring voice-ring--a"></span>
+	                  <span class="voice-ring voice-ring--b"></span>
+	                  <span class="voice-ring voice-ring--c"></span>
+	                  <button class="record-orb" id="start-recording" type="button">
+	                    <span class="orb-particles" aria-hidden="true"></span>
+	                    <span class="orb-face" aria-hidden="true">
+	                      <span class="orb-eye orb-eye--left"></span>
+	                      <span class="orb-eye orb-eye--right"></span>
+	                    </span>
+	                    <span class="record-orb-label">开始录音</span>
+	                  </button>
+	                </div>
 
                 <div class="recorder-actions recorder-actions--hidden" id="recording-actions">
                   <button class="action-button action-button--pause" id="pause-recording" type="button">暂停</button>
@@ -459,41 +463,143 @@
               </section>
             </section>
 
-            <section class="app-view" data-view="settings">
-              <header class="screen-header">
-                <div>
-                  <h2>设置</h2>
-                </div>
-                <button class="ghost-button" type="button">蓝牙已连接</button>
+	            <section class="app-view" data-view="settings">
+	              <header class="screen-header">
+	                <div>
+	                  <h2>设置</h2>
+	                </div>
+	              </header>
+
+		              <section class="settings-stack">
+		                <article class="setting-row setting-row--stack panel">
+		                  <button class="setting-value-row" id="edit-nickname" type="button">
+		                    <div>
+		                      <strong>昵称</strong>
+		                      <p id="user-nickname-display" data-auto-nickname="true">未设置</p>
+		                    </div>
+		                    <span class="setting-arrow"></span>
+		                  </button>
+		                </article>
+
+		                <article class="setting-row setting-row--stack device-setting-card panel">
+		                  <button class="setting-value-row" id="edit-device-name" type="button">
+		                    <div>
+		                      <strong>设备名称</strong>
+		                      <p id="device-name-display">白鸽会议记录仪 A01</p>
+		                    </div>
+		                    <span class="device-connection-badge device-connection-badge--connected">已连接</span>
+		                  </button>
+		                </article>
+
+	                <button class="setting-row setting-action panel" id="open-voice-library" type="button">
+	                  <div>
+	                    <strong>声纹库</strong>
+	                    <p>管理已录制声纹，用于区分会议发言人</p>
+	                  </div>
+	                  <span class="setting-arrow"></span>
+	                </button>
+
+	                <button class="setting-row setting-action panel" id="open-hotwords" type="button">
+	                  <div>
+	                    <strong>热词库</strong>
+	                    <p>自定义人名、地名、专业名词，提高转写准确率</p>
+	                  </div>
+	                  <span class="setting-arrow"></span>
+	                </button>
+	              </section>
+	            </section>
+
+            <section class="app-view feature-view" data-view="voice-library">
+              <header class="detail-header">
+                <button class="back-button" id="voice-library-back" type="button" aria-label="返回">‹</button>
+                <h2>声纹库</h2>
+                <span class="header-spacer"></span>
               </header>
 
-              <section class="settings-stack">
-                <article class="setting-row setting-row--stack panel">
-                  <div>
-                    <strong>昵称</strong>
-                  </div>
-                  <label class="name-input">
-                    <input id="user-nickname" type="text" value="" maxlength="12" aria-label="昵称" data-auto-nickname="true" />
-                  </label>
-                </article>
+              <section class="voice-list" id="voice-list">
+	                <article class="voice-card panel" data-voice-card data-voice-duration="9">
+	                  <div>
+	                    <strong>余雪薇</strong>
+	                    <p>已录制 · 00:09 · 2026-06-30</p>
+	                  </div>
+	                  <div class="voice-card-actions">
+	                    <button class="edit-voice" type="button">编辑</button>
+	                    <button class="delete-voice" type="button">删除</button>
+	                  </div>
+	                </article>
+	                <article class="voice-card panel" data-voice-card data-voice-duration="12">
+	                  <div>
+	                    <strong>林舟</strong>
+	                    <p>已录制 · 00:12 · 2026-06-26</p>
+	                  </div>
+	                  <div class="voice-card-actions">
+	                    <button class="edit-voice" type="button">编辑</button>
+	                    <button class="delete-voice" type="button">删除</button>
+	                  </div>
+	                </article>
+	              </section>
 
-                <article class="setting-row setting-row--stack panel">
-                  <div>
-                    <strong>设备名称</strong>
-                  </div>
-                  <label class="name-input">
-                    <input type="text" value="白鸽会议记录仪 A01" aria-label="设备名称" />
-                  </label>
-                </article>
+              <p class="empty-state" id="voice-empty">暂无声纹，添加后可在会议纪要中区分发言人。</p>
+              <button class="bottom-primary-button" id="add-voice" type="button">新增声纹</button>
+            </section>
 
-                <article class="setting-row panel">
-                  <div>
-                    <strong>设备连接状态</strong>
-                    <p>已连接，信号良好，电量 82%</p>
-                  </div>
-                  <span class="status-badge">正常</span>
-                </article>
+	            <section class="app-view feature-view voice-create-view" data-view="voice-create">
+	              <header class="detail-header">
+	                <button class="back-button" id="voice-create-back" type="button" aria-label="返回">‹</button>
+	                <h2 id="voice-create-title">声纹采集</h2>
+	                <span class="header-spacer"></span>
+	              </header>
+
+              <section class="voice-name-card panel">
+                <label class="name-input name-input--flat">
+                  <span>声纹姓名</span>
+                  <input id="voice-name-input" type="text" maxlength="12" placeholder="请输入姓名" aria-label="声纹姓名" />
+                </label>
               </section>
+
+              <section class="voice-script-card">
+                <p>请在安静环境下，点击“开始”后朗读下方文字</p>
+                <div class="script-box">
+                  <p>朗读这段文字的过程中，如果出现读错的情况，并不会影响声纹采集的质量，继续以正常语速完成朗读即可。朗读完后，点击“停止”按钮，声纹将在 5 秒左右完成采集。如果采集失败，会提示错误原因，可以根据提示重新采集。</p>
+                  <p>我的声纹采集成功后，妙记中将能正确展示我在会议室的发言，这将对妙记的可读性和正确性起到很大作用。</p>
+                </div>
+              </section>
+
+              <section class="voice-recorder-card panel">
+                <div class="voice-wave" aria-hidden="true"><span></span><span></span><span></span><b id="voice-record-time">00:00</b><span></span><span></span><span></span></div>
+                <div class="voice-record-actions">
+	                  <button class="voice-side-button" id="voice-rerecord" type="button"><span>↻</span>重录</button>
+	                  <button class="voice-main-button" id="voice-record-toggle" type="button" data-state="idle" aria-label="开始录音"><span></span></button>
+	                  <button class="voice-side-button" id="voice-submit" type="button"><span>✓</span><b id="voice-submit-label">提交</b></button>
+	                </div>
+                <p class="voice-record-tip" id="voice-record-tip">点击开始录音</p>
+              </section>
+            </section>
+
+            <section class="app-view feature-view hotword-view" data-view="hotwords">
+              <header class="detail-header">
+                <button class="back-button" id="hotwords-back" type="button" aria-label="返回">‹</button>
+                <h2>自定义热词</h2>
+                <span class="header-spacer"></span>
+              </header>
+
+              <section class="hotword-empty" id="hotword-empty">
+                <div class="hotword-illustration" aria-hidden="true"></div>
+                <p>添加常用词汇（如人名、地名、专业名词等），AI 将优先识别这些词，提高转写准确率。</p>
+              </section>
+
+              <section class="hotword-content" id="hotword-content" hidden>
+                <section class="search-row hotword-search panel">
+                  <input id="hotword-search" type="search" placeholder="搜索热词" aria-label="搜索热词" />
+                  <button class="search-button" type="button">搜</button>
+                </section>
+                <section class="hotword-list-card panel" id="hotword-list-card">
+                  <p class="hotword-label">热词</p>
+                  <div class="hotword-list" id="hotword-list"></div>
+                </section>
+                <p class="empty-state" id="hotword-no-result">没有找到相关热词</p>
+              </section>
+              <button class="bottom-primary-button" id="add-hotword" type="button">添加</button>
             </section>
 
             <nav class="bottom-nav bottom-nav--hidden panel" aria-label="底部导航">
@@ -604,7 +710,51 @@
                 </div>
               </div>
             </section>
-          </div>
+
+            <section class="voice-delete-modal" id="voice-delete-modal" aria-hidden="true">
+              <div class="modal-scrim" id="voice-delete-cancel-scrim"></div>
+              <div class="modal-sheet panel">
+                <div class="modal-handle"></div>
+                <h3>删除声纹</h3>
+                <p>确认删除“<span id="voice-delete-name">该声纹</span>”吗？删除后会议中将不再使用该声纹识别发言人。</p>
+                <div class="hotword-modal-actions">
+                  <button class="secondary-button" id="voice-delete-cancel" type="button">取消</button>
+                  <button class="danger-button" id="voice-delete-confirm" type="button">删除</button>
+                </div>
+              </div>
+            </section>
+
+	            <section class="hotword-modal" id="hotword-modal" aria-hidden="true">
+              <div class="modal-scrim" id="hotword-modal-close"></div>
+              <div class="modal-sheet panel">
+                <div class="modal-handle"></div>
+                <h3>添加热词</h3>
+                <p>支持批量输入，词与词之间用逗号或空格隔开。</p>
+                <label class="hotword-input">
+                  <textarea id="hotword-input" rows="3" placeholder="例如：TPA、可信数据空间、金融风控专区"></textarea>
+                </label>
+                <div class="hotword-modal-actions">
+                  <button class="secondary-button" id="hotword-cancel" type="button">取消</button>
+                  <button class="confirm-button" id="hotword-save" type="button">保存</button>
+                </div>
+	              </div>
+	            </section>
+
+	            <section class="setting-edit-modal" id="setting-edit-modal" aria-hidden="true">
+	              <div class="modal-scrim" id="setting-edit-close"></div>
+	              <div class="modal-sheet panel">
+	                <div class="modal-handle"></div>
+	                <h3 id="setting-edit-title">修改信息</h3>
+	                <label class="hotword-input">
+	                  <input id="setting-edit-input" type="text" maxlength="20" placeholder="请输入" />
+	                </label>
+	                <div class="hotword-modal-actions">
+	                  <button class="secondary-button" id="setting-edit-cancel" type="button">取消</button>
+	                  <button class="confirm-button" id="setting-edit-confirm" type="button">确认</button>
+	                </div>
+	              </div>
+	            </section>
+	          </div>
         </section>
       </main>
     </div>
@@ -619,12 +769,15 @@
       let previousView = "home";
       let selectedTemplate = "standard";
 
+      const fullScreenViews = new Set(["login", "detail", "voice-library", "voice-create", "hotwords"]);
+      const mainViews = new Set(["home", "history", "settings"]);
+
       function showView(target, options = {}) {
         views.forEach((view) => view.classList.remove("app-view--active"));
         document.querySelector(`[data-view="${target}"]`).classList.add("app-view--active");
-        bottomNav.classList.toggle("bottom-nav--hidden", target === "login" || target === "detail");
+        bottomNav.classList.toggle("bottom-nav--hidden", fullScreenViews.has(target));
 
-        if (target !== "login" && target !== "detail") {
+        if (mainViews.has(target)) {
           navItems.forEach((button) => {
             button.classList.toggle("nav-item--active", button.dataset.target === target);
           });
@@ -637,10 +790,18 @@
 
       const loginPhone = document.querySelector("#login-phone");
       const loginCode = document.querySelector("#login-code");
-      const sendCode = document.querySelector("#send-code");
-      const loginSubmit = document.querySelector("#login-submit");
-      const loginHint = document.querySelector("#login-hint");
-      const userNickname = document.querySelector("#user-nickname");
+	      const sendCode = document.querySelector("#send-code");
+	      const loginSubmit = document.querySelector("#login-submit");
+	      const loginHint = document.querySelector("#login-hint");
+	      const userNicknameDisplay = document.querySelector("#user-nickname-display");
+	      const deviceNameDisplay = document.querySelector("#device-name-display");
+	      const editNickname = document.querySelector("#edit-nickname");
+	      const editDeviceName = document.querySelector("#edit-device-name");
+	      const settingEditModal = document.querySelector("#setting-edit-modal");
+	      const settingEditTitle = document.querySelector("#setting-edit-title");
+	      const settingEditInput = document.querySelector("#setting-edit-input");
+	      const settingEditConfirm = document.querySelector("#setting-edit-confirm");
+	      let settingEditTarget = null;
 
       function maskPhone(phone) {
         return phone.replace(/^(\d{3})\d{4}(\d{4})$/, "$1****$2");
@@ -654,11 +815,7 @@
         loginCode.value = loginCode.value.replace(/\D/g, "").slice(0, 6);
       });
 
-      userNickname.addEventListener("input", () => {
-        userNickname.dataset.autoNickname = "false";
-      });
-
-      sendCode.addEventListener("click", () => {
+	      sendCode.addEventListener("click", () => {
         if (!/^1\d{10}$/.test(loginPhone.value)) {
           loginHint.textContent = "请输入 11 位手机号后获取验证码。";
           loginHint.classList.add("login-hint--error");
@@ -694,16 +851,54 @@
         }
 
         loginHint.classList.remove("login-hint--error");
-        if (userNickname.dataset.autoNickname === "true" || !userNickname.value.trim()) {
-          userNickname.value = maskPhone(loginPhone.value);
-          userNickname.dataset.autoNickname = "true";
-        }
-        showView("home");
-      });
+	        if (userNicknameDisplay && (userNicknameDisplay.dataset.autoNickname === "true" || userNicknameDisplay.textContent.trim() === "未设置")) {
+	          userNicknameDisplay.textContent = maskPhone(loginPhone.value);
+	          userNicknameDisplay.dataset.autoNickname = "true";
+	        }
+	        showView("home");
+	      });
 
-      navItems.forEach((item) => {
-        item.addEventListener("click", () => showView(item.dataset.target));
-      });
+	      navItems.forEach((item) => {
+	        item.addEventListener("click", () => showView(item.dataset.target));
+	      });
+
+	      function openSettingEditModal(target) {
+	        settingEditTarget = target;
+	        const isNickname = target === "nickname";
+	        const currentValue = isNickname ? userNicknameDisplay.textContent.trim() : deviceNameDisplay.textContent.trim();
+	        settingEditTitle.textContent = isNickname ? "修改昵称" : "修改设备名称";
+	        settingEditInput.value = currentValue === "未设置" ? "" : currentValue;
+	        settingEditInput.placeholder = isNickname ? "请输入昵称" : "请输入设备名称";
+	        settingEditModal.classList.add("setting-edit-modal--open");
+	        settingEditModal.setAttribute("aria-hidden", "false");
+	        window.setTimeout(() => settingEditInput.focus(), 80);
+	      }
+
+	      function closeSettingEditModal() {
+	        settingEditModal.classList.remove("setting-edit-modal--open");
+	        settingEditModal.setAttribute("aria-hidden", "true");
+	        settingEditTarget = null;
+	      }
+
+	      editNickname.addEventListener("click", () => openSettingEditModal("nickname"));
+	      editDeviceName.addEventListener("click", () => openSettingEditModal("device"));
+	      document.querySelector("#setting-edit-close").addEventListener("click", closeSettingEditModal);
+	      document.querySelector("#setting-edit-cancel").addEventListener("click", closeSettingEditModal);
+	      settingEditConfirm.addEventListener("click", () => {
+	        const value = settingEditInput.value.trim();
+	        if (!value) {
+	          settingEditInput.focus();
+	          return;
+	        }
+	        if (settingEditTarget === "nickname") {
+	          userNicknameDisplay.textContent = value;
+	          userNicknameDisplay.dataset.autoNickname = "false";
+	        }
+	        if (settingEditTarget === "device") {
+	          deviceNameDisplay.textContent = value;
+	        }
+	        closeSettingEditModal();
+	      });
 
       const recorderCard = document.querySelector("#recorder-card");
       const startRecording = document.querySelector("#start-recording");
@@ -713,6 +908,7 @@
       const timerValue = document.querySelector("#timer-value");
       const voiceStage = document.querySelector("#voice-stage");
       const templateModal = document.querySelector("#template-modal");
+      const recordingTemplateButtons = templateModal.querySelectorAll("[data-template-choice]");
 
       startRecording.addEventListener("click", () => {
         recorderCard.classList.add("is-recording");
@@ -729,7 +925,7 @@
 
       finishRecording.addEventListener("click", () => {
         selectedTemplate = "standard";
-        document.querySelectorAll(".modal-template").forEach((item) => {
+        recordingTemplateButtons.forEach((item) => {
           item.classList.toggle("modal-template--active", item.dataset.templateChoice === "standard");
         });
         templateModal.classList.add("template-modal--open");
@@ -741,10 +937,10 @@
         templateModal.setAttribute("aria-hidden", "true");
       });
 
-      document.querySelectorAll(".modal-template").forEach((button) => {
+      recordingTemplateButtons.forEach((button) => {
         button.addEventListener("click", () => {
           selectedTemplate = button.dataset.templateChoice;
-          document.querySelectorAll(".modal-template").forEach((item) => item.classList.remove("modal-template--active"));
+          recordingTemplateButtons.forEach((item) => item.classList.remove("modal-template--active"));
           button.classList.add("modal-template--active");
         });
       });
@@ -755,7 +951,7 @@
         openDetail({
           title: "新会议录音",
           meta: "刚刚 · " + templateLabel(selectedTemplate) + " · 00:00:18",
-          from: "home",
+          from: "history",
           template: selectedTemplate,
         });
       });
@@ -852,6 +1048,313 @@
       }
 
       detailBack.addEventListener("click", () => showView(previousView));
+
+      const openVoiceLibrary = document.querySelector("#open-voice-library");
+      const openHotwords = document.querySelector("#open-hotwords");
+      const voiceLibraryBack = document.querySelector("#voice-library-back");
+      const voiceCreateBack = document.querySelector("#voice-create-back");
+      const hotwordsBack = document.querySelector("#hotwords-back");
+      const addVoice = document.querySelector("#add-voice");
+      const voiceList = document.querySelector("#voice-list");
+      const voiceEmpty = document.querySelector("#voice-empty");
+      const voiceCreateTitle = document.querySelector("#voice-create-title");
+      const voiceNameInput = document.querySelector("#voice-name-input");
+      const voiceRecordToggle = document.querySelector("#voice-record-toggle");
+      const voiceRerecord = document.querySelector("#voice-rerecord");
+      const voiceSubmit = document.querySelector("#voice-submit");
+      const voiceSubmitLabel = document.querySelector("#voice-submit-label");
+      const voiceRecordTime = document.querySelector("#voice-record-time");
+      const voiceRecordTip = document.querySelector("#voice-record-tip");
+      const voiceDeleteModal = document.querySelector("#voice-delete-modal");
+      const voiceDeleteName = document.querySelector("#voice-delete-name");
+      const voiceDeleteCancel = document.querySelector("#voice-delete-cancel");
+      const voiceDeleteConfirm = document.querySelector("#voice-delete-confirm");
+      const addHotword = document.querySelector("#add-hotword");
+      const hotwordModal = document.querySelector("#hotword-modal");
+      const hotwordInput = document.querySelector("#hotword-input");
+      const hotwordSearch = document.querySelector("#hotword-search");
+      const hotwordEmpty = document.querySelector("#hotword-empty");
+      const hotwordContent = document.querySelector("#hotword-content");
+      const hotwordList = document.querySelector("#hotword-list");
+      const hotwordNoResult = document.querySelector("#hotword-no-result");
+      let voiceRecordSeconds = 0;
+      let voiceRecordTimer = null;
+      let voiceRecordState = "idle";
+      let voiceFormMode = "create";
+      let editingVoiceCard = null;
+      let voiceRecordingChanged = false;
+      let pendingVoiceDeleteCard = null;
+
+      function formatShortTime(seconds) {
+        return `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+      }
+
+      function updateVoiceEmptyState() {
+        voiceEmpty.classList.toggle("empty-state--visible", voiceList.querySelectorAll("[data-voice-card]").length === 0);
+      }
+
+      function todayText() {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      }
+
+      function getVoiceDuration(card) {
+        if (card.dataset.voiceDuration) return Number(card.dataset.voiceDuration);
+        const match = card.querySelector("p").textContent.match(/(\d{2}):(\d{2})/);
+        return match ? Number(match[1]) * 60 + Number(match[2]) : 8;
+      }
+
+      function stopVoiceTimer() {
+        window.clearInterval(voiceRecordTimer);
+        voiceRecordTimer = null;
+      }
+
+      function setVoiceRecordState(state) {
+        voiceRecordState = state;
+        voiceRecordToggle.dataset.state = state;
+        voiceRecordToggle.setAttribute("aria-label", state === "recording" ? "暂停录音" : "开始录音");
+        if (state === "recording") {
+          voiceRecordTip.textContent = "录制中，点击中间按钮暂停";
+          if (!voiceRecordTimer) {
+            voiceRecordTimer = window.setInterval(() => {
+              voiceRecordSeconds += 1;
+              voiceRecordTime.textContent = formatShortTime(voiceRecordSeconds);
+            }, 1000);
+          }
+          return;
+        }
+
+        stopVoiceTimer();
+        voiceRecordTip.textContent = state === "paused" ? "已暂停，可继续录制或重录" : "点击开始录音";
+      }
+
+      function resetVoiceRecorder() {
+        stopVoiceTimer();
+        voiceRecordSeconds = 0;
+        voiceRecordTime.textContent = "00:00";
+        setVoiceRecordState("idle");
+      }
+
+      function setVoiceFormMode(mode, card = null) {
+        voiceFormMode = mode;
+        editingVoiceCard = card;
+        voiceRecordingChanged = false;
+        voiceCreateTitle.textContent = mode === "edit" ? "编辑声纹" : "声纹采集";
+        voiceSubmitLabel.textContent = mode === "edit" ? "保存" : "提交";
+        voiceNameInput.value = card ? card.querySelector("strong").textContent : "";
+        resetVoiceRecorder();
+
+        if (card) {
+          voiceRecordSeconds = getVoiceDuration(card);
+          voiceRecordTime.textContent = formatShortTime(voiceRecordSeconds);
+          voiceRecordTip.textContent = "可修改姓名，点击中间按钮重新录制声纹";
+        }
+      }
+
+      function updateVoiceCard(card, name, duration) {
+        card.dataset.voiceDuration = String(duration);
+        card.querySelector("strong").textContent = name;
+        card.querySelector("p").textContent = `已录制 · ${formatShortTime(duration)} · ${todayText()}`;
+      }
+
+      function createVoiceCard(name, duration) {
+        const card = document.createElement("article");
+        const content = document.createElement("div");
+        const title = document.createElement("strong");
+        const meta = document.createElement("p");
+        const actions = document.createElement("div");
+        const editButton = document.createElement("button");
+        const deleteButton = document.createElement("button");
+
+        card.className = "voice-card panel";
+        card.dataset.voiceCard = "";
+        card.dataset.voiceDuration = String(duration);
+        title.textContent = name;
+        meta.textContent = `已录制 · ${formatShortTime(duration)} · ${todayText()}`;
+        actions.className = "voice-card-actions";
+        editButton.className = "edit-voice";
+        editButton.type = "button";
+        editButton.textContent = "编辑";
+        deleteButton.className = "delete-voice";
+        deleteButton.type = "button";
+        deleteButton.textContent = "删除";
+
+        content.append(title, meta);
+        actions.append(editButton, deleteButton);
+        card.append(content, actions);
+        voiceList.prepend(card);
+        attachVoiceEdit(editButton);
+        attachVoiceDelete(deleteButton);
+        updateVoiceEmptyState();
+      }
+
+      function attachVoiceEdit(button) {
+        button.addEventListener("click", () => {
+          setVoiceFormMode("edit", button.closest("[data-voice-card]"));
+          showView("voice-create");
+        });
+      }
+
+      function attachVoiceDelete(button) {
+        button.addEventListener("click", () => {
+          pendingVoiceDeleteCard = button.closest("[data-voice-card]");
+          voiceDeleteName.textContent = pendingVoiceDeleteCard.querySelector("strong").textContent;
+          voiceDeleteModal.classList.add("voice-delete-modal--open");
+          voiceDeleteModal.setAttribute("aria-hidden", "false");
+        });
+      }
+
+      function closeVoiceDeleteModal() {
+        voiceDeleteModal.classList.remove("voice-delete-modal--open");
+        voiceDeleteModal.setAttribute("aria-hidden", "true");
+        pendingVoiceDeleteCard = null;
+      }
+
+      document.querySelectorAll(".edit-voice").forEach(attachVoiceEdit);
+      document.querySelectorAll(".delete-voice").forEach(attachVoiceDelete);
+      updateVoiceEmptyState();
+      document.querySelector("#voice-delete-cancel-scrim").addEventListener("click", closeVoiceDeleteModal);
+      voiceDeleteCancel.addEventListener("click", closeVoiceDeleteModal);
+      voiceDeleteConfirm.addEventListener("click", () => {
+        if (pendingVoiceDeleteCard) {
+          pendingVoiceDeleteCard.remove();
+          updateVoiceEmptyState();
+        }
+        closeVoiceDeleteModal();
+      });
+
+	      openVoiceLibrary?.addEventListener("click", () => showView("voice-library"));
+	      openHotwords?.addEventListener("click", () => showView("hotwords"));
+      voiceLibraryBack.addEventListener("click", () => showView("settings"));
+      hotwordsBack.addEventListener("click", () => showView("settings"));
+      voiceCreateBack.addEventListener("click", () => {
+        resetVoiceRecorder();
+        voiceFormMode = "create";
+        editingVoiceCard = null;
+        voiceRecordingChanged = false;
+        showView("voice-library");
+      });
+
+      addVoice.addEventListener("click", () => {
+        setVoiceFormMode("create");
+        showView("voice-create");
+      });
+
+      voiceRecordToggle.addEventListener("click", () => {
+        if (voiceRecordState === "recording") {
+          setVoiceRecordState("paused");
+          return;
+        }
+        if (voiceFormMode === "edit" && !voiceRecordingChanged) {
+          voiceRecordSeconds = 0;
+          voiceRecordTime.textContent = "00:00";
+        }
+        voiceRecordingChanged = true;
+        setVoiceRecordState("recording");
+      });
+
+      voiceRerecord.addEventListener("click", () => {
+        resetVoiceRecorder();
+        voiceRecordingChanged = true;
+        voiceRecordTip.textContent = "已重置，请重新开始录音";
+      });
+
+      voiceSubmit.addEventListener("click", () => {
+        const name = voiceNameInput.value.trim();
+        if (!name) {
+          voiceRecordTip.textContent = "请先填写声纹姓名";
+          voiceNameInput.focus();
+          return;
+        }
+        if (voiceFormMode === "create" && voiceRecordSeconds === 0) {
+          voiceRecordTip.textContent = "请先完成一段声纹录制";
+          return;
+        }
+        if (voiceFormMode === "edit" && voiceRecordingChanged && voiceRecordSeconds === 0) {
+          voiceRecordTip.textContent = "请先完成一段声纹录制";
+          return;
+        }
+        stopVoiceTimer();
+        if (voiceFormMode === "edit" && editingVoiceCard) {
+          updateVoiceCard(editingVoiceCard, name, voiceRecordSeconds);
+        } else {
+          createVoiceCard(name, voiceRecordSeconds);
+        }
+        resetVoiceRecorder();
+        voiceFormMode = "create";
+        editingVoiceCard = null;
+        voiceRecordingChanged = false;
+        showView("voice-library");
+      });
+
+      function openHotwordModal() {
+        hotwordInput.value = "";
+        hotwordModal.classList.add("hotword-modal--open");
+        hotwordModal.setAttribute("aria-hidden", "false");
+        window.setTimeout(() => hotwordInput.focus(), 80);
+      }
+
+      function closeHotwordModal() {
+        hotwordModal.classList.remove("hotword-modal--open");
+        hotwordModal.setAttribute("aria-hidden", "true");
+      }
+
+      function updateHotwordState() {
+        const items = Array.from(hotwordList.querySelectorAll(".hotword-item"));
+        const keyword = hotwordSearch.value.trim().toLowerCase();
+        const hasItems = items.length > 0;
+        let matchedCount = 0;
+
+        hotwordEmpty.hidden = hasItems;
+        hotwordContent.hidden = !hasItems;
+        if (!hasItems) {
+          hotwordNoResult.classList.remove("empty-state--visible");
+          return;
+        }
+
+        items.forEach((item) => {
+          const matches = item.dataset.word.toLowerCase().includes(keyword);
+          item.hidden = !matches;
+          if (matches) matchedCount += 1;
+        });
+        hotwordNoResult.classList.toggle("empty-state--visible", matchedCount === 0);
+      }
+
+      function createHotwordItem(word) {
+        const normalized = word.trim();
+        if (!normalized) return;
+        const exists = Array.from(hotwordList.querySelectorAll(".hotword-item")).some((item) => item.dataset.word === normalized);
+        if (exists) return;
+
+        const item = document.createElement("button");
+        const closeIcon = document.createElement("span");
+        item.className = "hotword-item";
+        item.type = "button";
+        item.dataset.word = normalized;
+        item.append(document.createTextNode(normalized));
+        closeIcon.textContent = "×";
+        item.append(closeIcon);
+        item.addEventListener("click", () => {
+          item.remove();
+          updateHotwordState();
+        });
+        hotwordList.appendChild(item);
+        updateHotwordState();
+      }
+
+      hotwordSearch.addEventListener("input", updateHotwordState);
+      addHotword.addEventListener("click", openHotwordModal);
+      document.querySelector("#hotword-modal-close").addEventListener("click", closeHotwordModal);
+      document.querySelector("#hotword-cancel").addEventListener("click", closeHotwordModal);
+      document.querySelector("#hotword-save").addEventListener("click", () => {
+        hotwordInput.value
+          .split(/[，,、;；\s]+/)
+          .map((word) => word.trim())
+          .filter(Boolean)
+          .forEach(createHotwordItem);
+        closeHotwordModal();
+      });
+      updateHotwordState();
 
       document.querySelectorAll(".history-item").forEach((item) => {
         item.addEventListener("click", () => {
