@@ -48,9 +48,9 @@
             <section class="app-view" data-view="home">
               <header class="home-header">
                 <h1>白鸽慧译</h1>
-                <button class="device-status device-status--ok" id="device-status" type="button">
+                <button class="device-status device-status--connected" id="device-status" type="button">
                   <span></span>
-                  设备正常
+                  设备已连接
                 </button>
               </header>
 
@@ -277,14 +277,17 @@
               <header class="detail-header">
                 <button class="back-button" id="detail-back" type="button" aria-label="返回">‹</button>
                 <div class="detail-tools">
-                  <button class="more-button" type="button">...</button>
+                  <button class="more-button" id="detail-more" type="button" aria-label="更多操作">...</button>
                 </div>
               </header>
 
               <section class="detail-card">
                 <div class="detail-title-row">
                   <div>
-                    <h3 id="detail-title">05-25 保险科技与AI模型应用</h3>
+                    <button class="detail-title-button" id="detail-title-button" type="button" aria-label="修改会议标题">
+                      <h3 id="detail-title">05-25 保险科技与AI模型应用</h3>
+                      <span class="title-edit-icon" aria-hidden="true"></span>
+                    </button>
                     <p id="detail-meta">椰苏 05-29 15:30 · 标准会议纪要 · 44:53</p>
                   </div>
                 </div>
@@ -506,6 +509,13 @@
 	                  </div>
 	                  <span class="setting-arrow"></span>
 	                </button>
+
+	                <button class="setting-row setting-action setting-action--logout panel" id="logout-account" type="button">
+	                  <div>
+	                    <strong>退出登录</strong>
+	                    <p>退出当前账号，返回手机号验证码登录</p>
+	                  </div>
+	                </button>
 	              </section>
 	            </section>
 
@@ -711,18 +721,31 @@
               </div>
             </section>
 
-            <section class="voice-delete-modal" id="voice-delete-modal" aria-hidden="true">
-              <div class="modal-scrim" id="voice-delete-cancel-scrim"></div>
-              <div class="modal-sheet panel">
-                <div class="modal-handle"></div>
-                <h3>删除声纹</h3>
+	            <section class="voice-delete-modal" id="voice-delete-modal" aria-hidden="true">
+	              <div class="modal-scrim" id="voice-delete-cancel-scrim"></div>
+	              <div class="modal-sheet panel">
+	                <div class="modal-handle"></div>
+	                <h3>删除声纹</h3>
                 <p>确认删除“<span id="voice-delete-name">该声纹</span>”吗？删除后会议中将不再使用该声纹识别发言人。</p>
                 <div class="hotword-modal-actions">
                   <button class="secondary-button" id="voice-delete-cancel" type="button">取消</button>
                   <button class="danger-button" id="voice-delete-confirm" type="button">删除</button>
-                </div>
-              </div>
-            </section>
+	                </div>
+	              </div>
+	            </section>
+
+	            <section class="logout-modal" id="logout-modal" aria-hidden="true">
+	              <div class="modal-scrim" id="logout-cancel-scrim"></div>
+	              <div class="modal-sheet panel">
+	                <div class="modal-handle"></div>
+	                <h3>退出登录</h3>
+	                <p>确认退出当前账号吗？退出后需要重新使用手机号验证码登录。</p>
+	                <div class="hotword-modal-actions">
+	                  <button class="secondary-button" id="logout-cancel" type="button">取消</button>
+	                  <button class="danger-button" id="logout-confirm" type="button">退出登录</button>
+	                </div>
+	              </div>
+	            </section>
 
 	            <section class="hotword-modal" id="hotword-modal" aria-hidden="true">
               <div class="modal-scrim" id="hotword-modal-close"></div>
@@ -754,6 +777,106 @@
 	                </div>
 	              </div>
 	            </section>
+
+	            <section class="rename-meeting-modal" id="rename-meeting-modal" aria-hidden="true">
+	              <div class="modal-scrim" id="rename-meeting-close"></div>
+	              <div class="modal-sheet panel">
+	                <div class="modal-handle"></div>
+	                <h3>修改会议标题</h3>
+	                <p>重命名后，历史列表和会议详情会同步更新。</p>
+	                <label class="hotword-input">
+	                  <input id="rename-meeting-input" type="text" maxlength="50" placeholder="请输入会议标题" />
+	                </label>
+	                <div class="hotword-modal-actions">
+	                  <button class="secondary-button" id="rename-meeting-cancel" type="button">取消</button>
+	                  <button class="confirm-button" id="rename-meeting-confirm" type="button">确认</button>
+	                </div>
+	              </div>
+	            </section>
+
+	            <section class="detail-more-modal" id="detail-more-modal" aria-hidden="true">
+	              <div class="modal-scrim" id="detail-more-close"></div>
+	              <div class="modal-sheet panel">
+	                <div class="modal-handle"></div>
+	                <h3>更多操作</h3>
+	                <div class="detail-action-list">
+	                  <button class="detail-action-item" id="detail-edit-open" type="button">
+	                    <strong>编辑</strong>
+	                    <span>编辑标题、时间、参与人和 AI 纪要内容</span>
+	                  </button>
+	                  <button class="detail-action-item" id="detail-export-open" type="button">
+	                    <strong>导出</strong>
+	                    <span>选择 Word 或 PDF 格式导出会议纪要</span>
+	                  </button>
+	                  <button class="detail-action-item detail-action-item--danger" id="detail-delete-open" type="button">
+	                    <strong>删除</strong>
+	                    <span>删除此会议记录，删除后不可恢复</span>
+	                  </button>
+	                </div>
+	              </div>
+	            </section>
+
+	            <section class="export-format-modal" id="export-format-modal" aria-hidden="true">
+	              <div class="modal-scrim" id="export-format-close"></div>
+	              <div class="modal-sheet panel">
+	                <div class="modal-handle"></div>
+	                <h3>选择导出格式</h3>
+	                <p>导出内容包含会议标题、时间、参与人、AI 纪要全文和摘要图。</p>
+	                <div class="detail-action-list">
+	                  <button class="detail-action-item" id="export-word" type="button">
+	                    <strong>Word 格式</strong>
+	                    <span>适合继续编辑和归档</span>
+	                  </button>
+	                  <button class="detail-action-item" id="export-pdf" type="button">
+	                    <strong>PDF 格式</strong>
+	                    <span>适合发送、打印和固定版式阅读</span>
+	                  </button>
+	                </div>
+	                <button class="secondary-button export-cancel-button" id="export-format-cancel" type="button">取消</button>
+	              </div>
+	            </section>
+
+	            <section class="detail-edit-modal" id="detail-edit-modal" aria-hidden="true">
+	              <div class="modal-scrim" id="detail-edit-close"></div>
+	              <div class="modal-sheet detail-edit-sheet panel">
+	                <div class="modal-handle"></div>
+	                <h3>编辑会议纪要</h3>
+	                <div class="detail-edit-body">
+	                  <label class="edit-field">
+	                    <span>会议标题</span>
+	                    <input id="edit-meeting-title" type="text" maxlength="50" placeholder="请输入会议标题" />
+	                  </label>
+	                  <label class="edit-field">
+	                    <span>会议时间</span>
+	                    <input id="edit-meeting-time" type="datetime-local" />
+	                  </label>
+	                  <label class="edit-field">
+	                    <span>参与人</span>
+	                    <input id="edit-meeting-participants" type="text" placeholder="多人用逗号分隔" />
+	                  </label>
+	                  <div class="edit-section-list" id="edit-section-list"></div>
+	                </div>
+	                <div class="hotword-modal-actions">
+	                  <button class="secondary-button" id="detail-edit-cancel" type="button">取消</button>
+	                  <button class="confirm-button" id="detail-edit-save" type="button">保存</button>
+	                </div>
+	              </div>
+	            </section>
+
+	            <section class="delete-meeting-modal" id="delete-meeting-modal" aria-hidden="true">
+	              <div class="modal-scrim" id="delete-meeting-cancel-scrim"></div>
+	              <div class="modal-sheet panel">
+	                <div class="modal-handle"></div>
+	                <h3>删除确认</h3>
+	                <p>确定删除此会议记录？删除后不可恢复</p>
+	                <div class="hotword-modal-actions">
+	                  <button class="secondary-button" id="delete-meeting-cancel" type="button">取消</button>
+	                  <button class="danger-button" id="delete-meeting-confirm" type="button">确认删除</button>
+	                </div>
+	              </div>
+	            </section>
+
+	            <div class="export-toast" id="export-toast" aria-live="polite"></div>
 	          </div>
         </section>
       </main>
@@ -764,10 +887,26 @@
       const views = document.querySelectorAll(".app-view");
       const bottomNav = document.querySelector(".bottom-nav");
       const detailBack = document.querySelector("#detail-back");
+      const detailMoreButton = document.querySelector("#detail-more");
+      const detailTitleButton = document.querySelector("#detail-title-button");
       const detailTitle = document.querySelector("#detail-title");
       const detailMeta = document.querySelector("#detail-meta");
+      const renameMeetingModal = document.querySelector("#rename-meeting-modal");
+      const renameMeetingInput = document.querySelector("#rename-meeting-input");
+      const renameMeetingConfirm = document.querySelector("#rename-meeting-confirm");
+      const detailMoreModal = document.querySelector("#detail-more-modal");
+      const detailEditModal = document.querySelector("#detail-edit-modal");
+      const deleteMeetingModal = document.querySelector("#delete-meeting-modal");
+      const exportFormatModal = document.querySelector("#export-format-modal");
+      const exportToast = document.querySelector("#export-toast");
+      const editMeetingTitle = document.querySelector("#edit-meeting-title");
+      const editMeetingTime = document.querySelector("#edit-meeting-time");
+      const editMeetingParticipants = document.querySelector("#edit-meeting-participants");
+      const editSectionList = document.querySelector("#edit-section-list");
       let previousView = "home";
       let selectedTemplate = "standard";
+      let activeHistoryItem = null;
+      let activeEditSections = [];
 
       const fullScreenViews = new Set(["login", "detail", "voice-library", "voice-create", "hotwords"]);
       const mainViews = new Set(["home", "history", "settings"]);
@@ -801,6 +940,8 @@
 	      const settingEditTitle = document.querySelector("#setting-edit-title");
 	      const settingEditInput = document.querySelector("#setting-edit-input");
 	      const settingEditConfirm = document.querySelector("#setting-edit-confirm");
+	      const logoutAccount = document.querySelector("#logout-account");
+	      const logoutModal = document.querySelector("#logout-modal");
 	      let settingEditTarget = null;
 
       function maskPhone(phone) {
@@ -898,6 +1039,33 @@
 	          deviceNameDisplay.textContent = value;
 	        }
 	        closeSettingEditModal();
+	      });
+
+	      function openLogoutModal() {
+	        logoutModal.classList.add("logout-modal--open");
+	        logoutModal.setAttribute("aria-hidden", "false");
+	      }
+
+	      function closeLogoutModal() {
+	        logoutModal.classList.remove("logout-modal--open");
+	        logoutModal.setAttribute("aria-hidden", "true");
+	      }
+
+	      logoutAccount.addEventListener("click", openLogoutModal);
+	      document.querySelector("#logout-cancel-scrim").addEventListener("click", closeLogoutModal);
+	      document.querySelector("#logout-cancel").addEventListener("click", closeLogoutModal);
+	      document.querySelector("#logout-confirm").addEventListener("click", () => {
+	        closeLogoutModal();
+	        window.clearInterval(sendCode.timer);
+	        loginPhone.value = "";
+	        loginCode.value = "";
+	        sendCode.disabled = false;
+	        sendCode.textContent = "获取验证码";
+	        loginHint.textContent = "未注册手机号将自动创建账号。";
+	        loginHint.classList.remove("login-hint--error");
+	        userNicknameDisplay.textContent = "未设置";
+	        userNicknameDisplay.dataset.autoNickname = "true";
+	        showView("login");
 	      });
 
       const recorderCard = document.querySelector("#recorder-card");
@@ -1039,7 +1207,8 @@
         detailPanels.forEach((panel) => panel.classList.toggle("detail-panel--active", panel.dataset.panel === "summary"));
       }
 
-      function openDetail({ title, meta, from, template = "standard" }) {
+      function openDetail({ title, meta, from, template = "standard", historyItem = null }) {
+        activeHistoryItem = historyItem;
         detailTitle.textContent = title;
         detailMeta.textContent = meta;
         setDetailDefaultTab();
@@ -1048,6 +1217,396 @@
       }
 
       detailBack.addEventListener("click", () => showView(previousView));
+
+      function getDetailMetaParts() {
+        const parts = detailMeta.textContent.split(" · ");
+        const first = (parts[0] || "").trim();
+        const firstMatch = first.match(/^(.*?)\s*(\d{2}-\d{2}\s+\d{2}:\d{2}|刚刚)$/);
+        return {
+          participants: firstMatch ? (firstMatch[1].trim() || "未明确") : (first || "未明确"),
+          time: firstMatch ? firstMatch[2] : "05-26 15:00",
+          template: (parts[1] || templateLabel(currentSummaryTemplate)).trim(),
+          duration: (parts[2] || "44:53").trim(),
+        };
+      }
+
+      function getVisualMetaRows() {
+        return document.querySelectorAll(".summary-meta-block p");
+      }
+
+      function toInputDateTime(value) {
+        const normalized = value.replace(/\//g, "-");
+        const full = normalized.match(/(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/);
+        if (full) return `${full[1]}-${full[2]}-${full[3]}T${full[4]}:${full[5]}`;
+        const short = normalized.match(/(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/);
+        if (short) return `2026-${short[1]}-${short[2]}T${short[3]}:${short[4]}`;
+        return "2026-05-26T15:00";
+      }
+
+      function formatShortDateTime(value) {
+        if (!value) return "05-26 15:00";
+        const [, month, day, hour, minute] = value.match(/\d{4}-(\d{2})-(\d{2})T(\d{2}):(\d{2})/) || [];
+        return month ? `${month}-${day} ${hour}:${minute}` : "05-26 15:00";
+      }
+
+      function formatFullDateTime(value) {
+        if (!value) return "2026-05-26 15:00:00";
+        return value.replace("T", " ") + ":00";
+      }
+
+      function updateActiveHistory(title, meta) {
+        if (!activeHistoryItem) return;
+        activeHistoryItem.dataset.title = title;
+        activeHistoryItem.dataset.meta = meta;
+        const historyTitle = activeHistoryItem.querySelector(".history-main strong");
+        const historyMeta = activeHistoryItem.querySelector(".history-main small");
+        if (historyTitle) historyTitle.textContent = title;
+        if (historyMeta) historyMeta.textContent = meta;
+        renderHistoryList();
+      }
+
+      function applyMeetingTitle(nextTitle) {
+        detailTitle.textContent = nextTitle;
+        updateActiveHistory(nextTitle, detailMeta.textContent);
+      }
+
+      function openModal(modal, openClass) {
+        modal.classList.add(openClass);
+        modal.setAttribute("aria-hidden", "false");
+      }
+
+      function closeModal(modal, openClass) {
+        modal.classList.remove(openClass);
+        modal.setAttribute("aria-hidden", "true");
+      }
+
+      function getActiveSummaryTemplate() {
+        return document.querySelector(".summary-template--active");
+      }
+
+      function collectEditableSections() {
+        const activePanel = getActiveSummaryTemplate();
+        if (!activePanel) return [];
+
+        const visualBlocks = activePanel.querySelectorAll(".visual-minutes-text .minutes-block");
+        if (visualBlocks.length) {
+          return Array.from(visualBlocks).map((block) => ({
+            title: block.querySelector("strong")?.textContent.trim() || "未命名章节",
+            itemNodes: Array.from(block.querySelectorAll("li")),
+          }));
+        }
+
+        return Array.from(activePanel.querySelectorAll(".summary-section")).map((section) => ({
+          title: section.querySelector("strong")?.textContent.trim() || "未命名章节",
+          itemNodes: Array.from(section.querySelectorAll("p")),
+        }));
+      }
+
+      function renderEditSections() {
+        activeEditSections = collectEditableSections();
+        editSectionList.innerHTML = "";
+        activeEditSections.forEach((section, sectionIndex) => {
+          const details = document.createElement("details");
+          details.className = "edit-section";
+          details.open = sectionIndex === 0;
+          details.dataset.sectionIndex = sectionIndex;
+
+          const summary = document.createElement("summary");
+          summary.textContent = section.title;
+          details.append(summary);
+
+          const list = document.createElement("div");
+          list.className = "edit-section-items";
+          section.itemNodes.forEach((node, itemIndex) => {
+            const textarea = document.createElement("textarea");
+            textarea.className = "edit-item-input";
+            textarea.dataset.itemIndex = itemIndex;
+            textarea.value = node.textContent.trim();
+            list.append(textarea);
+          });
+          details.append(list);
+          editSectionList.append(details);
+        });
+      }
+
+      function openDetailEditModal() {
+        const metaRows = getVisualMetaRows();
+        const meta = getDetailMetaParts();
+        editMeetingTitle.value = detailTitle.textContent.trim();
+        editMeetingParticipants.value = meta.participants || "未明确";
+        editMeetingTime.value = toInputDateTime(metaRows[1]?.textContent.replace("时间:", "").trim() || meta.time);
+        renderEditSections();
+        closeModal(detailMoreModal, "detail-more-modal--open");
+        openModal(detailEditModal, "detail-edit-modal--open");
+        window.setTimeout(() => editMeetingTitle.focus(), 80);
+      }
+
+      function saveDetailEdit() {
+        const nextTitle = editMeetingTitle.value.trim();
+        const nextParticipants = editMeetingParticipants.value.trim();
+        if (!nextTitle || !nextParticipants) {
+          (!nextTitle ? editMeetingTitle : editMeetingParticipants).focus();
+          return;
+        }
+
+        detailTitle.textContent = nextTitle.slice(0, 50);
+        const nextMeta = `${nextParticipants} ${formatShortDateTime(editMeetingTime.value)} · ${templateLabel(currentSummaryTemplate)} · ${getDetailMetaParts().duration}`;
+        detailMeta.textContent = nextMeta;
+
+        const metaRows = getVisualMetaRows();
+        if (metaRows[0]) metaRows[0].innerHTML = `<strong>主题:</strong> ${nextTitle.slice(0, 50)}`;
+        if (metaRows[1]) metaRows[1].innerHTML = `<strong>时间:</strong> ${formatFullDateTime(editMeetingTime.value)}`;
+        if (metaRows[2]) metaRows[2].innerHTML = `<strong>参与人:</strong> ${nextParticipants}`;
+
+        editSectionList.querySelectorAll(".edit-section").forEach((sectionEl) => {
+          const section = activeEditSections[Number(sectionEl.dataset.sectionIndex)];
+          sectionEl.querySelectorAll(".edit-item-input").forEach((input) => {
+            const node = section.itemNodes[Number(input.dataset.itemIndex)];
+            node.textContent = input.value.trim() || "未明确";
+          });
+        });
+
+        updateActiveHistory(detailTitle.textContent, nextMeta);
+        closeModal(detailEditModal, "detail-edit-modal--open");
+      }
+
+      function getExportSectionsText() {
+        const activePanel = getActiveSummaryTemplate();
+        if (!activePanel) return "";
+        const blocks = collectEditableSections();
+        return blocks
+          .map((section) => `${section.title}\n${section.itemNodes.map((node, index) => `${index + 1}. ${node.textContent.trim()}`).join("\n")}`)
+          .join("\n\n");
+      }
+
+      function getExportHtml() {
+        const metaRows = getVisualMetaRows();
+        const poster = document.querySelector(".summary-template--active .visual-poster")?.outerHTML || "";
+        return `<!doctype html><html><head><meta charset="utf-8"><title>${detailTitle.textContent}</title></head><body>
+          <h1>${detailTitle.textContent}</h1>
+          <p><strong>时间:</strong> ${metaRows[1]?.textContent.replace("时间:", "").trim() || getDetailMetaParts().time}</p>
+          <p><strong>参与人:</strong> ${metaRows[2]?.textContent.replace("参与人:", "").trim() || getDetailMetaParts().participants}</p>
+          <h2>AI纪要全文</h2>
+          <pre style="white-space:pre-wrap;font-family:Arial,'Microsoft YaHei',sans-serif;line-height:1.6;">${getExportSectionsText()}</pre>
+          <h2>摘要图</h2>
+          ${poster || "<p>无摘要图</p>"}
+        </body></html>`;
+      }
+
+      function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight) {
+        const chars = String(text).split("");
+        let line = "";
+        chars.forEach((char) => {
+          const nextLine = line + char;
+          if (ctx.measureText(nextLine).width > maxWidth && line) {
+            ctx.fillText(line, x, y);
+            line = char;
+            y += lineHeight;
+          } else {
+            line = nextLine;
+          }
+        });
+        if (line) {
+          ctx.fillText(line, x, y);
+          y += lineHeight;
+        }
+        return y;
+      }
+
+      function buildPdfBlob() {
+        const sectionsText = getExportSectionsText().split("\n");
+        const canvas = document.createElement("canvas");
+        canvas.width = 1080;
+        canvas.height = Math.min(2400, Math.max(1600, 520 + sectionsText.length * 42));
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        let y = 96;
+        ctx.fillStyle = "#24304d";
+        ctx.font = "bold 44px Arial, sans-serif";
+        y = drawWrappedText(ctx, detailTitle.textContent, 72, y, 936, 58) + 16;
+        ctx.font = "28px Arial, sans-serif";
+        ctx.fillStyle = "#66728a";
+        const metaRows = getVisualMetaRows();
+        y = drawWrappedText(ctx, `时间：${metaRows[1]?.textContent.replace("时间:", "").trim() || getDetailMetaParts().time}`, 72, y, 936, 42);
+        y = drawWrappedText(ctx, `参与人：${metaRows[2]?.textContent.replace("参与人:", "").trim() || getDetailMetaParts().participants}`, 72, y, 936, 42) + 28;
+
+        ctx.fillStyle = "#3e96ff";
+        ctx.font = "bold 34px Arial, sans-serif";
+        ctx.fillText("AI纪要全文", 72, y);
+        y += 52;
+        ctx.fillStyle = "#24304d";
+        ctx.font = "26px Arial, sans-serif";
+        sectionsText.forEach((line) => {
+          if (y > canvas.height - 130) return;
+          const isHeading = line && !line.match(/^\d+\./);
+          ctx.font = isHeading ? "bold 28px Arial, sans-serif" : "26px Arial, sans-serif";
+          ctx.fillStyle = isHeading ? "#24304d" : "#46536d";
+          y = drawWrappedText(ctx, line, 72, y, 936, 39);
+          if (isHeading) y += 8;
+        });
+
+        if (document.querySelector(".summary-template--active .visual-poster")) {
+          y += 24;
+          ctx.fillStyle = "#f2f7ff";
+          ctx.fillRect(72, y, 936, 160);
+          ctx.fillStyle = "#3e96ff";
+          ctx.font = "bold 30px Arial, sans-serif";
+          ctx.fillText("摘要图", 108, y + 62);
+          ctx.fillStyle = "#66728a";
+          ctx.font = "25px Arial, sans-serif";
+          ctx.fillText("图文纪要摘要图已包含在导出内容中", 108, y + 112);
+        }
+
+        const imageData = atob(canvas.toDataURL("image/jpeg", 0.92).split(",")[1]);
+        const imageBytes = new Uint8Array(imageData.length);
+        for (let i = 0; i < imageData.length; i += 1) imageBytes[i] = imageData.charCodeAt(i);
+
+        const encoder = new TextEncoder();
+        const pageWidth = 595;
+        const pageHeight = Math.round(pageWidth * (canvas.height / canvas.width));
+        const content = `q\n${pageWidth} 0 0 ${pageHeight} 0 0 cm\n/Im0 Do\nQ`;
+        const objects = [
+          encoder.encode("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"),
+          encoder.encode("2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n"),
+          encoder.encode(`3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>\nendobj\n`),
+          [encoder.encode(`4 0 obj\n<< /Type /XObject /Subtype /Image /Width ${canvas.width} /Height ${canvas.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imageBytes.length} >>\nstream\n`), imageBytes, encoder.encode("\nendstream\nendobj\n")],
+          encoder.encode(`5 0 obj\n<< /Length ${content.length} >>\nstream\n${content}\nendstream\nendobj\n`),
+        ];
+
+        const chunks = [encoder.encode("%PDF-1.4\n")];
+        const offsets = [0];
+        let length = chunks[0].length;
+        objects.forEach((object) => {
+          offsets.push(length);
+          const parts = Array.isArray(object) ? object : [object];
+          parts.forEach((part) => {
+            chunks.push(part);
+            length += part.length;
+          });
+        });
+        const xrefOffset = length;
+        let xref = `xref\n0 ${offsets.length}\n0000000000 65535 f \n`;
+        offsets.slice(1).forEach((offset) => {
+          xref += `${String(offset).padStart(10, "0")} 00000 n \n`;
+        });
+        xref += `trailer\n<< /Size ${offsets.length} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+        chunks.push(encoder.encode(xref));
+        return new Blob(chunks, { type: "application/pdf" });
+      }
+
+      function showExportToast(message) {
+        exportToast.textContent = message;
+        exportToast.classList.add("export-toast--visible");
+      }
+
+      function hideExportToastLater() {
+        window.clearTimeout(showExportToast.timer);
+        showExportToast.timer = window.setTimeout(() => {
+          exportToast.classList.remove("export-toast--visible");
+        }, 1400);
+      }
+
+      function sanitizeFileName(name) {
+        return name.replace(/[\\/:*?"<>|]/g, "_").slice(0, 36) || "会议纪要";
+      }
+
+      function downloadBlob(blob, filename) {
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        document.body.append(link);
+        link.click();
+        URL.revokeObjectURL(link.href);
+        link.remove();
+      }
+
+      function exportMeeting(format) {
+        closeModal(exportFormatModal, "export-format-modal--open");
+        const label = format === "pdf" ? "PDF" : "Word";
+        showExportToast(`正在生成${label}...`);
+        window.setTimeout(() => {
+          try {
+            const filename = `${sanitizeFileName(detailTitle.textContent)}.${format === "pdf" ? "pdf" : "doc"}`;
+            const html = getExportHtml();
+            const blob = format === "pdf" ? buildPdfBlob() : new Blob([html], { type: "application/msword" });
+            downloadBlob(blob, filename);
+            showExportToast("导出成功");
+          } catch (error) {
+            showExportToast("导出失败，请稍后重试");
+          }
+          hideExportToastLater();
+        }, 900);
+      }
+
+      detailMoreButton.addEventListener("click", () => openModal(detailMoreModal, "detail-more-modal--open"));
+      document.querySelector("#detail-more-close").addEventListener("click", () => closeModal(detailMoreModal, "detail-more-modal--open"));
+      document.querySelector("#detail-edit-open").addEventListener("click", openDetailEditModal);
+      document.querySelector("#detail-edit-close").addEventListener("click", () => closeModal(detailEditModal, "detail-edit-modal--open"));
+      document.querySelector("#detail-edit-cancel").addEventListener("click", () => closeModal(detailEditModal, "detail-edit-modal--open"));
+      document.querySelector("#detail-edit-save").addEventListener("click", saveDetailEdit);
+      document.querySelector("#detail-export-open").addEventListener("click", () => {
+        closeModal(detailMoreModal, "detail-more-modal--open");
+        openModal(exportFormatModal, "export-format-modal--open");
+      });
+      document.querySelector("#export-format-close").addEventListener("click", () => closeModal(exportFormatModal, "export-format-modal--open"));
+      document.querySelector("#export-format-cancel").addEventListener("click", () => closeModal(exportFormatModal, "export-format-modal--open"));
+      document.querySelector("#export-word").addEventListener("click", () => exportMeeting("word"));
+      document.querySelector("#export-pdf").addEventListener("click", () => exportMeeting("pdf"));
+      document.querySelector("#detail-delete-open").addEventListener("click", () => {
+        closeModal(detailMoreModal, "detail-more-modal--open");
+        openModal(deleteMeetingModal, "delete-meeting-modal--open");
+      });
+      document.querySelector("#delete-meeting-cancel-scrim").addEventListener("click", () => closeModal(deleteMeetingModal, "delete-meeting-modal--open"));
+      document.querySelector("#delete-meeting-cancel").addEventListener("click", () => closeModal(deleteMeetingModal, "delete-meeting-modal--open"));
+      document.querySelector("#delete-meeting-confirm").addEventListener("click", () => {
+        if (activeHistoryItem) {
+          const deletedItem = activeHistoryItem;
+          activeHistoryItem.remove();
+          historyItems = historyItems.filter((item) => item !== deletedItem);
+          activeHistoryItem = null;
+          renderHistoryList();
+        }
+        closeModal(deleteMeetingModal, "delete-meeting-modal--open");
+        showView("history");
+      });
+
+      function openRenameMeetingModal() {
+        renameMeetingInput.value = detailTitle.textContent.trim();
+        renameMeetingModal.classList.add("rename-meeting-modal--open");
+        renameMeetingModal.setAttribute("aria-hidden", "false");
+        window.setTimeout(() => {
+          renameMeetingInput.focus();
+          renameMeetingInput.select();
+        }, 80);
+      }
+
+      function closeRenameMeetingModal() {
+        renameMeetingModal.classList.remove("rename-meeting-modal--open");
+        renameMeetingModal.setAttribute("aria-hidden", "true");
+      }
+
+      function confirmMeetingRename() {
+        const nextTitle = renameMeetingInput.value.trim();
+        if (!nextTitle) {
+          renameMeetingInput.focus();
+          return;
+        }
+
+        detailTitle.textContent = nextTitle;
+        updateActiveHistory(nextTitle, detailMeta.textContent);
+        closeRenameMeetingModal();
+      }
+
+      detailTitleButton.addEventListener("click", openRenameMeetingModal);
+      document.querySelector("#rename-meeting-close").addEventListener("click", closeRenameMeetingModal);
+      document.querySelector("#rename-meeting-cancel").addEventListener("click", closeRenameMeetingModal);
+      renameMeetingConfirm.addEventListener("click", confirmMeetingRename);
+      renameMeetingInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") confirmMeetingRename();
+        if (event.key === "Escape") closeRenameMeetingModal();
+      });
 
       const openVoiceLibrary = document.querySelector("#open-voice-library");
       const openHotwords = document.querySelector("#open-hotwords");
@@ -1363,12 +1922,13 @@
             meta: item.dataset.meta,
             from: "history",
             template: item.dataset.meta.includes("头脑风暴") ? "brainstorm" : item.dataset.meta.includes("图文纪要") ? "visual" : "standard",
+            historyItem: item,
           });
         });
       });
 
       const historySearch = document.querySelector("#history-search");
-      const historyItems = document.querySelectorAll(".history-item");
+      let historyItems = Array.from(document.querySelectorAll(".history-item"));
       const historyEmpty = document.querySelector("#history-empty");
       const loadMoreHistory = document.querySelector("#load-more-history");
       let shownHistoryCount = 10;

@@ -327,10 +327,12 @@ button {
   box-shadow: 0 0 0 4px rgba(54, 194, 117, 0.14);
 }
 
+.device-status--disconnected,
 .device-status--error {
   color: #d94f5c;
 }
 
+.device-status--disconnected span,
 .device-status--error span {
   background: #e35361;
   box-shadow: 0 0 0 4px rgba(227, 83, 97, 0.14);
@@ -365,6 +367,7 @@ button {
 .hotword-item,
 .secondary-button,
 .danger-button,
+.detail-title-button,
 .history-item {
   border: none;
   background: none;
@@ -849,6 +852,58 @@ button {
   font-size: 1.85rem;
   line-height: 1.15;
   font-weight: 800;
+}
+
+.detail-title-button {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 100%;
+  padding: 0;
+  text-align: left;
+}
+
+.detail-title-button h3 {
+  transition: color 0.18s ease, transform 0.18s ease;
+}
+
+.detail-title-button:active h3 {
+  color: var(--blue);
+  transform: translateY(1px);
+}
+
+.title-edit-icon {
+  position: relative;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  margin-top: 4px;
+  border-radius: 5px;
+  background: rgba(62, 150, 255, 0.12);
+}
+
+.title-edit-icon::before {
+  content: "";
+  position: absolute;
+  width: 9px;
+  height: 3px;
+  left: 4px;
+  top: 7px;
+  border-radius: 999px;
+  background: var(--blue);
+  transform: rotate(-38deg);
+}
+
+.title-edit-icon::after {
+  content: "";
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  left: 11px;
+  top: 4px;
+  border-radius: 1px;
+  background: var(--blue);
+  transform: rotate(-38deg);
 }
 
 .detail-title-row p {
@@ -1540,6 +1595,16 @@ button {
   text-align: left;
 }
 
+.setting-action--logout {
+  color: #d94f5c;
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(217, 79, 92, 0.12);
+}
+
+.setting-action--logout p {
+  color: rgba(217, 79, 92, 0.68);
+}
+
 .setting-value-row {
   width: 100%;
   display: flex;
@@ -1982,8 +2047,14 @@ button {
 .template-modal,
 .summary-template-modal,
 .voice-delete-modal,
+.logout-modal,
+.detail-more-modal,
+.export-format-modal,
+.detail-edit-modal,
+.delete-meeting-modal,
 .hotword-modal,
-.setting-edit-modal {
+.setting-edit-modal,
+.rename-meeting-modal {
   display: none;
   position: absolute;
   inset: 0;
@@ -1993,8 +2064,14 @@ button {
 .template-modal--open,
 .summary-template-modal--open,
 .voice-delete-modal--open,
+.logout-modal--open,
+.detail-more-modal--open,
+.export-format-modal--open,
+.detail-edit-modal--open,
+.delete-meeting-modal--open,
 .hotword-modal--open,
-.setting-edit-modal--open {
+.setting-edit-modal--open,
+.rename-meeting-modal--open {
   display: block;
 }
 
@@ -2124,6 +2201,139 @@ button {
   color: white;
   background: linear-gradient(180deg, #ff7a86, #e64e5e);
   font-weight: 800;
+}
+
+.detail-action-list {
+  display: grid;
+  gap: 10px;
+}
+
+.detail-action-item {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 18px;
+  background: rgba(246, 250, 255, 0.94);
+  color: var(--text);
+  text-align: left;
+}
+
+.detail-action-item strong,
+.detail-action-item span {
+  display: block;
+}
+
+.detail-action-item strong {
+  margin-bottom: 4px;
+}
+
+.detail-action-item span {
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.detail-action-item--danger {
+  background: rgba(217, 79, 92, 0.08);
+  color: #d94f5c;
+}
+
+.detail-action-item--danger span {
+  color: rgba(217, 79, 92, 0.7);
+}
+
+.export-cancel-button {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 12px;
+}
+
+.detail-edit-sheet {
+  max-height: calc(100% - 42px);
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-edit-body {
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  gap: 12px;
+  padding-right: 2px;
+}
+
+.edit-field {
+  display: grid;
+  gap: 8px;
+}
+
+.edit-field span,
+.edit-section-title {
+  color: #66728a;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.edit-field input,
+.edit-item-input {
+  width: 100%;
+  border: 1px solid rgba(105, 162, 255, 0.14);
+  border-radius: 16px;
+  outline: none;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--text);
+}
+
+.edit-section-list {
+  display: grid;
+  gap: 10px;
+}
+
+.edit-section {
+  border-radius: 18px;
+  background: rgba(246, 250, 255, 0.94);
+  border: 1px solid rgba(105, 162, 255, 0.12);
+  overflow: hidden;
+}
+
+.edit-section summary {
+  cursor: pointer;
+  padding: 13px 14px;
+  font-weight: 800;
+}
+
+.edit-section-items {
+  display: grid;
+  gap: 9px;
+  padding: 0 14px 14px;
+}
+
+.edit-item-input {
+  min-height: 76px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.export-toast {
+  display: none;
+  position: absolute;
+  left: 50%;
+  bottom: 94px;
+  z-index: 6;
+  min-width: 148px;
+  transform: translateX(-50%);
+  padding: 12px 16px;
+  border-radius: 999px;
+  background: rgba(37, 50, 77, 0.88);
+  color: white;
+  text-align: center;
+  font-size: 0.9rem;
+  box-shadow: 0 16px 34px rgba(37, 50, 77, 0.18);
+}
+
+.export-toast--visible {
+  display: block;
 }
 
 button:active {
