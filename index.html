@@ -984,17 +984,13 @@
 	                      <span><strong>新建会话</strong><small>清空当前内容，开始新的会议问询</small></span>
 	                      <b aria-hidden="true">›</b>
 	                    </button>
-	                    <button class="ai-session-action" id="ai-session-history-open" type="button">
-	                      <i class="ai-session-action__icon ai-session-action__icon--history" aria-hidden="true"></i>
-	                      <span><strong>历史任务</strong><small>查看之前的提问和青鸾回复</small></span>
-	                      <b aria-hidden="true">›</b>
-	                    </button>
-	                  </div>
-
-	                  <div class="ai-session-history" id="ai-session-history" hidden>
-	                    <button class="ai-session-history__back" id="ai-session-history-back" type="button">‹ 历史任务</button>
-	                    <p>选择任务后，可继续查看之前的聊天记录。</p>
-	                    <div class="ai-session-history__list" id="ai-session-history-list"></div>
+	                    <section class="ai-session-history" id="ai-session-history">
+	                      <div class="ai-session-history__heading">
+	                        <strong>历史会话</strong>
+	                        <span>选择会话可查看之前的聊天记录</span>
+	                      </div>
+	                      <div class="ai-session-history__list" id="ai-session-history-list"></div>
+	                    </section>
 	                  </div>
 	                </aside>
 	              </div>
@@ -2242,8 +2238,6 @@
       const folderAiHold = document.querySelector("#folder-ai-hold");
       const folderAiMore = document.querySelector("#folder-ai-more");
       const aiSessionDrawer = document.querySelector("#ai-session-drawer");
-      const aiSessionMenu = document.querySelector("#ai-session-menu");
-      const aiSessionHistory = document.querySelector("#ai-session-history");
       const aiSessionHistoryList = document.querySelector("#ai-session-history-list");
       let activeAiHistoryId = null;
       let aiConversationHistory = [
@@ -2547,7 +2541,7 @@
         const scope = currentAiScope();
         const activeTask = aiConversationHistory.find((task) => task.id === activeAiHistoryId);
         folderAiScope.textContent = activeTask
-          ? `历史任务 · ${activeTask.scope}`
+          ? `历史会话 · ${activeTask.scope}`
           : `问询范围：${scope.name} · ${scope.count} 条会议`;
         folderAiInput.placeholder = "发消息或按住说话";
         folderAiModal.classList.add("folder-ai-modal--open");
@@ -2561,8 +2555,8 @@
       }
 
       function openAiSessionDrawer() {
-        aiSessionMenu.hidden = false;
-        aiSessionHistory.hidden = true;
+        saveCurrentAiConversation();
+        renderAiHistoryTasks();
         aiSessionDrawer.classList.add("ai-session-drawer--open");
         aiSessionDrawer.setAttribute("aria-hidden", "false");
       }
@@ -2616,7 +2610,7 @@
         activeAiHistoryId = task.id;
         folderAiMessages.replaceChildren();
         task.messages.forEach((message) => appendAiMessage(message.text, message.role));
-        folderAiScope.textContent = `历史任务 · ${task.scope}`;
+        folderAiScope.textContent = `历史会话 · ${task.scope}`;
         closeAiSessionDrawer();
       }
 
@@ -2625,7 +2619,7 @@
         if (!aiConversationHistory.length) {
           const empty = document.createElement("div");
           empty.className = "ai-history-empty";
-          empty.textContent = "暂无历史任务";
+          empty.textContent = "暂无历史会话";
           aiSessionHistoryList.append(empty);
           return;
         }
@@ -2643,13 +2637,6 @@
           button.addEventListener("click", () => loadAiHistoryTask(task));
           aiSessionHistoryList.append(button);
         });
-      }
-
-      function showAiHistoryTasks() {
-        saveCurrentAiConversation();
-        renderAiHistoryTasks();
-        aiSessionMenu.hidden = true;
-        aiSessionHistory.hidden = false;
       }
 
       function appendAiMessage(text, role, loading = false) {
@@ -2771,11 +2758,6 @@
       document.querySelector("#ai-session-scrim").addEventListener("click", closeAiSessionDrawer);
       document.querySelector("#ai-session-close").addEventListener("click", closeAiSessionDrawer);
       document.querySelector("#ai-session-create").addEventListener("click", startNewAiConversation);
-      document.querySelector("#ai-session-history-open").addEventListener("click", showAiHistoryTasks);
-      document.querySelector("#ai-session-history-back").addEventListener("click", () => {
-        aiSessionHistory.hidden = true;
-        aiSessionMenu.hidden = false;
-      });
       document.querySelector("#folder-ai-send").addEventListener("click", () => sendAiQuestion());
       folderAiInput.addEventListener("keydown", (event) => {
         if (event.key === "Enter") sendAiQuestion();
