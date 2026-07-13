@@ -916,7 +916,7 @@
 	                <div class="folder-ai-bottom">
 	                  <div class="folder-ai-input">
 	                    <span class="folder-ai-add" aria-hidden="true">＋</span>
-	                    <input id="folder-ai-input" type="text" placeholder="发消息或按住说话…" />
+	                    <input id="folder-ai-input" type="text" placeholder="发消息或按住说话" />
 	                    <button id="folder-ai-send" type="button" aria-label="发送问题">↑</button>
 	                  </div>
 	                  <small>AI 内容仅供参考，请结合原始会议纪要核对</small>
@@ -2437,7 +2437,7 @@
       function openFolderAi() {
         const scope = currentAiScope();
         folderAiScope.textContent = `问询范围：${scope.name} · ${scope.count} 条会议`;
-        folderAiInput.placeholder = `问问“${scope.name}”中的会议纪要`;
+        folderAiInput.placeholder = "发消息或按住说话";
         folderAiModal.classList.add("folder-ai-modal--open");
         folderAiModal.setAttribute("aria-hidden", "false");
       }
