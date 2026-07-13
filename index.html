@@ -273,6 +273,12 @@
                   </span>
                   <span class="dot-menu"></span>
                 </button>
+                <div class="folder-empty-state" id="folder-empty-state" hidden>
+                  <span class="folder-empty-state__icon" aria-hidden="true"></span>
+                  <strong id="folder-empty-title">该文件夹暂无会议</strong>
+                  <p id="folder-empty-desc">可返回全部会议，长按会议记录并拖入该文件夹。</p>
+                  <button id="folder-empty-back" type="button">返回全部会议</button>
+                </div>
               </section>
 
               <p class="empty-state" id="history-empty">没有找到相关会议</p>
@@ -2129,6 +2135,9 @@
       let historyItems = Array.from(document.querySelectorAll(".history-item"));
       const historyList = document.querySelector("#history-list");
       const historyEmpty = document.querySelector("#history-empty");
+      const folderEmptyState = document.querySelector("#folder-empty-state");
+      const folderEmptyTitle = document.querySelector("#folder-empty-title");
+      const folderEmptyDesc = document.querySelector("#folder-empty-desc");
       const loadMoreHistory = document.querySelector("#load-more-history");
       const folderTabs = document.querySelector("#folder-tabs");
       const folderPanel = document.querySelector("#folder-panel");
@@ -2357,8 +2366,15 @@
         historyItems.filter((item) => !visibleItems.has(item)).forEach((item) => historyList.append(item));
 
         const folderName = getFolder().name;
-        historyEmpty.textContent = keyword ? "没有找到相关会议" : `“${folderName}”中还没有会议`;
-        historyEmpty.classList.toggle("empty-state--visible", matchedCount === 0);
+        const folderIsEmpty = !isRoot && getFolderMeetingCount(activeFolderId) === 0;
+        folderEmptyTitle.textContent = folderIsEmpty ? "该文件夹暂无会议" : "未找到相关会议";
+        folderEmptyDesc.textContent = folderIsEmpty
+          ? "可返回全部会议，长按会议记录并拖入该文件夹。"
+          : `“${folderName}”中没有匹配当前关键词的会议。`;
+        folderEmptyState.hidden = isRoot || matchedCount > 0;
+        historyList.append(folderEmptyState);
+        historyEmpty.textContent = "没有找到相关会议";
+        historyEmpty.classList.toggle("empty-state--visible", isRoot && matchedCount === 0);
         loadMoreHistory.hidden = matchedCount <= shownHistoryCount;
       }
 
@@ -2480,6 +2496,7 @@
       });
 
       historyFolderBack.addEventListener("click", () => selectFolder("all"));
+      document.querySelector("#folder-empty-back").addEventListener("click", () => selectFolder("all"));
       document.querySelector("#folder-edit-close").addEventListener("click", closeFolderEdit);
       document.querySelector("#folder-edit-cancel").addEventListener("click", closeFolderEdit);
       document.querySelector("#folder-edit-confirm").addEventListener("click", () => {

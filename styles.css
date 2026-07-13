@@ -3942,3 +3942,83 @@ button:active {
 .history-item--inside-folder .history-category-badge {
   display: none;
 }
+
+.folder-empty-state[hidden] {
+  display: none;
+}
+
+.folder-empty-state {
+  min-height: 490px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  padding: 34px 24px 72px;
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(190, 223, 255, 0.34), transparent 31%),
+    linear-gradient(180deg, rgba(248, 252, 255, 0.22), rgba(239, 248, 255, 0.42));
+  border-radius: 24px;
+}
+
+.folder-empty-state__icon {
+  width: 72px;
+  height: 58px;
+  position: relative;
+  display: block;
+  margin-bottom: 22px;
+  border-radius: 15px;
+  background: linear-gradient(160deg, #8fc8ff, #559de9);
+  box-shadow: 0 22px 38px -28px rgba(57, 126, 211, 0.7);
+  opacity: 0.82;
+}
+
+.folder-empty-state__icon::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: -10px;
+  width: 30px;
+  height: 17px;
+  border-radius: 8px 8px 0 0;
+  background: #79b7f4;
+}
+
+.folder-empty-state__icon::after {
+  content: "";
+  position: absolute;
+  left: 26px;
+  top: 21px;
+  width: 20px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 8px 0 rgba(255, 255, 255, 0.58);
+}
+
+.folder-empty-state strong {
+  color: #45546c;
+  font-size: 1rem;
+}
+
+.folder-empty-state p {
+  max-width: 245px;
+  margin: 9px 0 18px;
+  color: #97a3b5;
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+
+.folder-empty-state button {
+  min-height: 36px;
+  padding: 0 15px;
+  border: 1px solid rgba(62, 150, 255, 0.16);
+  border-radius: 999px;
+  color: #3a86d6;
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.folder-empty-state button:active {
+  transform: scale(0.97);
+}
