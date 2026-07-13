@@ -3638,7 +3638,7 @@ button:active {
   display: block;
   border-radius: 50%;
   object-fit: cover;
-  object-position: 43% 42%;
+  object-position: 50% 24%;
   pointer-events: none;
 }
 
@@ -3701,7 +3701,7 @@ button:active {
   margin: 0 0 8px 2px;
   border-radius: 0;
   object-fit: cover;
-  object-position: 52% 42%;
+  object-position: 50% 30%;
   mix-blend-mode: multiply;
   animation: qingluan-character-breathe 4s ease-in-out infinite;
 }
