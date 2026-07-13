@@ -86,7 +86,7 @@
                     <h2 id="history-scope-title">历史记录</h2>
                     <span class="history-folder-title-edit" aria-hidden="true"></span>
                   </button>
-                  <p id="history-scope-meta">所有会议记录</p>
+                  <p id="history-scope-meta" hidden></p>
                 </div>
               </header>
 
@@ -877,6 +877,33 @@
 	                <h3>移动到文件夹</h3>
 	                <p id="move-meeting-title">请选择目标文件夹。</p>
 	                <div class="move-folder-list" id="move-folder-list"></div>
+	              </div>
+	            </section>
+
+	            <section class="history-more-modal" id="history-more-modal" aria-hidden="true">
+	              <div class="modal-scrim" id="history-more-close"></div>
+	              <div class="modal-sheet panel">
+	                <div class="modal-handle"></div>
+	                <h3>更多操作</h3>
+	                <p id="history-more-title">请选择要执行的操作。</p>
+	                <div class="detail-action-list">
+	                  <button class="detail-action-item" id="history-more-move" type="button">
+	                    <strong>移动到文件夹</strong>
+	                    <span>将会议归类到指定文件夹</span>
+	                  </button>
+	                  <button class="detail-action-item" id="history-more-edit" type="button">
+	                    <strong>编辑</strong>
+	                    <span>编辑标题、时间、参与人和 AI 纪要内容</span>
+	                  </button>
+	                  <button class="detail-action-item" id="history-more-export" type="button">
+	                    <strong>导出</strong>
+	                    <span>选择 Word 或 PDF 格式导出会议纪要</span>
+	                  </button>
+	                  <button class="detail-action-item detail-action-item--danger" id="history-more-delete" type="button">
+	                    <strong>删除</strong>
+	                    <span>删除此会议记录，删除后不可恢复</span>
+	                  </button>
+	                </div>
 	              </div>
 	            </section>
 
@@ -2170,6 +2197,8 @@
       const moveMeetingModal = document.querySelector("#move-meeting-modal");
       const moveMeetingTitle = document.querySelector("#move-meeting-title");
       const moveFolderList = document.querySelector("#move-folder-list");
+      const historyMoreModal = document.querySelector("#history-more-modal");
+      const historyMoreTitle = document.querySelector("#history-more-title");
       const historyAiFab = document.querySelector("#history-ai-fab");
       const folderAiModal = document.querySelector("#folder-ai-modal");
       const folderAiScope = document.querySelector("#folder-ai-scope");
@@ -2216,11 +2245,9 @@
       function renderHistoryScope() {
         const folder = getFolder();
         const isRoot = folder.id === "all";
-        const unclassifiedCount = historyItems.filter((item) => !item.dataset.folderId).length;
         historyScopeTitle.textContent = isRoot ? "历史记录" : folder.name;
-        historyScopeMeta.textContent = isRoot
-          ? `${unclassifiedCount} 条未归类会议 · 已归类会议请进入文件夹查看`
-          : `${getFolderMeetingCount(folder.id)} 条会议 · 长按会议可移动到其他文件夹`;
+        historyScopeMeta.textContent = isRoot ? "" : `${getFolderMeetingCount(folder.id)} 条会议 · 长按会议可移动到其他文件夹`;
+        historyScopeMeta.hidden = isRoot;
         historyFolderBack.hidden = isRoot;
         folderPanel.hidden = !isRoot;
         historyFolderTitleButton.disabled = isRoot;
@@ -2334,14 +2361,7 @@
         }
 
         historyItems.forEach((item) => {
-          let badge = item.querySelector(".history-category-badge");
-          if (!badge) {
-            badge = document.createElement("span");
-            item.querySelector(".history-main").append(badge);
-          }
-          const folder = folders.find((candidate) => candidate.id === item.dataset.folderId);
-          badge.className = `history-category-badge ${folder ? "history-category-badge--classified" : "history-category-badge--unclassified"}`;
-          badge.textContent = folder ? folder.name : "未归类";
+          item.querySelector(".history-category-badge")?.remove();
           item.classList.toggle("history-item--inside-folder", !isRoot);
           item.hidden = !visibleItems.has(item);
         });
@@ -2387,27 +2407,21 @@
             item.dataset.dragJustEnded = "false";
             return;
           }
-          openDetail({
-            title: item.dataset.title,
-            meta: item.dataset.meta,
-            from: "history",
-            template: item.dataset.meta.includes("头脑风暴") ? "brainstorm" : item.dataset.meta.includes("图文纪要") ? "visual" : "standard",
-            historyItem: item,
-          });
+          openHistoryItemDetail(item);
         });
         const menu = item.querySelector(".dot-menu");
         menu.setAttribute("role", "button");
         menu.setAttribute("tabindex", "0");
-        menu.setAttribute("aria-label", `移动“${item.dataset.title}”`);
-        const openMove = (event) => {
+        menu.setAttribute("aria-label", `更多操作：${item.dataset.title}`);
+        const openMore = (event) => {
           event.stopPropagation();
-          openMoveMeeting(item);
+          openHistoryMore(item);
         };
-        menu.addEventListener("click", openMove);
+        menu.addEventListener("click", openMore);
         menu.addEventListener("keydown", (event) => {
           if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
-            openMove(event);
+            openMore(event);
           }
         });
 
@@ -2415,6 +2429,28 @@
           if (event.target.closest(".dot-menu")) return;
           beginMeetingPress(item, event);
         });
+      }
+
+      let activeHistoryMenuItem = null;
+
+      function openHistoryItemDetail(item) {
+        openDetail({
+          title: item.dataset.title,
+          meta: item.dataset.meta,
+          from: "history",
+          template: item.dataset.meta.includes("头脑风暴") ? "brainstorm" : item.dataset.meta.includes("图文纪要") ? "visual" : "standard",
+          historyItem: item,
+        });
+      }
+
+      function openHistoryMore(item) {
+        activeHistoryMenuItem = item;
+        historyMoreTitle.textContent = item.dataset.title;
+        openModal(historyMoreModal, "history-more-modal--open");
+      }
+
+      function closeHistoryMore() {
+        closeModal(historyMoreModal, "history-more-modal--open");
       }
 
       historyItems.forEach((item) => {
@@ -2528,6 +2564,33 @@
         if (event.key === "Enter") document.querySelector("#folder-edit-confirm").click();
       });
       document.querySelector("#move-meeting-close").addEventListener("click", closeMoveMeeting);
+      document.querySelector("#history-more-close").addEventListener("click", closeHistoryMore);
+      document.querySelector("#history-more-move").addEventListener("click", () => {
+        const item = activeHistoryMenuItem;
+        closeHistoryMore();
+        if (item) openMoveMeeting(item);
+      });
+      document.querySelector("#history-more-edit").addEventListener("click", () => {
+        const item = activeHistoryMenuItem;
+        closeHistoryMore();
+        if (!item) return;
+        openHistoryItemDetail(item);
+        window.setTimeout(openDetailEditModal, 30);
+      });
+      document.querySelector("#history-more-export").addEventListener("click", () => {
+        const item = activeHistoryMenuItem;
+        closeHistoryMore();
+        if (!item) return;
+        openHistoryItemDetail(item);
+        openModal(exportFormatModal, "export-format-modal--open");
+      });
+      document.querySelector("#history-more-delete").addEventListener("click", () => {
+        const item = activeHistoryMenuItem;
+        closeHistoryMore();
+        if (!item) return;
+        activeHistoryItem = item;
+        openModal(deleteMeetingModal, "delete-meeting-modal--open");
+      });
 
       historyAiFab.addEventListener("click", () => {
         if (historyAiFab.dataset.dragJustEnded === "true") {

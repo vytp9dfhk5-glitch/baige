@@ -2660,6 +2660,7 @@ button {
 .setting-edit-modal,
 .folder-edit-modal,
 .move-meeting-modal,
+.history-more-modal,
 .folder-ai-modal,
 .rename-meeting-modal {
   display: none;
@@ -2680,6 +2681,7 @@ button {
 .setting-edit-modal--open,
 .folder-edit-modal--open,
 .move-meeting-modal--open,
+.history-more-modal--open,
 .folder-ai-modal--open,
 .rename-meeting-modal--open {
   display: block;
@@ -4066,37 +4068,6 @@ button:active {
 .history-section-label--classified::before {
   background: #4b9cf0;
   box-shadow: 0 0 0 4px rgba(75, 156, 240, 0.1);
-}
-
-.history-category-badge {
-  width: max-content;
-  max-width: 150px;
-  display: block;
-  overflow: hidden;
-  margin-top: 7px;
-  padding: 3px 8px;
-  border-radius: 999px;
-  font-size: 0.66rem;
-  font-weight: 750;
-  line-height: 1.35;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.history-category-badge--unclassified {
-  color: #7f8a9d;
-  background: rgba(131, 144, 168, 0.1);
-  border: 1px solid rgba(131, 144, 168, 0.12);
-}
-
-.history-category-badge--classified {
-  color: #327fcf;
-  background: rgba(62, 150, 255, 0.1);
-  border: 1px solid rgba(62, 150, 255, 0.14);
-}
-
-.history-item--inside-folder .history-category-badge {
-  display: none;
 }
 
 .folder-empty-state[hidden] {
