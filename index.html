@@ -2127,6 +2127,7 @@
 
       const historySearch = document.querySelector("#history-search");
       let historyItems = Array.from(document.querySelectorAll(".history-item"));
+      const historyList = document.querySelector("#history-list");
       const historyEmpty = document.querySelector("#history-empty");
       const loadMoreHistory = document.querySelector("#load-more-history");
       const folderTabs = document.querySelector("#folder-tabs");
@@ -2297,16 +2298,63 @@
 
       function renderHistoryList() {
         const keyword = historySearch.value.trim().toLowerCase();
-        let matchedCount = 0;
+        const matchesKeyword = (item) => (item.dataset.title + " " + item.dataset.meta).toLowerCase().includes(keyword);
+        const isRoot = activeFolderId === "all";
+        const unclassifiedMatches = historyItems.filter((item) => !item.dataset.folderId && matchesKeyword(item));
+        const classifiedMatches = historyItems.filter((item) => item.dataset.folderId && matchesKeyword(item));
+        const folderMatches = historyItems.filter((item) => item.dataset.folderId === activeFolderId && matchesKeyword(item));
+        const matchedCount = isRoot ? unclassifiedMatches.length + classifiedMatches.length : folderMatches.length;
+        const visibleItems = new Set();
+
+        if (isRoot) {
+          const balancedQuota = Math.floor(shownHistoryCount / 2);
+          unclassifiedMatches.slice(0, balancedQuota).forEach((item) => visibleItems.add(item));
+          classifiedMatches.slice(0, balancedQuota).forEach((item) => visibleItems.add(item));
+          const remainingSlots = shownHistoryCount - visibleItems.size;
+          if (remainingSlots > 0) {
+            [...unclassifiedMatches.slice(balancedQuota), ...classifiedMatches.slice(balancedQuota)]
+              .slice(0, remainingSlots)
+              .forEach((item) => visibleItems.add(item));
+          }
+        } else {
+          folderMatches.slice(0, shownHistoryCount).forEach((item) => visibleItems.add(item));
+        }
 
         historyItems.forEach((item) => {
-          const haystack = (item.dataset.title + " " + item.dataset.meta).toLowerCase();
-          const inFolder = activeFolderId === "all" || item.dataset.folderId === activeFolderId;
-          const matches = inFolder && haystack.includes(keyword);
-          if (matches) matchedCount += 1;
-          const visible = matches && matchedCount <= shownHistoryCount;
-          item.hidden = !visible;
+          let badge = item.querySelector(".history-category-badge");
+          if (!badge) {
+            badge = document.createElement("span");
+            item.querySelector(".history-main").append(badge);
+          }
+          const folder = folders.find((candidate) => candidate.id === item.dataset.folderId);
+          badge.className = `history-category-badge ${folder ? "history-category-badge--classified" : "history-category-badge--unclassified"}`;
+          badge.textContent = folder ? folder.name : "未分类";
+          item.classList.toggle("history-item--inside-folder", !isRoot);
+          item.hidden = !visibleItems.has(item);
         });
+
+        historyList.querySelectorAll(".history-section-label").forEach((label) => label.remove());
+        if (isRoot) {
+          const appendGroup = (label, count, kind, items) => {
+            const visibleGroupItems = items.filter((item) => visibleItems.has(item));
+            if (!visibleGroupItems.length) return;
+            const heading = document.createElement("div");
+            const title = document.createElement("strong");
+            const amount = document.createElement("span");
+            heading.className = `history-section-label history-section-label--${kind}`;
+            title.textContent = label;
+            amount.textContent = `${count} 条`;
+            heading.append(title, amount);
+            historyList.append(heading);
+            visibleGroupItems.forEach((item) => historyList.append(item));
+          };
+          appendGroup("未分类会议", unclassifiedMatches.length, "unclassified", unclassifiedMatches);
+          appendGroup("已归类会议", classifiedMatches.length, "classified", classifiedMatches);
+        } else {
+          folderMatches.filter((item) => visibleItems.has(item)).forEach((item) => historyList.append(item));
+        }
+
+        historyItems.filter((item) => !visibleItems.has(item)).forEach((item) => historyList.append(item));
 
         const folderName = getFolder().name;
         historyEmpty.textContent = keyword ? "没有找到相关会议" : `“${folderName}”中还没有会议`;

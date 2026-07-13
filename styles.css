@@ -3863,3 +3863,82 @@ button:active {
     animation: none;
   }
 }
+
+/* History classification visibility */
+.history-section-label {
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 7px 2px;
+  color: #6d7a90;
+}
+
+.history-section-label::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #a6b0c0;
+}
+
+.history-section-label::after {
+  content: "";
+  height: 1px;
+  min-width: 18px;
+  flex: 1;
+  margin-left: 3px;
+  background: rgba(131, 144, 168, 0.16);
+}
+
+.history-section-label strong {
+  font-size: 0.78rem;
+  letter-spacing: 0.01em;
+}
+
+.history-section-label span {
+  color: #9aa5b6;
+  font-size: 0.68rem;
+}
+
+.history-section-label--classified {
+  margin-top: 5px;
+  color: #377fcf;
+}
+
+.history-section-label--classified::before {
+  background: #4b9cf0;
+  box-shadow: 0 0 0 4px rgba(75, 156, 240, 0.1);
+}
+
+.history-category-badge {
+  width: max-content;
+  max-width: 150px;
+  display: block;
+  overflow: hidden;
+  margin-top: 7px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 750;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-category-badge--unclassified {
+  color: #7f8a9d;
+  background: rgba(131, 144, 168, 0.1);
+  border: 1px solid rgba(131, 144, 168, 0.12);
+}
+
+.history-category-badge--classified {
+  color: #327fcf;
+  background: rgba(62, 150, 255, 0.1);
+  border: 1px solid rgba(62, 150, 255, 0.14);
+}
+
+.history-item--inside-folder .history-category-badge {
+  display: none;
+}
