@@ -3362,10 +3362,66 @@ button:active {
   min-width: 0;
 }
 
-.history-scope-heading h2 {
+.history-folder-title-button {
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  text-align: left;
+  background: none;
+}
+
+.history-folder-title-button:disabled {
+  cursor: default;
+}
+
+.history-folder-title-button h2 {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.history-folder-title-edit {
+  width: 15px;
+  height: 15px;
+  position: relative;
+  display: none;
+  flex: 0 0 auto;
+  opacity: 0.72;
+}
+
+.history-folder-title-edit::before {
+  content: "";
+  width: 10px;
+  height: 4px;
+  position: absolute;
+  left: 2px;
+  top: 5px;
+  border: 1.7px solid #4a91dc;
+  border-radius: 2px 1px 1px 2px;
+  transform: rotate(-45deg);
+}
+
+.history-folder-title-edit::after {
+  content: "";
+  width: 4px;
+  height: 1.5px;
+  position: absolute;
+  right: 0;
+  bottom: 1px;
+  border-radius: 999px;
+  background: #4a91dc;
+}
+
+.history-folder-title-button--editable .history-folder-title-edit {
+  display: block;
+}
+
+.history-folder-title-button--editable:active {
+  transform: scale(0.985);
 }
 
 .history-scope-heading p {
@@ -3391,13 +3447,15 @@ button:active {
 .folder-card {
   width: 148px;
   min-width: 148px;
-  min-height: 90px;
+  min-height: 78px;
+  align-content: center;
   padding: 12px;
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.78);
 }
 
 .folder-card-top {
+  align-items: center;
   justify-content: flex-start;
 }
 

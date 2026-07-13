@@ -82,7 +82,10 @@
               <header class="screen-header history-header">
                 <button class="history-folder-back" id="history-folder-back" type="button" aria-label="返回全部会议" hidden>‹</button>
                 <div class="history-scope-heading">
-                  <h2 id="history-scope-title">全部会议</h2>
+                  <button class="history-folder-title-button" id="history-folder-title-button" type="button" disabled>
+                    <h2 id="history-scope-title">全部会议</h2>
+                    <span class="history-folder-title-edit" aria-hidden="true"></span>
+                  </button>
                   <p id="history-scope-meta">所有会议记录</p>
                 </div>
               </header>
@@ -2158,6 +2161,7 @@
       const historyScopeTitle = document.querySelector("#history-scope-title");
       const historyScopeMeta = document.querySelector("#history-scope-meta");
       const historyFolderBack = document.querySelector("#history-folder-back");
+      const historyFolderTitleButton = document.querySelector("#history-folder-title-button");
       const folderDropTray = document.querySelector("#folder-drop-tray");
       const folderDropTargets = document.querySelector("#folder-drop-targets");
       const folderEditModal = document.querySelector("#folder-edit-modal");
@@ -2218,6 +2222,9 @@
           : `${getFolderMeetingCount(folder.id)} 条会议 · 长按会议可移动到其他文件夹`;
         historyFolderBack.hidden = isRoot;
         folderPanel.hidden = !isRoot;
+        historyFolderTitleButton.disabled = isRoot;
+        historyFolderTitleButton.classList.toggle("history-folder-title-button--editable", !isRoot);
+        historyFolderTitleButton.setAttribute("aria-label", isRoot ? "全部会议" : `修改文件夹名称：${folder.name}`);
       }
 
       function openFolderEdit(folderId = null) {
@@ -2259,18 +2266,6 @@
           top.append(icon, copy);
           top.addEventListener("click", () => selectFolder(folder.id));
           card.append(top);
-
-          if (!folder.fixed) {
-            const actions = document.createElement("div");
-            const rename = document.createElement("button");
-            actions.className = "folder-card-actions";
-            rename.className = "folder-mini-button";
-            rename.type = "button";
-            rename.textContent = "重命名";
-            rename.addEventListener("click", () => openFolderEdit(folder.id));
-            actions.append(rename);
-            card.append(actions);
-          }
           folderTabs.append(card);
         });
 
@@ -2513,6 +2508,9 @@
       });
 
       historyFolderBack.addEventListener("click", () => selectFolder("all"));
+      historyFolderTitleButton.addEventListener("click", () => {
+        if (activeFolderId !== "all") openFolderEdit(activeFolderId);
+      });
       document.querySelector("#folder-empty-back").addEventListener("click", () => selectFolder("all"));
       document.querySelector("#folder-edit-close").addEventListener("click", closeFolderEdit);
       document.querySelector("#folder-edit-cancel").addEventListener("click", closeFolderEdit);
