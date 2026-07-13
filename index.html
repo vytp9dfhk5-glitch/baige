@@ -48,9 +48,9 @@
             <section class="app-view" data-view="home">
               <header class="home-header">
                 <h1>白鸽慧译</h1>
-                <button class="device-status device-status--connected" id="device-status" type="button">
+                <button class="device-status device-status--disconnected" id="device-status" type="button">
                   <span></span>
-                  设备已连接
+                  设备未连接
                 </button>
               </header>
 
@@ -79,15 +79,21 @@
             </section>
 
             <section class="app-view" data-view="history">
-              <header class="screen-header">
-                <div>
-                  <h2>历史记录</h2>
+              <header class="screen-header history-header">
+                <button class="history-folder-back" id="history-folder-back" type="button" aria-label="返回全部会议" hidden>‹</button>
+                <div class="history-scope-heading">
+                  <h2 id="history-scope-title">全部会议</h2>
+                  <p id="history-scope-meta">所有会议记录</p>
                 </div>
               </header>
 
               <section class="search-row panel">
                 <input id="history-search" type="search" placeholder="搜索会议标题、日期" aria-label="搜索历史会议" />
                 <button class="search-button" type="button">搜</button>
+              </section>
+
+              <section class="folder-panel" id="folder-panel">
+                <div class="folder-tabs" id="folder-tabs"></div>
               </section>
 
               <section class="history-list" id="history-list">
@@ -271,6 +277,11 @@
 
               <p class="empty-state" id="history-empty">没有找到相关会议</p>
               <button class="load-more-button panel" id="load-more-history" type="button">查看更多</button>
+
+              <div class="folder-drop-tray" id="folder-drop-tray" aria-hidden="true">
+                <strong>拖到文件夹中完成归类</strong>
+                <div id="folder-drop-targets"></div>
+              </div>
             </section>
 
             <section class="app-view" data-view="detail">
@@ -484,13 +495,17 @@
 		                  </button>
 		                </article>
 
-		                <article class="setting-row setting-row--stack device-setting-card panel">
-		                  <button class="setting-value-row" id="edit-device-name" type="button">
+		                <article class="device-setting-card device-setting-card--unset">
+		                  <div class="device-card-top">
+		                    <strong>设备设置</strong>
+		                    <span class="device-connection-badge device-connection-badge--disconnected" id="device-connection-badge" hidden><i></i>设备未连接</span>
+		                  </div>
+		                  <button class="device-card-main" id="open-device-bluetooth" type="button">
 		                    <div>
-		                      <strong>设备名称</strong>
-		                      <p id="device-name-display">白鸽会议记录仪 A01</p>
+		                      <strong id="device-entry-title">请绑定设备蓝牙</strong>
+		                      <p id="device-name-display"></p>
 		                    </div>
-		                    <span class="device-connection-badge device-connection-badge--connected">已连接</span>
+		                    <span class="device-card-arrow"></span>
 		                  </button>
 		                </article>
 
@@ -518,6 +533,37 @@
 	                </button>
 	              </section>
 	            </section>
+
+            <section class="app-view feature-view bluetooth-native-view" data-view="bluetooth-native">
+              <header class="native-bluetooth-header">
+                <button class="back-button" id="bluetooth-native-back" type="button" aria-label="返回">‹</button>
+                <div>
+                  <p>系统设置</p>
+                  <h2>蓝牙</h2>
+                </div>
+                <span class="native-switch native-switch--on" aria-hidden="true"></span>
+              </header>
+
+              <section class="native-bluetooth-panel">
+                <p class="native-bluetooth-tip">正在通过手机系统连接白鸽硬件设备，连接成功后将自动返回白鸽慧译。</p>
+                <article class="native-device-row">
+                  <span class="native-device-icon"></span>
+                  <div>
+                    <strong>白鸽慧译-XXXX</strong>
+                    <p id="native-bluetooth-state">未连接</p>
+                  </div>
+                  <button id="native-bluetooth-connect" type="button">连接</button>
+                </article>
+                <article class="native-device-row native-device-row--muted">
+                  <span class="native-device-icon native-device-icon--muted"></span>
+                  <div>
+                    <strong>其他设备</strong>
+                    <p>正在搜索附近蓝牙设备...</p>
+                  </div>
+                  <span class="native-searching-dot"></span>
+                </article>
+              </section>
+            </section>
 
             <section class="app-view feature-view" data-view="voice-library">
               <header class="detail-header">
@@ -611,6 +657,11 @@
               </section>
               <button class="bottom-primary-button" id="add-hotword" type="button">添加</button>
             </section>
+
+            <button class="history-ai-fab" id="history-ai-fab" type="button" aria-label="打开青鸾大模型">
+              <img src="assets/qingluan-avatar.jpg" alt="" />
+              <span class="history-ai-fab__pulse" aria-hidden="true"></span>
+            </button>
 
             <nav class="bottom-nav bottom-nav--hidden panel" aria-label="底部导航">
               <button class="nav-item nav-item--active" type="button" data-target="home">
@@ -794,6 +845,79 @@
 	              </div>
 	            </section>
 
+	            <section class="folder-edit-modal" id="folder-edit-modal" aria-hidden="true">
+	              <div class="modal-scrim" id="folder-edit-close"></div>
+	              <div class="modal-sheet panel">
+	                <div class="modal-handle"></div>
+	                <h3 id="folder-edit-title">新建文件夹</h3>
+	                <p>用于归类历史录音和会议纪要。</p>
+	                <label class="hotword-input">
+	                  <input id="folder-name-input" type="text" maxlength="24" placeholder="请输入文件夹名称" />
+	                </label>
+	                <div class="hotword-modal-actions">
+	                  <button class="secondary-button" id="folder-edit-cancel" type="button">取消</button>
+	                  <button class="confirm-button" id="folder-edit-confirm" type="button">确认</button>
+	                </div>
+	              </div>
+	            </section>
+
+	            <section class="move-meeting-modal" id="move-meeting-modal" aria-hidden="true">
+	              <div class="modal-scrim" id="move-meeting-close"></div>
+	              <div class="modal-sheet panel">
+	                <div class="modal-handle"></div>
+	                <h3>移动到文件夹</h3>
+	                <p id="move-meeting-title">请选择目标文件夹。</p>
+	                <div class="move-folder-list" id="move-folder-list"></div>
+	              </div>
+	            </section>
+
+	            <section class="folder-ai-modal" id="folder-ai-modal" aria-hidden="true">
+	              <div class="folder-ai-drawer" role="dialog" aria-modal="true" aria-labelledby="folder-ai-title">
+	                <header class="folder-ai-header">
+	                  <button class="folder-ai-back" id="folder-ai-back" type="button" aria-label="关闭青鸾大模型">‹</button>
+	                  <div>
+	                    <h3 id="folder-ai-title">青鸾大模型</h3>
+	                    <span class="folder-ai-scope" id="folder-ai-scope">问询范围：全部会议</span>
+	                  </div>
+	                  <button class="folder-ai-new" id="folder-ai-new" type="button">新会话</button>
+	                </header>
+
+	                <div class="folder-ai-conversation" id="folder-ai-conversation">
+	                  <section class="folder-ai-hero">
+	                    <img class="folder-ai-character" src="assets/qingluan-avatar.jpg" alt="青鸾大模型助手形象" />
+	                    <div class="folder-ai-greeting">
+	                      <strong>嗨，我是青鸾，</strong>
+	                      <p>有什么我可以帮你的吗？</p>
+	                    </div>
+	                  </section>
+	                  <div class="folder-ai-suggestions">
+	                    <button type="button">
+	                      <i class="ai-suggestion-icon ai-suggestion-icon--todo" aria-hidden="true"></i>
+	                      <span><strong>我的待办事项有哪些</strong><small>汇总会议中的负责人、时间和行动项</small></span>
+	                    </button>
+	                    <button type="button">
+	                      <i class="ai-suggestion-icon ai-suggestion-icon--focus" aria-hidden="true"></i>
+	                      <span><strong>这周会议有哪些重点信息</strong><small>提炼本周结论、风险和关键进展</small></span>
+	                    </button>
+	                    <button type="button">
+	                      <i class="ai-suggestion-icon ai-suggestion-icon--compare" aria-hidden="true"></i>
+	                      <span><strong>根据我的描述，帮我比对不同会议</strong><small>从多场会议中找出共同点和差异</small></span>
+	                    </button>
+	                  </div>
+	                  <div class="folder-ai-messages" id="folder-ai-messages" aria-live="polite"></div>
+	                </div>
+
+	                <div class="folder-ai-bottom">
+	                  <div class="folder-ai-input">
+	                    <span class="folder-ai-add" aria-hidden="true">＋</span>
+	                    <input id="folder-ai-input" type="text" placeholder="发消息或按住说话…" />
+	                    <button id="folder-ai-send" type="button" aria-label="发送问题">↑</button>
+	                  </div>
+	                  <small>AI 内容仅供参考，请结合原始会议纪要核对</small>
+	                </div>
+	              </div>
+	            </section>
+
 	            <section class="detail-more-modal" id="detail-more-modal" aria-hidden="true">
 	              <div class="modal-scrim" id="detail-more-close"></div>
 	              <div class="modal-sheet panel">
@@ -908,13 +1032,20 @@
       let activeHistoryItem = null;
       let activeEditSections = [];
 
-      const fullScreenViews = new Set(["login", "detail", "voice-library", "voice-create", "hotwords"]);
+      const fullScreenViews = new Set(["login", "detail", "bluetooth-native", "voice-library", "voice-create", "hotwords"]);
       const mainViews = new Set(["home", "history", "settings"]);
 
       function showView(target, options = {}) {
         views.forEach((view) => view.classList.remove("app-view--active"));
         document.querySelector(`[data-view="${target}"]`).classList.add("app-view--active");
         bottomNav.classList.toggle("bottom-nav--hidden", fullScreenViews.has(target));
+        document.querySelector("#history-ai-fab")?.classList.toggle("history-ai-fab--visible", target === "history");
+
+        if (target !== "history") {
+          const aiModal = document.querySelector("#folder-ai-modal");
+          aiModal?.classList.remove("folder-ai-modal--open");
+          aiModal?.setAttribute("aria-hidden", "true");
+        }
 
         if (mainViews.has(target)) {
           navItems.forEach((button) => {
@@ -934,15 +1065,25 @@
 	      const loginHint = document.querySelector("#login-hint");
 	      const userNicknameDisplay = document.querySelector("#user-nickname-display");
 	      const deviceNameDisplay = document.querySelector("#device-name-display");
+	      const deviceEntryTitle = document.querySelector("#device-entry-title");
+	      const deviceSettingCard = document.querySelector(".device-setting-card");
+	      const deviceConnectionBadge = document.querySelector("#device-connection-badge");
+	      const homeDeviceStatus = document.querySelector("#device-status");
 	      const editNickname = document.querySelector("#edit-nickname");
-	      const editDeviceName = document.querySelector("#edit-device-name");
+	      const openDeviceBluetoothButton = document.querySelector("#open-device-bluetooth");
 	      const settingEditModal = document.querySelector("#setting-edit-modal");
 	      const settingEditTitle = document.querySelector("#setting-edit-title");
 	      const settingEditInput = document.querySelector("#setting-edit-input");
 	      const settingEditConfirm = document.querySelector("#setting-edit-confirm");
 	      const logoutAccount = document.querySelector("#logout-account");
 	      const logoutModal = document.querySelector("#logout-modal");
+	      const bluetoothNativeBack = document.querySelector("#bluetooth-native-back");
+	      const nativeBluetoothConnect = document.querySelector("#native-bluetooth-connect");
+	      const nativeBluetoothState = document.querySelector("#native-bluetooth-state");
 	      let settingEditTarget = null;
+	      let deviceConnectionState = "unset";
+	      let bluetoothConnected = false;
+	      let bluetoothReturnView = "settings";
 
       function maskPhone(phone) {
         return phone.replace(/^(\d{3})\d{4}(\d{4})$/, "$1****$2");
@@ -1021,8 +1162,67 @@
 	        settingEditTarget = null;
 	      }
 
+	      function applyDeviceConnectionState(state) {
+	        deviceConnectionState = state;
+	        const isConnected = state === "connected";
+	        const isUnset = state === "unset";
+	        const label = isConnected ? "设备已连接" : isUnset ? "请绑定设备蓝牙" : "设备未连接";
+	        const shortLabel = isConnected ? "已连接" : "未连接";
+
+	        homeDeviceStatus.classList.toggle("device-status--connected", isConnected);
+	        homeDeviceStatus.classList.toggle("device-status--disconnected", !isConnected);
+	        homeDeviceStatus.lastChild.textContent = isConnected ? "设备已连接" : "设备未连接";
+
+	        deviceSettingCard.classList.toggle("device-setting-card--unset", isUnset);
+	        deviceConnectionBadge.hidden = isUnset;
+	        deviceConnectionBadge.classList.toggle("device-connection-badge--connected", isConnected);
+	        deviceConnectionBadge.classList.toggle("device-connection-badge--disconnected", !isConnected && !isUnset);
+	        deviceConnectionBadge.innerHTML = `<i></i>${isConnected ? "设备已连接" : "设备未连接"}`;
+	        deviceEntryTitle.textContent = isUnset ? label : "设备名称";
+	        deviceNameDisplay.textContent = isUnset ? "" : deviceNameDisplay.textContent || "白鸽会议记录仪 A01";
+	        openDeviceBluetoothButton.setAttribute("aria-label", isConnected ? `修改设备名称，当前${shortLabel}` : "绑定设备蓝牙");
+	      }
+
+	      function openNativeBluetooth(returnView = "settings") {
+	        bluetoothReturnView = returnView;
+	        nativeBluetoothState.textContent = "未连接";
+	        nativeBluetoothConnect.textContent = "连接";
+	        nativeBluetoothConnect.disabled = false;
+	        showView("bluetooth-native");
+	      }
+
+	      function setBluetoothConnected(isConnected) {
+	        bluetoothConnected = isConnected;
+	      }
+
+	      function finishNativeBluetoothBinding() {
+	        nativeBluetoothState.textContent = "连接中...";
+	        nativeBluetoothConnect.textContent = "连接中";
+	        nativeBluetoothConnect.disabled = true;
+	        window.setTimeout(() => {
+	          setBluetoothConnected(true);
+	          deviceNameDisplay.textContent = "白鸽会议记录仪 A01";
+	          applyDeviceConnectionState("connected");
+	          nativeBluetoothState.textContent = "已连接";
+	          nativeBluetoothConnect.textContent = "已连接";
+	          window.setTimeout(() => {
+	            showView(bluetoothReturnView);
+	          }, 650);
+	        }, 900);
+	      }
+
 	      editNickname.addEventListener("click", () => openSettingEditModal("nickname"));
-	      editDeviceName.addEventListener("click", () => openSettingEditModal("device"));
+	      openDeviceBluetoothButton.addEventListener("click", () => {
+	        if (deviceConnectionState === "connected") {
+	          openSettingEditModal("device");
+	          return;
+	        }
+	        if (deviceConnectionState === "unset") {
+	          openNativeBluetooth("settings");
+	          return;
+	        }
+	        openNativeBluetooth("settings");
+	      });
 	      document.querySelector("#setting-edit-close").addEventListener("click", closeSettingEditModal);
 	      document.querySelector("#setting-edit-cancel").addEventListener("click", closeSettingEditModal);
 	      settingEditConfirm.addEventListener("click", () => {
@@ -1037,9 +1237,17 @@
 	        }
 	        if (settingEditTarget === "device") {
 	          deviceNameDisplay.textContent = value;
+	          applyDeviceConnectionState(deviceConnectionState);
 	        }
 	        closeSettingEditModal();
 	      });
+
+	      bluetoothNativeBack.addEventListener("click", () => {
+	        showView(bluetoothReturnView);
+	      });
+	      nativeBluetoothConnect.addEventListener("click", finishNativeBluetoothBinding);
+	      applyDeviceConnectionState(deviceConnectionState);
+	      setBluetoothConnected(bluetoothConnected);
 
 	      function openLogoutModal() {
 	        logoutModal.classList.add("logout-modal--open");
@@ -1566,6 +1774,8 @@
           activeHistoryItem.remove();
           historyItems = historyItems.filter((item) => item !== deletedItem);
           activeHistoryItem = null;
+          renderFolders();
+          renderHistoryScope();
           renderHistoryList();
         }
         closeModal(deleteMeetingModal, "delete-meeting-modal--open");
@@ -1915,22 +2125,37 @@
       });
       updateHotwordState();
 
-      document.querySelectorAll(".history-item").forEach((item) => {
-        item.addEventListener("click", () => {
-          openDetail({
-            title: item.dataset.title,
-            meta: item.dataset.meta,
-            from: "history",
-            template: item.dataset.meta.includes("头脑风暴") ? "brainstorm" : item.dataset.meta.includes("图文纪要") ? "visual" : "standard",
-            historyItem: item,
-          });
-        });
-      });
-
       const historySearch = document.querySelector("#history-search");
       let historyItems = Array.from(document.querySelectorAll(".history-item"));
       const historyEmpty = document.querySelector("#history-empty");
       const loadMoreHistory = document.querySelector("#load-more-history");
+      const folderTabs = document.querySelector("#folder-tabs");
+      const folderPanel = document.querySelector("#folder-panel");
+      const historyScopeTitle = document.querySelector("#history-scope-title");
+      const historyScopeMeta = document.querySelector("#history-scope-meta");
+      const historyFolderBack = document.querySelector("#history-folder-back");
+      const folderDropTray = document.querySelector("#folder-drop-tray");
+      const folderDropTargets = document.querySelector("#folder-drop-targets");
+      const folderEditModal = document.querySelector("#folder-edit-modal");
+      const folderEditTitle = document.querySelector("#folder-edit-title");
+      const folderNameInput = document.querySelector("#folder-name-input");
+      const moveMeetingModal = document.querySelector("#move-meeting-modal");
+      const moveMeetingTitle = document.querySelector("#move-meeting-title");
+      const moveFolderList = document.querySelector("#move-folder-list");
+      const historyAiFab = document.querySelector("#history-ai-fab");
+      const folderAiModal = document.querySelector("#folder-ai-modal");
+      const folderAiScope = document.querySelector("#folder-ai-scope");
+      const folderAiMessages = document.querySelector("#folder-ai-messages");
+      const folderAiConversation = document.querySelector("#folder-ai-conversation");
+      const folderAiInput = document.querySelector("#folder-ai-input");
+      let folders = [
+        { id: "all", name: "全部会议", fixed: true },
+        { id: "folder-trust", name: "可信数据空间" },
+        { id: "folder-project", name: "项目例会" },
+      ];
+      let activeFolderId = "all";
+      let editingFolderId = null;
+      let pendingMoveItem = null;
       let shownHistoryCount = 10;
       const posterModal = document.querySelector("#poster-modal");
       const openPosterPreview = document.querySelector("#open-poster-preview");
@@ -1939,22 +2164,261 @@
         posterModal.setAttribute("aria-hidden", "true");
       };
 
+      function getFolder(folderId = activeFolderId) {
+        return folders.find((folder) => folder.id === folderId) || folders[0];
+      }
+
+      function getFolderMeetingCount(folderId) {
+        if (folderId === "all") return historyItems.length;
+        return historyItems.filter((item) => item.dataset.folderId === folderId).length;
+      }
+
+      function selectFolder(folderId) {
+        activeFolderId = folderId;
+        shownHistoryCount = 10;
+        historySearch.value = "";
+        renderHistoryScope();
+        renderFolders();
+        renderHistoryList();
+      }
+
+      function renderHistoryScope() {
+        const folder = getFolder();
+        const isRoot = folder.id === "all";
+        historyScopeTitle.textContent = folder.name;
+        historyScopeMeta.textContent = isRoot
+          ? `共 ${historyItems.length} 条会议 · 点击文件夹进入，长按会议可归类`
+          : `${getFolderMeetingCount(folder.id)} 条会议 · 长按会议可移动到其他文件夹`;
+        historyFolderBack.hidden = isRoot;
+        folderPanel.hidden = !isRoot;
+      }
+
+      function openFolderEdit(folderId = null) {
+        editingFolderId = folderId;
+        const folder = folderId ? getFolder(folderId) : null;
+        folderEditTitle.textContent = folder ? "修改文件夹名称" : "新建文件夹";
+        folderNameInput.value = folder?.name || "";
+        folderEditModal.classList.add("folder-edit-modal--open");
+        folderEditModal.setAttribute("aria-hidden", "false");
+        window.setTimeout(() => {
+          folderNameInput.focus();
+          if (folder) folderNameInput.select();
+        }, 80);
+      }
+
+      function closeFolderEdit() {
+        folderEditModal.classList.remove("folder-edit-modal--open");
+        folderEditModal.setAttribute("aria-hidden", "true");
+        editingFolderId = null;
+      }
+
+      function renderFolders() {
+        folderTabs.replaceChildren();
+        folders.filter((folder) => !folder.fixed).forEach((folder) => {
+          const card = document.createElement("article");
+          const top = document.createElement("button");
+          const icon = document.createElement("span");
+          const copy = document.createElement("span");
+          const name = document.createElement("h3");
+          const count = document.createElement("p");
+          card.className = "folder-card";
+          top.className = "folder-card-top";
+          top.type = "button";
+          top.setAttribute("aria-label", `打开${folder.name}`);
+          icon.className = "file-icon folder-file-icon";
+          name.textContent = folder.name;
+          count.textContent = `${getFolderMeetingCount(folder.id)} 条会议`;
+          copy.append(name, count);
+          top.append(icon, copy);
+          top.addEventListener("click", () => selectFolder(folder.id));
+          card.append(top);
+
+          if (!folder.fixed) {
+            const actions = document.createElement("div");
+            const rename = document.createElement("button");
+            actions.className = "folder-card-actions";
+            rename.className = "folder-mini-button";
+            rename.type = "button";
+            rename.textContent = "重命名";
+            rename.addEventListener("click", () => openFolderEdit(folder.id));
+            actions.append(rename);
+            card.append(actions);
+          }
+          folderTabs.append(card);
+        });
+
+        const createCard = document.createElement("button");
+        const createIcon = document.createElement("span");
+        const createCopy = document.createElement("span");
+        const createName = document.createElement("strong");
+        const createHint = document.createElement("small");
+        createCard.className = "folder-card folder-card--create";
+        createCard.type = "button";
+        createCard.id = "create-folder";
+        createIcon.className = "file-icon folder-file-icon folder-file-icon--create";
+        createName.textContent = "新建文件夹";
+        createHint.textContent = "整理会议记录";
+        createCopy.append(createName, createHint);
+        createCard.append(createIcon, createCopy);
+        createCard.addEventListener("click", () => openFolderEdit());
+        folderTabs.append(createCard);
+      }
+
+      function openMoveMeeting(item) {
+        pendingMoveItem = item;
+        moveMeetingTitle.textContent = `“${item.dataset.title}”移动后仍可在全部会议中查看。`;
+        moveFolderList.replaceChildren();
+
+        const targets = [{ id: "", name: "未分类" }, ...folders.filter((folder) => !folder.fixed)];
+        targets.forEach((folder) => {
+          const option = document.createElement("button");
+          const label = document.createElement("strong");
+          const state = document.createElement("span");
+          const isCurrent = (item.dataset.folderId || "") === folder.id;
+          option.className = "move-folder-item";
+          option.type = "button";
+          label.textContent = folder.name;
+          state.textContent = isCurrent ? "当前所在" : "移动到这里";
+          option.append(label, state);
+          option.addEventListener("click", () => {
+            pendingMoveItem.dataset.folderId = folder.id;
+            moveMeetingModal.classList.remove("move-meeting-modal--open");
+            moveMeetingModal.setAttribute("aria-hidden", "true");
+            pendingMoveItem = null;
+            renderFolders();
+            renderHistoryScope();
+            renderHistoryList();
+          });
+          moveFolderList.append(option);
+        });
+        moveMeetingModal.classList.add("move-meeting-modal--open");
+        moveMeetingModal.setAttribute("aria-hidden", "false");
+      }
+
       function renderHistoryList() {
         const keyword = historySearch.value.trim().toLowerCase();
-        let visibleCount = 0;
         let matchedCount = 0;
 
-        historyItems.forEach((item, index) => {
+        historyItems.forEach((item) => {
           const haystack = (item.dataset.title + " " + item.dataset.meta).toLowerCase();
-          const matches = haystack.includes(keyword);
+          const inFolder = activeFolderId === "all" || item.dataset.folderId === activeFolderId;
+          const matches = inFolder && haystack.includes(keyword);
           if (matches) matchedCount += 1;
           const visible = matches && matchedCount <= shownHistoryCount;
           item.hidden = !visible;
-          if (visible) visibleCount += 1;
         });
 
+        const folderName = getFolder().name;
+        historyEmpty.textContent = keyword ? "没有找到相关会议" : `“${folderName}”中还没有会议`;
         historyEmpty.classList.toggle("empty-state--visible", matchedCount === 0);
         loadMoreHistory.hidden = matchedCount <= shownHistoryCount;
+      }
+
+      function bindHistoryItem(item) {
+        item.addEventListener("click", () => {
+          if (item.dataset.dragJustEnded === "true") {
+            item.dataset.dragJustEnded = "false";
+            return;
+          }
+          openDetail({
+            title: item.dataset.title,
+            meta: item.dataset.meta,
+            from: "history",
+            template: item.dataset.meta.includes("头脑风暴") ? "brainstorm" : item.dataset.meta.includes("图文纪要") ? "visual" : "standard",
+            historyItem: item,
+          });
+        });
+        const menu = item.querySelector(".dot-menu");
+        menu.setAttribute("role", "button");
+        menu.setAttribute("tabindex", "0");
+        menu.setAttribute("aria-label", `移动“${item.dataset.title}”`);
+        const openMove = (event) => {
+          event.stopPropagation();
+          openMoveMeeting(item);
+        };
+        menu.addEventListener("click", openMove);
+        menu.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openMove(event);
+          }
+        });
+
+        item.addEventListener("pointerdown", (event) => {
+          if (event.target.closest(".dot-menu")) return;
+          beginMeetingPress(item, event);
+        });
+      }
+
+      historyItems.forEach((item) => {
+        if (/可信数据空间|数据资产|数据产品|数据授权|数据合规/.test(item.dataset.title)) item.dataset.folderId = "folder-trust";
+        if (/项目例会|周会|研发排期|交付风险/.test(item.dataset.title)) item.dataset.folderId = "folder-project";
+        bindHistoryItem(item);
+      });
+
+      function closeMoveMeeting() {
+        moveMeetingModal.classList.remove("move-meeting-modal--open");
+        moveMeetingModal.setAttribute("aria-hidden", "true");
+        pendingMoveItem = null;
+      }
+
+      function currentAiScope() {
+        const folder = getFolder();
+        return {
+          name: folder.name,
+          count: getFolderMeetingCount(folder.id),
+        };
+      }
+
+      function openFolderAi() {
+        const scope = currentAiScope();
+        folderAiScope.textContent = `问询范围：${scope.name} · ${scope.count} 条会议`;
+        folderAiInput.placeholder = `问问“${scope.name}”中的会议纪要`;
+        folderAiModal.classList.add("folder-ai-modal--open");
+        folderAiModal.setAttribute("aria-hidden", "false");
+      }
+
+      function closeFolderAi() {
+        folderAiModal.classList.remove("folder-ai-modal--open");
+        folderAiModal.setAttribute("aria-hidden", "true");
+      }
+
+      function appendAiMessage(text, role, loading = false) {
+        const message = document.createElement("div");
+        message.className = `folder-ai-message folder-ai-message--${role}` + (loading ? " folder-ai-message--loading" : "");
+        message.textContent = text;
+        folderAiMessages.append(message);
+        folderAiConversation.scrollTop = folderAiConversation.scrollHeight;
+        return message;
+      }
+
+      function buildAiResponse(question) {
+        const scope = currentAiScope();
+        if (question.includes("待办")) {
+          return `已筛选“${scope.name}”中的 ${scope.count} 条会议纪要。当前重点待办有：完善合作框架责任分工、确认数据授权边界、跟进产品排期与风险项。来源：05-26 可信数据空间合作框架、05-24 项目例会行动项确认。`;
+        }
+        if (question.includes("重点") || question.includes("总结")) {
+          return `本周重点集中在三个方向：可信数据空间合作方案进一步收敛；项目排期与跨部门责任人需要确认；数据合规和交付风险仍需持续跟进。以上结论仅来自“${scope.name}”范围内的会议纪要。`;
+        }
+        if (question.includes("比对") || question.includes("不同")) {
+          return `可以。我会只在“${scope.name}”的 ${scope.count} 条会议中比对。请继续补充你想比较的主题、项目或时间范围，我会按共同点、差异、结论和待办四部分整理。`;
+        }
+        return `我已在“${scope.name}”的 ${scope.count} 条会议纪要中检索“${question}”。相关内容主要涉及合作框架、行动项和风险跟进；你可以继续指定会议名称或时间范围，我会给出更精确的来源。`;
+      }
+
+      function sendAiQuestion(question = folderAiInput.value.trim()) {
+        const normalized = question.trim();
+        if (!normalized) {
+          folderAiInput.focus();
+          return;
+        }
+        appendAiMessage(normalized, "user");
+        folderAiInput.value = "";
+        const loading = appendAiMessage("正在筛选当前范围内的会议纪要", "assistant", true);
+        window.setTimeout(() => {
+          loading.remove();
+          appendAiMessage(buildAiResponse(normalized), "assistant");
+        }, 720);
       }
 
       historySearch.addEventListener("input", () => {
@@ -1967,6 +2431,189 @@
         renderHistoryList();
       });
 
+      historyFolderBack.addEventListener("click", () => selectFolder("all"));
+      document.querySelector("#folder-edit-close").addEventListener("click", closeFolderEdit);
+      document.querySelector("#folder-edit-cancel").addEventListener("click", closeFolderEdit);
+      document.querySelector("#folder-edit-confirm").addEventListener("click", () => {
+        const name = folderNameInput.value.trim();
+        if (!name) {
+          folderNameInput.focus();
+          return;
+        }
+        if (editingFolderId) {
+          getFolder(editingFolderId).name = name;
+        } else {
+          const id = `folder-${Date.now()}`;
+          folders.push({ id, name });
+          activeFolderId = id;
+        }
+        closeFolderEdit();
+        shownHistoryCount = 10;
+        renderFolders();
+        renderHistoryScope();
+        renderHistoryList();
+      });
+      folderNameInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") document.querySelector("#folder-edit-confirm").click();
+      });
+      document.querySelector("#move-meeting-close").addEventListener("click", closeMoveMeeting);
+
+      historyAiFab.addEventListener("click", () => {
+        if (historyAiFab.dataset.dragJustEnded === "true") {
+          historyAiFab.dataset.dragJustEnded = "false";
+          return;
+        }
+        openFolderAi();
+      });
+      document.querySelector("#folder-ai-back").addEventListener("click", closeFolderAi);
+      document.querySelector("#folder-ai-new").addEventListener("click", () => {
+        folderAiMessages.replaceChildren();
+        folderAiInput.value = "";
+      });
+      document.querySelector("#folder-ai-send").addEventListener("click", () => sendAiQuestion());
+      folderAiInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") sendAiQuestion();
+      });
+      document.querySelectorAll(".folder-ai-suggestions button").forEach((button) => {
+        button.addEventListener("click", () => sendAiQuestion(button.querySelector("strong").textContent.trim()));
+      });
+
+      let meetingPress = null;
+
+      function renderFolderDropTargets() {
+        folderDropTargets.replaceChildren();
+        folders.filter((folder) => !folder.fixed).forEach((folder) => {
+          const target = document.createElement("button");
+          const icon = document.createElement("span");
+          const name = document.createElement("span");
+          target.type = "button";
+          target.dataset.dropFolder = folder.id;
+          icon.className = "file-icon folder-file-icon";
+          name.textContent = folder.name;
+          target.append(icon, name);
+          folderDropTargets.append(target);
+        });
+      }
+
+      function positionMeetingGhost(clientX, clientY) {
+        if (!meetingPress?.ghost) return;
+        const phoneRect = document.querySelector(".phone-screen").getBoundingClientRect();
+        const x = Math.max(8, Math.min(phoneRect.width - meetingPress.ghost.offsetWidth - 8, clientX - phoneRect.left - meetingPress.ghost.offsetWidth / 2));
+        const y = Math.max(56, Math.min(phoneRect.height - meetingPress.ghost.offsetHeight - 24, clientY - phoneRect.top - 28));
+        meetingPress.ghost.style.transform = `translate3d(${x}px, ${y}px, 0) scale(1.02)`;
+      }
+
+      function activateMeetingDrag() {
+        if (!meetingPress) return;
+        const ghost = meetingPress.item.cloneNode(true);
+        ghost.className = "meeting-drag-ghost";
+        ghost.removeAttribute("id");
+        document.querySelector(".phone-screen").append(ghost);
+        meetingPress.ghost = ghost;
+        meetingPress.active = true;
+        navigator.vibrate?.(18);
+        meetingPress.item.classList.add("history-item--drag-source");
+        renderFolderDropTargets();
+        folderDropTray.classList.add("folder-drop-tray--open");
+        folderDropTray.setAttribute("aria-hidden", "false");
+        positionMeetingGhost(meetingPress.lastX, meetingPress.lastY);
+      }
+
+      function beginMeetingPress(item, event) {
+        window.clearTimeout(meetingPress?.timer);
+        meetingPress = {
+          item,
+          pointerId: event.pointerId,
+          startX: event.clientX,
+          startY: event.clientY,
+          lastX: event.clientX,
+          lastY: event.clientY,
+          active: false,
+        };
+        item.setPointerCapture?.(event.pointerId);
+        meetingPress.timer = window.setTimeout(activateMeetingDrag, 480);
+      }
+
+      document.addEventListener("pointermove", (event) => {
+        if (!meetingPress || event.pointerId !== meetingPress.pointerId) return;
+        meetingPress.lastX = event.clientX;
+        meetingPress.lastY = event.clientY;
+        const movement = Math.hypot(event.clientX - meetingPress.startX, event.clientY - meetingPress.startY);
+        if (!meetingPress.active && movement > 10) {
+          window.clearTimeout(meetingPress.timer);
+          meetingPress = null;
+          return;
+        }
+        if (!meetingPress.active) return;
+        event.preventDefault();
+        positionMeetingGhost(event.clientX, event.clientY);
+        const target = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-drop-folder]");
+        folderDropTargets.querySelectorAll("[data-drop-folder]").forEach((item) => item.classList.toggle("folder-drop-target--active", item === target));
+      }, { passive: false });
+
+      document.addEventListener("pointerup", (event) => {
+        if (!meetingPress || event.pointerId !== meetingPress.pointerId) return;
+        window.clearTimeout(meetingPress.timer);
+        if (meetingPress.active) {
+          const target = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-drop-folder]");
+          if (target) meetingPress.item.dataset.folderId = target.dataset.dropFolder;
+          meetingPress.item.dataset.dragJustEnded = "true";
+          meetingPress.item.classList.remove("history-item--drag-source");
+          meetingPress.ghost?.remove();
+          folderDropTray.classList.remove("folder-drop-tray--open");
+          folderDropTray.setAttribute("aria-hidden", "true");
+          renderFolders();
+          renderHistoryScope();
+          renderHistoryList();
+        }
+        meetingPress = null;
+      });
+
+      let aiDrag = null;
+      historyAiFab.addEventListener("pointerdown", (event) => {
+        const phoneRect = document.querySelector(".phone-screen").getBoundingClientRect();
+        const fabRect = historyAiFab.getBoundingClientRect();
+        historyAiFab.setPointerCapture?.(event.pointerId);
+        historyAiFab.style.left = `${fabRect.left - phoneRect.left}px`;
+        historyAiFab.style.top = `${fabRect.top - phoneRect.top}px`;
+        historyAiFab.style.right = "auto";
+        aiDrag = {
+          pointerId: event.pointerId,
+          startX: event.clientX,
+          startY: event.clientY,
+          offsetX: event.clientX - fabRect.left,
+          offsetY: event.clientY - fabRect.top,
+          moved: false,
+        };
+      });
+
+      historyAiFab.addEventListener("pointermove", (event) => {
+        if (!aiDrag || event.pointerId !== aiDrag.pointerId) return;
+        const phoneRect = document.querySelector(".phone-screen").getBoundingClientRect();
+        const movement = Math.hypot(event.clientX - aiDrag.startX, event.clientY - aiDrag.startY);
+        if (movement > 5) aiDrag.moved = true;
+        if (!aiDrag.moved) return;
+        event.preventDefault();
+        const x = Math.max(4, Math.min(phoneRect.width - historyAiFab.offsetWidth - 4, event.clientX - phoneRect.left - aiDrag.offsetX));
+        const y = Math.max(72, Math.min(phoneRect.height - historyAiFab.offsetHeight - 96, event.clientY - phoneRect.top - aiDrag.offsetY));
+        historyAiFab.style.left = `${x}px`;
+        historyAiFab.style.top = `${y}px`;
+        historyAiFab.classList.add("history-ai-fab--dragging");
+      });
+
+      historyAiFab.addEventListener("pointerup", (event) => {
+        if (!aiDrag || event.pointerId !== aiDrag.pointerId) return;
+        if (aiDrag.moved) {
+          const phoneRect = document.querySelector(".phone-screen").getBoundingClientRect();
+          const fabRect = historyAiFab.getBoundingClientRect();
+          const snapLeft = fabRect.left + fabRect.width / 2 < phoneRect.left + phoneRect.width / 2;
+          historyAiFab.style.left = snapLeft ? "4px" : `${phoneRect.width - historyAiFab.offsetWidth - 4}px`;
+          historyAiFab.dataset.dragJustEnded = "true";
+        }
+        historyAiFab.classList.remove("history-ai-fab--dragging");
+        aiDrag = null;
+      });
+
       openPosterPreview.addEventListener("click", () => {
         posterModal.classList.add("poster-modal--open");
         posterModal.setAttribute("aria-hidden", "false");
@@ -1975,6 +2622,8 @@
       document.querySelector("#poster-modal-close").addEventListener("click", closePosterPreview);
       document.querySelector("#poster-close-button").addEventListener("click", closePosterPreview);
 
+      renderFolders();
+      renderHistoryScope();
       renderHistoryList();
     </script>
   </body>
