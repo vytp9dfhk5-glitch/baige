@@ -3845,15 +3845,111 @@ button:active {
   border-radius: 24px;
 }
 
-.folder-ai-add {
+.folder-ai-mode {
   width: 36px;
   height: 36px;
+  position: relative;
   display: grid;
   place-items: center;
+  padding: 0;
+  border: 0;
   border-radius: 50%;
   color: #64758c;
   background: rgba(236, 243, 251, 0.92);
-  font-size: 1.35rem;
+}
+
+.folder-ai-mode span {
+  width: 11px;
+  height: 16px;
+  position: relative;
+  display: block;
+  border: 2px solid #66819e;
+  border-radius: 7px;
+}
+
+.folder-ai-mode span::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 14px;
+  width: 15px;
+  height: 8px;
+  border: 2px solid #66819e;
+  border-top: 0;
+  border-radius: 0 0 9px 9px;
+  transform: translateX(-50%);
+}
+
+.folder-ai-mode span::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 21px;
+  width: 2px;
+  height: 5px;
+  border-radius: 999px;
+  background: #66819e;
+  box-shadow: -4px 5px 0 -0.5px #66819e, 4px 5px 0 -0.5px #66819e;
+  transform: translateX(-50%);
+}
+
+.folder-ai-mode--keyboard span {
+  width: 19px;
+  height: 14px;
+  border-radius: 4px;
+}
+
+.folder-ai-mode--keyboard span::before {
+  width: 11px;
+  height: 4px;
+  left: 2px;
+  top: 3px;
+  border: 0;
+  border-radius: 0;
+  background: repeating-linear-gradient(90deg, #66819e 0 2px, transparent 2px 4px);
+  transform: none;
+}
+
+.folder-ai-mode--keyboard span::after {
+  width: 11px;
+  height: 2px;
+  left: 2px;
+  top: 9px;
+  background: #66819e;
+  box-shadow: none;
+  transform: none;
+}
+
+.folder-ai-hold[hidden] {
+  display: none !important;
+}
+
+.folder-ai-hold {
+  width: 100% !important;
+  height: 38px !important;
+  border-radius: 14px !important;
+  color: #53657c !important;
+  background: rgba(239, 246, 253, 0.9) !important;
+  font-size: 0.86rem !important;
+  font-weight: 800 !important;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.folder-ai-hold--recording {
+  color: #2d7dcc !important;
+  background: rgba(211, 233, 255, 0.92) !important;
+  transform: scale(0.985);
+}
+
+.folder-ai-input--voice {
+  grid-template-columns: 42px minmax(0, 1fr);
+}
+
+.folder-ai-input--voice input,
+.folder-ai-input--voice #folder-ai-send {
+  display: none;
 }
 
 @keyframes qingluan-character-breathe {

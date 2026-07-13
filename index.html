@@ -914,9 +914,12 @@
 	                </div>
 
 	                <div class="folder-ai-bottom">
-	                  <div class="folder-ai-input">
-	                    <span class="folder-ai-add" aria-hidden="true">＋</span>
+	                  <div class="folder-ai-input" id="folder-ai-input-shell">
+	                    <button class="folder-ai-mode" id="folder-ai-mode" type="button" aria-label="切换到语音输入">
+	                      <span aria-hidden="true"></span>
+	                    </button>
 	                    <input id="folder-ai-input" type="text" placeholder="发消息或按住说话" />
+	                    <button class="folder-ai-hold" id="folder-ai-hold" type="button" hidden>按住说话</button>
 	                    <button id="folder-ai-send" type="button" aria-label="发送问题">↑</button>
 	                  </div>
 	                  <small>AI 内容仅供参考，请结合原始会议纪要核对</small>
@@ -2158,6 +2161,9 @@
       const folderAiMessages = document.querySelector("#folder-ai-messages");
       const folderAiConversation = document.querySelector("#folder-ai-conversation");
       const folderAiInput = document.querySelector("#folder-ai-input");
+      const folderAiInputShell = document.querySelector("#folder-ai-input-shell");
+      const folderAiMode = document.querySelector("#folder-ai-mode");
+      const folderAiHold = document.querySelector("#folder-ai-hold");
       let folders = [
         { id: "all", name: "全部会议", fixed: true },
         { id: "folder-trust", name: "可信数据空间" },
@@ -2539,6 +2545,42 @@
       folderAiInput.addEventListener("keydown", (event) => {
         if (event.key === "Enter") sendAiQuestion();
       });
+
+      function setFolderAiVoiceMode(enabled) {
+        folderAiInputShell.classList.toggle("folder-ai-input--voice", enabled);
+        folderAiMode.classList.toggle("folder-ai-mode--keyboard", enabled);
+        folderAiMode.setAttribute("aria-label", enabled ? "切换到文字输入" : "切换到语音输入");
+        folderAiHold.hidden = !enabled;
+        if (!enabled) window.setTimeout(() => folderAiInput.focus(), 60);
+      }
+
+      folderAiMode.addEventListener("click", () => {
+        setFolderAiVoiceMode(!folderAiInputShell.classList.contains("folder-ai-input--voice"));
+      });
+
+      let voiceHoldStartedAt = 0;
+      folderAiHold.addEventListener("pointerdown", (event) => {
+        folderAiHold.setPointerCapture?.(event.pointerId);
+        voiceHoldStartedAt = Date.now();
+        folderAiHold.textContent = "松开发送";
+        folderAiHold.classList.add("folder-ai-hold--recording");
+        navigator.vibrate?.(16);
+      });
+
+      function finishVoiceHold(cancelled = false) {
+        if (!voiceHoldStartedAt) return;
+        const duration = Date.now() - voiceHoldStartedAt;
+        voiceHoldStartedAt = 0;
+        folderAiHold.textContent = "按住说话";
+        folderAiHold.classList.remove("folder-ai-hold--recording");
+        if (!cancelled && duration >= 350) {
+          const seconds = Math.max(1, Math.round(duration / 1000));
+          appendAiMessage(`语音消息 · 00:${String(seconds).padStart(2, "0")}`, "user");
+        }
+      }
+
+      folderAiHold.addEventListener("pointerup", () => finishVoiceHold());
+      folderAiHold.addEventListener("pointercancel", () => finishVoiceHold(true));
       document.querySelectorAll(".folder-ai-suggestions button").forEach((button) => {
         button.addEventListener("click", () => sendAiQuestion(button.querySelector("strong").textContent.trim()));
       });
