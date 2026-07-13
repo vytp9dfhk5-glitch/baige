@@ -80,10 +80,10 @@
 
             <section class="app-view" data-view="history">
               <header class="screen-header history-header">
-                <button class="history-folder-back" id="history-folder-back" type="button" aria-label="返回全部会议" hidden>‹</button>
+                <button class="history-folder-back" id="history-folder-back" type="button" aria-label="返回历史记录" hidden>‹</button>
                 <div class="history-scope-heading">
                   <button class="history-folder-title-button" id="history-folder-title-button" type="button" disabled>
-                    <h2 id="history-scope-title">全部会议</h2>
+                    <h2 id="history-scope-title">历史记录</h2>
                     <span class="history-folder-title-edit" aria-hidden="true"></span>
                   </button>
                   <p id="history-scope-meta">所有会议记录</p>
@@ -279,8 +279,8 @@
                 <div class="folder-empty-state" id="folder-empty-state" hidden>
                   <span class="folder-empty-state__icon" aria-hidden="true"></span>
                   <strong id="folder-empty-title">该文件夹暂无会议</strong>
-                  <p id="folder-empty-desc">可返回全部会议，长按会议记录并拖入该文件夹。</p>
-                  <button id="folder-empty-back" type="button">返回全部会议</button>
+                  <p id="folder-empty-desc">可返回历史记录，长按未归类会议并拖入该文件夹。</p>
+                  <button id="folder-empty-back" type="button">返回历史记录</button>
                 </div>
               </section>
 
@@ -2216,15 +2216,16 @@
       function renderHistoryScope() {
         const folder = getFolder();
         const isRoot = folder.id === "all";
-        historyScopeTitle.textContent = folder.name;
+        const unclassifiedCount = historyItems.filter((item) => !item.dataset.folderId).length;
+        historyScopeTitle.textContent = isRoot ? "历史记录" : folder.name;
         historyScopeMeta.textContent = isRoot
-          ? `共 ${historyItems.length} 条会议 · 点击文件夹进入，长按会议可归类`
+          ? `${unclassifiedCount} 条未归类会议 · 已归类会议请进入文件夹查看`
           : `${getFolderMeetingCount(folder.id)} 条会议 · 长按会议可移动到其他文件夹`;
         historyFolderBack.hidden = isRoot;
         folderPanel.hidden = !isRoot;
         historyFolderTitleButton.disabled = isRoot;
         historyFolderTitleButton.classList.toggle("history-folder-title-button--editable", !isRoot);
-        historyFolderTitleButton.setAttribute("aria-label", isRoot ? "全部会议" : `修改文件夹名称：${folder.name}`);
+        historyFolderTitleButton.setAttribute("aria-label", isRoot ? "历史记录" : `修改文件夹名称：${folder.name}`);
       }
 
       function openFolderEdit(folderId = null) {
@@ -2288,7 +2289,7 @@
 
       function openMoveMeeting(item) {
         pendingMoveItem = item;
-        moveMeetingTitle.textContent = `“${item.dataset.title}”移动后仍可在全部会议中查看。`;
+        moveMeetingTitle.textContent = `“${item.dataset.title}”移动后将在目标文件夹中查看，一级列表不再展示。`;
         moveFolderList.replaceChildren();
 
         const targets = [{ id: "", name: "未分类" }, ...folders.filter((folder) => !folder.fixed)];
@@ -2322,21 +2323,12 @@
         const matchesKeyword = (item) => (item.dataset.title + " " + item.dataset.meta).toLowerCase().includes(keyword);
         const isRoot = activeFolderId === "all";
         const unclassifiedMatches = historyItems.filter((item) => !item.dataset.folderId && matchesKeyword(item));
-        const classifiedMatches = historyItems.filter((item) => item.dataset.folderId && matchesKeyword(item));
         const folderMatches = historyItems.filter((item) => item.dataset.folderId === activeFolderId && matchesKeyword(item));
-        const matchedCount = isRoot ? unclassifiedMatches.length + classifiedMatches.length : folderMatches.length;
+        const matchedCount = isRoot ? unclassifiedMatches.length : folderMatches.length;
         const visibleItems = new Set();
 
         if (isRoot) {
-          const balancedQuota = Math.floor(shownHistoryCount / 2);
-          unclassifiedMatches.slice(0, balancedQuota).forEach((item) => visibleItems.add(item));
-          classifiedMatches.slice(0, balancedQuota).forEach((item) => visibleItems.add(item));
-          const remainingSlots = shownHistoryCount - visibleItems.size;
-          if (remainingSlots > 0) {
-            [...unclassifiedMatches.slice(balancedQuota), ...classifiedMatches.slice(balancedQuota)]
-              .slice(0, remainingSlots)
-              .forEach((item) => visibleItems.add(item));
-          }
+          unclassifiedMatches.slice(0, shownHistoryCount).forEach((item) => visibleItems.add(item));
         } else {
           folderMatches.slice(0, shownHistoryCount).forEach((item) => visibleItems.add(item));
         }
@@ -2349,7 +2341,7 @@
           }
           const folder = folders.find((candidate) => candidate.id === item.dataset.folderId);
           badge.className = `history-category-badge ${folder ? "history-category-badge--classified" : "history-category-badge--unclassified"}`;
-          badge.textContent = folder ? folder.name : "未分类";
+          badge.textContent = folder ? folder.name : "未归类";
           item.classList.toggle("history-item--inside-folder", !isRoot);
           item.hidden = !visibleItems.has(item);
         });
@@ -2369,8 +2361,7 @@
             historyList.append(heading);
             visibleGroupItems.forEach((item) => historyList.append(item));
           };
-          appendGroup("未分类会议", unclassifiedMatches.length, "unclassified", unclassifiedMatches);
-          appendGroup("已归类会议", classifiedMatches.length, "classified", classifiedMatches);
+          appendGroup("未归类会议", unclassifiedMatches.length, "unclassified", unclassifiedMatches);
         } else {
           folderMatches.filter((item) => visibleItems.has(item)).forEach((item) => historyList.append(item));
         }
@@ -2381,11 +2372,11 @@
         const folderIsEmpty = !isRoot && getFolderMeetingCount(activeFolderId) === 0;
         folderEmptyTitle.textContent = folderIsEmpty ? "该文件夹暂无会议" : "未找到相关会议";
         folderEmptyDesc.textContent = folderIsEmpty
-          ? "可返回全部会议，长按会议记录并拖入该文件夹。"
+          ? "可返回历史记录，长按未归类会议并拖入该文件夹。"
           : `“${folderName}”中没有匹配当前关键词的会议。`;
         folderEmptyState.hidden = isRoot || matchedCount > 0;
         historyList.append(folderEmptyState);
-        historyEmpty.textContent = "没有找到相关会议";
+        historyEmpty.textContent = keyword ? "没有找到相关会议" : "暂无未归类会议";
         historyEmpty.classList.toggle("empty-state--visible", isRoot && matchedCount === 0);
         loadMoreHistory.hidden = matchedCount <= shownHistoryCount;
       }
