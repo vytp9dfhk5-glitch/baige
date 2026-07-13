@@ -3501,6 +3501,10 @@ button:active {
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
+.history-item[hidden] {
+  display: none !important;
+}
+
 .history-item--drag-source {
   opacity: 0.28;
   transform: scale(0.98);
@@ -3697,7 +3701,7 @@ button:active {
   margin: 0 0 8px 2px;
   border-radius: 0;
   object-fit: cover;
-  object-position: 42% 45%;
+  object-position: 52% 42%;
   mix-blend-mode: multiply;
   animation: qingluan-character-breathe 4s ease-in-out infinite;
 }
