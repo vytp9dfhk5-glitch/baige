@@ -3845,79 +3845,77 @@ button:active {
   border-radius: 24px;
 }
 
-.folder-ai-mode {
-  width: 36px;
-  height: 36px;
+.folder-ai-input .folder-ai-mode {
+  width: 38px;
+  height: 38px;
   position: relative;
   display: grid;
   place-items: center;
   padding: 0;
   border: 0;
-  border-radius: 50%;
-  color: #64758c;
-  background: rgba(236, 243, 251, 0.92);
+  border-radius: 14px;
+  color: #438bd8;
+  background: linear-gradient(145deg, rgba(237, 247, 255, 0.98), rgba(220, 238, 255, 0.9));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92), 0 8px 18px -15px rgba(53, 117, 197, 0.7);
+  transition: transform 0.2s ease, background 0.2s ease;
 }
 
-.folder-ai-mode span {
-  width: 11px;
-  height: 16px;
-  position: relative;
+.folder-ai-input .folder-ai-mode:active {
+  transform: scale(0.94);
+}
+
+.folder-ai-mode__icon {
+  width: 20px;
+  height: 20px;
   display: block;
-  border: 2px solid #66819e;
-  border-radius: 7px;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.folder-ai-mode span::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 14px;
-  width: 15px;
-  height: 8px;
-  border: 2px solid #66819e;
-  border-top: 0;
-  border-radius: 0 0 9px 9px;
-  transform: translateX(-50%);
+.folder-ai-mode__icon--keyboard {
+  display: none;
 }
 
-.folder-ai-mode span::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 21px;
-  width: 2px;
-  height: 5px;
-  border-radius: 999px;
-  background: #66819e;
-  box-shadow: -4px 5px 0 -0.5px #66819e, 4px 5px 0 -0.5px #66819e;
-  transform: translateX(-50%);
+.folder-ai-mode--keyboard .folder-ai-mode__icon--mic {
+  display: none;
 }
 
-.folder-ai-mode--keyboard span {
+.folder-ai-mode--keyboard .folder-ai-mode__icon--keyboard {
+  display: block;
+}
+
+.folder-ai-input #folder-ai-send {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 14px;
+  color: white;
+  background: linear-gradient(145deg, #63adf7, #3d8fe8);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 10px 20px -16px rgba(34, 104, 197, 0.9);
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.folder-ai-input #folder-ai-send:active {
+  transform: scale(0.94);
+  filter: saturate(0.9);
+}
+
+#folder-ai-send svg {
   width: 19px;
-  height: 14px;
-  border-radius: 4px;
-}
-
-.folder-ai-mode--keyboard span::before {
-  width: 11px;
-  height: 4px;
-  left: 2px;
-  top: 3px;
-  border: 0;
-  border-radius: 0;
-  background: repeating-linear-gradient(90deg, #66819e 0 2px, transparent 2px 4px);
-  transform: none;
-}
-
-.folder-ai-mode--keyboard span::after {
-  width: 11px;
-  height: 2px;
-  left: 2px;
-  top: 9px;
-  background: #66819e;
-  box-shadow: none;
-  transform: none;
+  height: 19px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .folder-ai-hold[hidden] {
