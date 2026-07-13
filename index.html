@@ -915,7 +915,7 @@
 	                    <h3 id="folder-ai-title">青鸾大模型</h3>
 	                    <span class="folder-ai-scope" id="folder-ai-scope">问询范围：全部会议</span>
 	                  </div>
-	                  <button class="folder-ai-new" id="folder-ai-new" type="button">新会话</button>
+	                  <button class="folder-ai-more" id="folder-ai-more" type="button">更多</button>
 	                </header>
 
 	                <div class="folder-ai-conversation" id="folder-ai-conversation">
@@ -965,6 +965,38 @@
 	                  </div>
 	                  <small>AI 内容仅供参考，请结合原始会议纪要核对</small>
 	                </div>
+	              </div>
+
+	              <div class="ai-session-drawer" id="ai-session-drawer" aria-hidden="true">
+	                <button class="ai-session-scrim" id="ai-session-scrim" type="button" aria-label="关闭会话管理"></button>
+	                <aside class="ai-session-panel" aria-labelledby="ai-session-title">
+	                  <header class="ai-session-header">
+	                    <div>
+	                      <span>会话管理</span>
+	                      <h3 id="ai-session-title">青鸾大模型</h3>
+	                    </div>
+	                    <button id="ai-session-close" type="button" aria-label="关闭">×</button>
+	                  </header>
+
+	                  <div class="ai-session-menu" id="ai-session-menu">
+	                    <button class="ai-session-action" id="ai-session-create" type="button">
+	                      <i class="ai-session-action__icon ai-session-action__icon--new" aria-hidden="true"></i>
+	                      <span><strong>新建会话</strong><small>清空当前内容，开始新的会议问询</small></span>
+	                      <b aria-hidden="true">›</b>
+	                    </button>
+	                    <button class="ai-session-action" id="ai-session-history-open" type="button">
+	                      <i class="ai-session-action__icon ai-session-action__icon--history" aria-hidden="true"></i>
+	                      <span><strong>历史任务</strong><small>查看之前的提问和青鸾回复</small></span>
+	                      <b aria-hidden="true">›</b>
+	                    </button>
+	                  </div>
+
+	                  <div class="ai-session-history" id="ai-session-history" hidden>
+	                    <button class="ai-session-history__back" id="ai-session-history-back" type="button">‹ 历史任务</button>
+	                    <p>选择任务后，可继续查看之前的聊天记录。</p>
+	                    <div class="ai-session-history__list" id="ai-session-history-list"></div>
+	                  </div>
+	                </aside>
 	              </div>
 	            </section>
 
@@ -2208,6 +2240,44 @@
       const folderAiInputShell = document.querySelector("#folder-ai-input-shell");
       const folderAiMode = document.querySelector("#folder-ai-mode");
       const folderAiHold = document.querySelector("#folder-ai-hold");
+      const folderAiMore = document.querySelector("#folder-ai-more");
+      const aiSessionDrawer = document.querySelector("#ai-session-drawer");
+      const aiSessionMenu = document.querySelector("#ai-session-menu");
+      const aiSessionHistory = document.querySelector("#ai-session-history");
+      const aiSessionHistoryList = document.querySelector("#ai-session-history-list");
+      let activeAiHistoryId = null;
+      let aiConversationHistory = [
+        {
+          id: "ai-task-weekly",
+          title: "本周会议重点汇总",
+          time: "今天 10:18",
+          scope: "全部会议",
+          messages: [
+            { role: "user", text: "这周会议有哪些重点信息？" },
+            { role: "assistant", text: "本周重点集中在可信数据空间合作方案、项目排期确认和数据合规风险三方面。其中合作框架责任分工仍需进一步确认。" },
+          ],
+        },
+        {
+          id: "ai-task-todos",
+          title: "待办事项整理",
+          time: "07-12 16:42",
+          scope: "项目例会",
+          messages: [
+            { role: "user", text: "帮我整理项目例会中的待办事项。" },
+            { role: "assistant", text: "已整理 4 项待办：确认研发排期、补充交付风险清单、同步跨部门责任人、下周一前完成方案复核。" },
+          ],
+        },
+        {
+          id: "ai-task-compare",
+          title: "合作方案会议比对",
+          time: "07-10 11:06",
+          scope: "可信数据空间",
+          messages: [
+            { role: "user", text: "比对两次可信数据空间会议的结论差异。" },
+            { role: "assistant", text: "两次会议的共同方向是建设金融风控专区；差异在于后一次会议进一步明确了数据授权边界、平台责任分工和阶段性交付节点。" },
+          ],
+        },
+      ];
       let folders = [
         { id: "all", name: "全部会议", fixed: true },
         { id: "folder-trust", name: "可信数据空间" },
@@ -2475,20 +2545,117 @@
 
       function openFolderAi() {
         const scope = currentAiScope();
-        folderAiScope.textContent = `问询范围：${scope.name} · ${scope.count} 条会议`;
+        const activeTask = aiConversationHistory.find((task) => task.id === activeAiHistoryId);
+        folderAiScope.textContent = activeTask
+          ? `历史任务 · ${activeTask.scope}`
+          : `问询范围：${scope.name} · ${scope.count} 条会议`;
         folderAiInput.placeholder = "发消息或按住说话";
         folderAiModal.classList.add("folder-ai-modal--open");
         folderAiModal.setAttribute("aria-hidden", "false");
       }
 
       function closeFolderAi() {
+        closeAiSessionDrawer();
         folderAiModal.classList.remove("folder-ai-modal--open");
         folderAiModal.setAttribute("aria-hidden", "true");
+      }
+
+      function openAiSessionDrawer() {
+        aiSessionMenu.hidden = false;
+        aiSessionHistory.hidden = true;
+        aiSessionDrawer.classList.add("ai-session-drawer--open");
+        aiSessionDrawer.setAttribute("aria-hidden", "false");
+      }
+
+      function closeAiSessionDrawer() {
+        aiSessionDrawer.classList.remove("ai-session-drawer--open");
+        aiSessionDrawer.setAttribute("aria-hidden", "true");
+      }
+
+      function getCurrentAiMessages() {
+        return Array.from(folderAiMessages.querySelectorAll(".folder-ai-message:not(.folder-ai-message--loading)"))
+          .map((message) => ({ role: message.dataset.role, text: message.textContent.trim() }))
+          .filter((message) => message.role && message.text);
+      }
+
+      function saveCurrentAiConversation() {
+        const messages = getCurrentAiMessages();
+        const firstQuestion = messages.find((message) => message.role === "user");
+        if (!firstQuestion) return;
+        const scope = currentAiScope();
+        const existing = aiConversationHistory.find((task) => task.id === activeAiHistoryId);
+        if (existing) {
+          existing.messages = messages;
+          existing.title = firstQuestion.text.replace(/语音消息\s*·\s*/, "语音问询 ").slice(0, 20);
+          existing.time = "刚刚";
+          return;
+        }
+        const task = {
+          id: `ai-task-${Date.now()}`,
+          title: firstQuestion.text.replace(/语音消息\s*·\s*/, "语音问询 ").slice(0, 20),
+          time: "刚刚",
+          scope: scope.name,
+          messages,
+        };
+        aiConversationHistory.unshift(task);
+        activeAiHistoryId = task.id;
+      }
+
+      function startNewAiConversation() {
+        saveCurrentAiConversation();
+        activeAiHistoryId = null;
+        folderAiMessages.replaceChildren();
+        folderAiInput.value = "";
+        const scope = currentAiScope();
+        folderAiScope.textContent = `问询范围：${scope.name} · ${scope.count} 条会议`;
+        closeAiSessionDrawer();
+        folderAiConversation.scrollTop = 0;
+      }
+
+      function loadAiHistoryTask(task) {
+        activeAiHistoryId = task.id;
+        folderAiMessages.replaceChildren();
+        task.messages.forEach((message) => appendAiMessage(message.text, message.role));
+        folderAiScope.textContent = `历史任务 · ${task.scope}`;
+        closeAiSessionDrawer();
+      }
+
+      function renderAiHistoryTasks() {
+        aiSessionHistoryList.replaceChildren();
+        if (!aiConversationHistory.length) {
+          const empty = document.createElement("div");
+          empty.className = "ai-history-empty";
+          empty.textContent = "暂无历史任务";
+          aiSessionHistoryList.append(empty);
+          return;
+        }
+        aiConversationHistory.forEach((task) => {
+          const button = document.createElement("button");
+          const title = document.createElement("strong");
+          const time = document.createElement("time");
+          const scope = document.createElement("span");
+          button.className = "ai-history-task" + (task.id === activeAiHistoryId ? " ai-history-task--active" : "");
+          button.type = "button";
+          title.textContent = task.title;
+          time.textContent = task.time;
+          scope.textContent = `问询范围：${task.scope} · ${task.messages.length} 条消息`;
+          button.append(title, time, scope);
+          button.addEventListener("click", () => loadAiHistoryTask(task));
+          aiSessionHistoryList.append(button);
+        });
+      }
+
+      function showAiHistoryTasks() {
+        saveCurrentAiConversation();
+        renderAiHistoryTasks();
+        aiSessionMenu.hidden = true;
+        aiSessionHistory.hidden = false;
       }
 
       function appendAiMessage(text, role, loading = false) {
         const message = document.createElement("div");
         message.className = `folder-ai-message folder-ai-message--${role}` + (loading ? " folder-ai-message--loading" : "");
+        message.dataset.role = role;
         message.textContent = text;
         folderAiMessages.append(message);
         folderAiConversation.scrollTop = folderAiConversation.scrollHeight;
@@ -2600,9 +2767,14 @@
         openFolderAi();
       });
       document.querySelector("#folder-ai-back").addEventListener("click", closeFolderAi);
-      document.querySelector("#folder-ai-new").addEventListener("click", () => {
-        folderAiMessages.replaceChildren();
-        folderAiInput.value = "";
+      folderAiMore.addEventListener("click", openAiSessionDrawer);
+      document.querySelector("#ai-session-scrim").addEventListener("click", closeAiSessionDrawer);
+      document.querySelector("#ai-session-close").addEventListener("click", closeAiSessionDrawer);
+      document.querySelector("#ai-session-create").addEventListener("click", startNewAiConversation);
+      document.querySelector("#ai-session-history-open").addEventListener("click", showAiHistoryTasks);
+      document.querySelector("#ai-session-history-back").addEventListener("click", () => {
+        aiSessionHistory.hidden = true;
+        aiSessionMenu.hidden = false;
       });
       document.querySelector("#folder-ai-send").addEventListener("click", () => sendAiQuestion());
       folderAiInput.addEventListener("keydown", (event) => {
