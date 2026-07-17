@@ -547,30 +547,132 @@
               <header class="native-bluetooth-header">
                 <button class="back-button" id="bluetooth-native-back" type="button" aria-label="返回">‹</button>
                 <div>
-                  <p>系统设置</p>
-                  <h2>蓝牙</h2>
+                  <p>设备设置</p>
+                  <h2>连接硬件</h2>
                 </div>
-                <span class="native-switch native-switch--on" aria-hidden="true"></span>
+                <span class="hardware-setup-step" id="hardware-setup-step">蓝牙 1/2</span>
               </header>
 
               <section class="native-bluetooth-panel">
-                <p class="native-bluetooth-tip">正在通过手机系统连接白鸽硬件设备，连接成功后将自动返回白鸽慧译。</p>
-                <article class="native-device-row">
-                  <span class="native-device-icon"></span>
-                  <div>
-                    <strong>白鸽慧译-XXXX</strong>
-                    <p id="native-bluetooth-state">未连接</p>
+                <div class="hardware-progress" aria-label="硬件连接进度">
+                  <span class="hardware-progress__item hardware-progress__item--active" id="progress-bluetooth"><i>1</i>连接蓝牙</span>
+                  <b></b>
+                  <span class="hardware-progress__item" id="progress-wifi"><i>2</i>配置 Wi-Fi</span>
+                </div>
+
+                <section class="hardware-setup-section" id="bluetooth-setup-section">
+                  <div class="hardware-section-heading">
+                    <div>
+                      <h3>选择附近的蓝牙设备</h3>
+                      <p>请确保白鸽硬件设备已开机，并靠近手机。</p>
+                    </div>
+                    <button class="hardware-scan-button" id="scan-bluetooth" type="button">搜索设备</button>
                   </div>
-                  <button id="native-bluetooth-connect" type="button">连接</button>
-                </article>
-                <article class="native-device-row native-device-row--muted">
-                  <span class="native-device-icon native-device-icon--muted"></span>
-                  <div>
-                    <strong>其他设备</strong>
-                    <p>正在搜索附近蓝牙设备...</p>
+
+                  <div class="hardware-search-state" id="bluetooth-search-state">
+                    <span class="hardware-search-illustration hardware-search-illustration--bluetooth" aria-hidden="true"></span>
+                    <strong>搜索附近蓝牙</strong>
+                    <p>点击“搜索设备”查找可连接的白鸽硬件。</p>
                   </div>
-                  <span class="native-searching-dot"></span>
-                </article>
+
+                  <div class="hardware-loading-state" id="bluetooth-loading" hidden>
+                    <span class="hardware-spinner" aria-hidden="true"></span>
+                    <strong>正在搜索附近蓝牙设备</strong>
+                    <p>请保持设备处于开机状态。</p>
+                  </div>
+
+                  <div class="hardware-device-list" id="bluetooth-device-list" hidden>
+                    <article class="native-device-row" data-bluetooth-device data-device-name="白鸽会议记录仪 A01" data-connect-result="success">
+                      <span class="native-device-icon"></span>
+                      <div>
+                        <strong>白鸽会议记录仪 A01</strong>
+                        <p>信号强 · 可连接</p>
+                      </div>
+                      <button class="bluetooth-device-connect" type="button">连接</button>
+                    </article>
+                    <article class="native-device-row" data-bluetooth-device data-device-name="白鸽会议记录仪 Mini" data-connect-result="failed">
+                      <span class="native-device-icon"></span>
+                      <div>
+                        <strong>白鸽会议记录仪 Mini</strong>
+                        <p>信号较弱 · 可连接</p>
+                      </div>
+                      <button class="bluetooth-device-connect" type="button">连接</button>
+                    </article>
+                  </div>
+
+                  <div class="hardware-result-state hardware-result-state--failed" id="bluetooth-failed" hidden>
+                    <span class="hardware-result-icon" aria-hidden="true">!</span>
+                    <strong>蓝牙连接失败</strong>
+                    <p>请确认设备未被其他手机占用，并靠近手机后重试。</p>
+                    <button id="retry-bluetooth" type="button">重新搜索</button>
+                  </div>
+                </section>
+
+                <section class="hardware-setup-section" id="wifi-setup-section" hidden>
+                  <div class="hardware-section-heading">
+                    <div>
+                      <h3>选择附近的 Wi-Fi</h3>
+                      <p id="bluetooth-connected-summary">蓝牙已连接，请继续为硬件配置网络。</p>
+                    </div>
+                    <button class="hardware-scan-button" id="scan-wifi" type="button">搜索 Wi-Fi</button>
+                  </div>
+
+                  <div class="hardware-search-state" id="wifi-search-state">
+                    <span class="hardware-search-illustration hardware-search-illustration--wifi" aria-hidden="true"></span>
+                    <strong>搜索附近 Wi-Fi</strong>
+                    <p>选择硬件需要连接的无线网络。</p>
+                  </div>
+
+                  <div class="hardware-loading-state" id="wifi-loading" hidden>
+                    <span class="hardware-spinner" aria-hidden="true"></span>
+                    <strong>正在搜索附近 Wi-Fi</strong>
+                    <p>请稍候，正在获取无线网络列表。</p>
+                  </div>
+
+                  <div class="wifi-network-list" id="wifi-network-list" hidden>
+                    <button class="wifi-network-row" type="button" data-wifi-name="BAIGE-Office-5G" data-signal="strong">
+                      <span class="wifi-signal-icon" aria-hidden="true"><i></i><i></i><i></i></span>
+                      <span><strong>BAIGE-Office-5G</strong><small>信号强 · 已加密</small></span>
+                      <b>›</b>
+                    </button>
+                    <button class="wifi-network-row" type="button" data-wifi-name="MeetingRoom-2.4G" data-signal="medium">
+                      <span class="wifi-signal-icon wifi-signal-icon--medium" aria-hidden="true"><i></i><i></i><i></i></span>
+                      <span><strong>MeetingRoom-2.4G</strong><small>信号良好 · 已加密</small></span>
+                      <b>›</b>
+                    </button>
+                    <button class="wifi-network-row" type="button" data-wifi-name="BAIGE-Guest" data-signal="weak">
+                      <span class="wifi-signal-icon wifi-signal-icon--weak" aria-hidden="true"><i></i><i></i><i></i></span>
+                      <span><strong>BAIGE-Guest</strong><small>信号较弱 · 已加密</small></span>
+                      <b>›</b>
+                    </button>
+                  </div>
+
+                  <div class="wifi-password-card" id="wifi-password-card" hidden>
+                    <div class="wifi-selected-network">
+                      <span class="wifi-signal-icon" aria-hidden="true"><i></i><i></i><i></i></span>
+                      <div><small>已选择 Wi-Fi</small><strong id="selected-wifi-name">BAIGE-Office-5G</strong></div>
+                      <button id="change-wifi" type="button">更换</button>
+                    </div>
+                    <label class="wifi-password-field">
+                      <span>Wi-Fi 密码</span>
+                      <input id="wifi-password" type="password" placeholder="请输入 Wi-Fi 密码" autocomplete="off" />
+                    </label>
+                    <p class="wifi-password-error" id="wifi-password-error"></p>
+                    <button class="wifi-configure-button" id="configure-wifi" type="button">开始配置</button>
+                  </div>
+
+                  <div class="hardware-loading-state" id="wifi-configuring" hidden>
+                    <span class="hardware-spinner" aria-hidden="true"></span>
+                    <strong>正在配置 Wi-Fi</strong>
+                    <p>正在将网络信息安全发送至硬件设备。</p>
+                  </div>
+
+                  <div class="hardware-result-state hardware-result-state--success" id="wifi-success" hidden>
+                    <span class="hardware-result-icon" aria-hidden="true">✓</span>
+                    <strong>硬件连接配置成功</strong>
+                    <p>蓝牙和 Wi-Fi 均已配置完成，请点击左上角返回设置首页。</p>
+                  </div>
+                </section>
               </section>
             </section>
 
@@ -1156,12 +1258,32 @@
 	      const logoutAccount = document.querySelector("#logout-account");
 	      const logoutModal = document.querySelector("#logout-modal");
 	      const bluetoothNativeBack = document.querySelector("#bluetooth-native-back");
-	      const nativeBluetoothConnect = document.querySelector("#native-bluetooth-connect");
-	      const nativeBluetoothState = document.querySelector("#native-bluetooth-state");
+	      const hardwareSetupStep = document.querySelector("#hardware-setup-step");
+	      const progressBluetooth = document.querySelector("#progress-bluetooth");
+	      const progressWifi = document.querySelector("#progress-wifi");
+	      const bluetoothSetupSection = document.querySelector("#bluetooth-setup-section");
+	      const wifiSetupSection = document.querySelector("#wifi-setup-section");
+	      const scanBluetooth = document.querySelector("#scan-bluetooth");
+	      const bluetoothSearchState = document.querySelector("#bluetooth-search-state");
+	      const bluetoothLoading = document.querySelector("#bluetooth-loading");
+	      const bluetoothDeviceList = document.querySelector("#bluetooth-device-list");
+	      const bluetoothFailed = document.querySelector("#bluetooth-failed");
+	      const scanWifi = document.querySelector("#scan-wifi");
+	      const wifiSearchState = document.querySelector("#wifi-search-state");
+	      const wifiLoading = document.querySelector("#wifi-loading");
+	      const wifiNetworkList = document.querySelector("#wifi-network-list");
+	      const wifiPasswordCard = document.querySelector("#wifi-password-card");
+	      const selectedWifiNameDisplay = document.querySelector("#selected-wifi-name");
+	      const wifiPassword = document.querySelector("#wifi-password");
+	      const wifiPasswordError = document.querySelector("#wifi-password-error");
+	      const wifiConfiguring = document.querySelector("#wifi-configuring");
+	      const wifiSuccess = document.querySelector("#wifi-success");
 	      let settingEditTarget = null;
 	      let deviceConnectionState = "unset";
 	      let bluetoothConnected = false;
 	      let bluetoothReturnView = "settings";
+	      let selectedBluetoothDevice = "";
+	      let selectedWifiName = "";
 
       function maskPhone(phone) {
         return phone.replace(/^(\d{3})\d{4}(\d{4})$/, "$1****$2");
@@ -1263,9 +1385,30 @@
 
 	      function openNativeBluetooth(returnView = "settings") {
 	        bluetoothReturnView = returnView;
-	        nativeBluetoothState.textContent = "未连接";
-	        nativeBluetoothConnect.textContent = "连接";
-	        nativeBluetoothConnect.disabled = false;
+	        selectedBluetoothDevice = "";
+	        selectedWifiName = "";
+	        bluetoothConnected = false;
+	        hardwareSetupStep.textContent = "蓝牙 1/2";
+	        progressBluetooth.classList.add("hardware-progress__item--active");
+	        progressBluetooth.classList.remove("hardware-progress__item--complete");
+	        progressWifi.classList.remove("hardware-progress__item--active", "hardware-progress__item--complete");
+	        bluetoothSetupSection.hidden = false;
+	        wifiSetupSection.hidden = true;
+	        bluetoothSearchState.hidden = false;
+	        bluetoothLoading.hidden = true;
+	        bluetoothDeviceList.hidden = true;
+	        bluetoothFailed.hidden = true;
+	        scanBluetooth.disabled = false;
+	        scanBluetooth.textContent = "搜索设备";
+	        wifiSearchState.hidden = false;
+	        wifiLoading.hidden = true;
+	        wifiNetworkList.hidden = true;
+	        wifiPasswordCard.hidden = true;
+	        wifiConfiguring.hidden = true;
+	        wifiSuccess.hidden = true;
+	        scanWifi.hidden = false;
+	        wifiPassword.value = "";
+	        wifiPasswordError.textContent = "";
 	        showView("bluetooth-native");
 	      }
 
@@ -1273,20 +1416,107 @@
 	        bluetoothConnected = isConnected;
 	      }
 
-	      function finishNativeBluetoothBinding() {
-	        nativeBluetoothState.textContent = "连接中...";
-	        nativeBluetoothConnect.textContent = "连接中";
-	        nativeBluetoothConnect.disabled = true;
+	      function searchNearbyBluetooth() {
+	        bluetoothSearchState.hidden = true;
+	        bluetoothDeviceList.hidden = true;
+	        bluetoothFailed.hidden = true;
+	        bluetoothLoading.hidden = false;
+	        scanBluetooth.disabled = true;
+	        scanBluetooth.textContent = "搜索中";
 	        window.setTimeout(() => {
-	          setBluetoothConnected(true);
-	          deviceNameDisplay.textContent = "白鸽会议记录仪 A01";
-	          applyDeviceConnectionState("connected");
-	          nativeBluetoothState.textContent = "已连接";
-	          nativeBluetoothConnect.textContent = "已连接";
-	          window.setTimeout(() => {
-	            showView(bluetoothReturnView);
-	          }, 650);
+	          bluetoothLoading.hidden = true;
+	          bluetoothDeviceList.hidden = false;
+	          scanBluetooth.disabled = false;
+	          scanBluetooth.textContent = "重新搜索";
+	          bluetoothDeviceList.querySelectorAll("[data-bluetooth-device]").forEach((row) => {
+	            row.classList.remove("native-device-row--connecting", "native-device-row--connected");
+	            row.querySelector("p").textContent = row.dataset.connectResult === "success" ? "信号强 · 可连接" : "信号较弱 · 可连接";
+	            const button = row.querySelector(".bluetooth-device-connect");
+	            button.disabled = false;
+	            button.textContent = "连接";
+	          });
 	        }, 900);
+	      }
+
+	      function connectBluetoothDevice(row) {
+	        const button = row.querySelector(".bluetooth-device-connect");
+	        bluetoothDeviceList.querySelectorAll(".bluetooth-device-connect").forEach((item) => item.disabled = true);
+	        row.classList.add("native-device-row--connecting");
+	        row.querySelector("p").textContent = "连接中...";
+	        button.innerHTML = '<span class="button-loading-spinner"></span>连接中';
+	        window.setTimeout(() => {
+	          if (row.dataset.connectResult === "failed") {
+	            bluetoothDeviceList.hidden = true;
+	            bluetoothFailed.hidden = false;
+	            return;
+	          }
+	          selectedBluetoothDevice = row.dataset.deviceName;
+	          setBluetoothConnected(true);
+	          row.classList.remove("native-device-row--connecting");
+	          row.classList.add("native-device-row--connected");
+	          row.querySelector("p").textContent = "已连接";
+	          button.innerHTML = "已连接";
+	          progressBluetooth.classList.remove("hardware-progress__item--active");
+	          progressBluetooth.classList.add("hardware-progress__item--complete");
+	          progressWifi.classList.add("hardware-progress__item--active");
+	          hardwareSetupStep.textContent = "Wi-Fi 2/2";
+	          document.querySelector("#bluetooth-connected-summary").textContent = `${selectedBluetoothDevice} 已连接，请继续配置 Wi-Fi。`;
+	          window.setTimeout(() => {
+	            bluetoothSetupSection.hidden = true;
+	            wifiSetupSection.hidden = false;
+	          }, 520);
+	        }, 1100);
+	      }
+
+	      function searchNearbyWifi() {
+	        wifiSearchState.hidden = true;
+	        wifiNetworkList.hidden = true;
+	        wifiPasswordCard.hidden = true;
+	        wifiLoading.hidden = false;
+	        wifiSuccess.hidden = true;
+	        scanWifi.disabled = true;
+	        scanWifi.textContent = "搜索中";
+	        window.setTimeout(() => {
+	          wifiLoading.hidden = true;
+	          wifiNetworkList.hidden = false;
+	          scanWifi.disabled = false;
+	          scanWifi.textContent = "重新搜索";
+	        }, 850);
+	      }
+
+	      function selectWifiNetwork(networkName) {
+	        selectedWifiName = networkName;
+	        selectedWifiNameDisplay.textContent = networkName;
+	        wifiNetworkList.hidden = true;
+	        wifiPasswordCard.hidden = false;
+	        wifiPassword.value = "";
+	        wifiPasswordError.textContent = "";
+	        window.setTimeout(() => wifiPassword.focus(), 80);
+	      }
+
+	      function configureSelectedWifi() {
+	        if (!selectedWifiName) {
+	          wifiPasswordError.textContent = "请先选择附近的 Wi-Fi。";
+	          return;
+	        }
+	        if (wifiPassword.value.length < 8) {
+	          wifiPasswordError.textContent = "Wi-Fi 密码至少需要 8 位。";
+	          wifiPassword.focus();
+	          return;
+	        }
+	        wifiPasswordError.textContent = "";
+	        wifiPasswordCard.hidden = true;
+	        scanWifi.hidden = true;
+	        wifiConfiguring.hidden = false;
+	        window.setTimeout(() => {
+	          wifiConfiguring.hidden = true;
+	          wifiSuccess.hidden = false;
+	          hardwareSetupStep.textContent = "配置完成";
+	          progressWifi.classList.remove("hardware-progress__item--active");
+	          progressWifi.classList.add("hardware-progress__item--complete");
+	          deviceNameDisplay.textContent = selectedBluetoothDevice || "白鸽会议记录仪 A01";
+	          applyDeviceConnectionState("connected");
+	        }, 1200);
 	      }
 
 	      editNickname.addEventListener("click", () => openSettingEditModal("nickname"));
@@ -1323,7 +1553,22 @@
 	      bluetoothNativeBack.addEventListener("click", () => {
 	        showView(bluetoothReturnView);
 	      });
-	      nativeBluetoothConnect.addEventListener("click", finishNativeBluetoothBinding);
+	      scanBluetooth.addEventListener("click", searchNearbyBluetooth);
+	      document.querySelector("#retry-bluetooth").addEventListener("click", searchNearbyBluetooth);
+	      bluetoothDeviceList.addEventListener("click", (event) => {
+	        const button = event.target.closest(".bluetooth-device-connect");
+	        if (button) connectBluetoothDevice(button.closest("[data-bluetooth-device]"));
+	      });
+	      scanWifi.addEventListener("click", searchNearbyWifi);
+	      wifiNetworkList.addEventListener("click", (event) => {
+	        const network = event.target.closest("[data-wifi-name]");
+	        if (network) selectWifiNetwork(network.dataset.wifiName);
+	      });
+	      document.querySelector("#change-wifi").addEventListener("click", () => {
+	        wifiPasswordCard.hidden = true;
+	        wifiNetworkList.hidden = false;
+	      });
+	      document.querySelector("#configure-wifi").addEventListener("click", configureSelectedWifi);
 	      applyDeviceConnectionState(deviceConnectionState);
 	      setBluetoothConnected(bluetoothConnected);
 
