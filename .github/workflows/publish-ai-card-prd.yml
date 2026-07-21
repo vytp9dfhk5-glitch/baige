@@ -1,0 +1,53 @@
+name: Publish AI card PRD issue
+
+on:
+  push:
+    branches: [ai-card-source]
+    paths:
+      - 'docs/PRD-白鸽在线AI电子名片.md'
+      - '.github/workflows/publish-ai-card-prd.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Create or update PRD issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE_TITLE: 'PRD: 白鸽在线 AI 电子名片完整需求说明'
+          PRD_FILE: 'docs/PRD-白鸽在线AI电子名片.md'
+        run: |
+          gh label create ready-for-agent \
+            --repo "$GH_REPO" \
+            --color 0E8A16 \
+            --description '需求已完整，可由研发 Agent 开始实施' \
+            --force
+
+          issue_number="$(
+            gh issue list --repo "$GH_REPO" --state all --limit 100 --json number,title |
+              jq -r --arg title "$ISSUE_TITLE" '.[] | select(.title == $title) | .number' |
+              head -n 1
+          )"
+
+          if [ -n "$issue_number" ]; then
+            gh issue edit "$issue_number" \
+              --repo "$GH_REPO" \
+              --body-file "$PRD_FILE" \
+              --add-label ready-for-agent
+            echo "Updated issue #$issue_number"
+          else
+            gh issue create \
+              --repo "$GH_REPO" \
+              --title "$ISSUE_TITLE" \
+              --body-file "$PRD_FILE" \
+              --label ready-for-agent
+          fi
