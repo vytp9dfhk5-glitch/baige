@@ -1,0 +1,29 @@
+<svg width="520" height="680" viewBox="0 0 520 680" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="25" y1="20" x2="500" y2="650" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D9E7FF"/><stop offset="1" stop-color="#8CB1FF"/>
+    </linearGradient>
+    <linearGradient id="suit" x1="175" y1="340" x2="410" y2="690" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#172849"/><stop offset="1" stop-color="#071329"/>
+    </linearGradient>
+    <linearGradient id="skin" x1="230" y1="115" x2="305" y2="322" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFDCC3"/><stop offset="1" stop-color="#E6AE8E"/>
+    </linearGradient>
+  </defs>
+  <rect width="520" height="680" rx="32" fill="url(#bg)"/>
+  <circle cx="425" cy="96" r="112" fill="#F6F9FF" fill-opacity=".35"/>
+  <circle cx="68" cy="558" r="156" fill="#5E8FF6" fill-opacity=".2"/>
+  <path d="M132 678c8-178 28-281 137-302 114-22 178 63 192 302H132Z" fill="url(#suit)"/>
+  <path d="m221 387 46 105 49-105-9-70h-79l-7 70Z" fill="url(#skin)"/>
+  <path d="m223 374 44 116-76-88 32-28ZM313 374l-46 116 81-88-35-28Z" fill="#F8FBFF"/>
+  <path d="m260 468-12 149h43l-17-149h-14Z" fill="#2868E6"/>
+  <path d="m250 442 17 47 17-47-17-19-17 19Z" fill="#3478F6"/>
+  <path d="M187 201c0-103 42-151 108-151 70 0 106 53 106 145l-15 90c-16 65-61 99-105 99-50 0-92-43-104-108l10-75Z" fill="url(#skin)"/>
+  <path d="M188 223c-22-99 18-183 102-183 82 0 125 62 106 173l-15-49c-26-7-52-24-77-49-18 31-60 57-116 65v43Z" fill="#13213D"/>
+  <path d="M190 201c-21-9-31 11-23 48 7 32 22 39 32 27l-9-75ZM395 201c21-9 31 11 23 48-7 32-22 39-32 27l9-75Z" fill="#E7B292"/>
+  <ellipse cx="240" cy="225" rx="8" ry="10" fill="#25324B"/><ellipse cx="342" cy="225" rx="8" ry="10" fill="#25324B"/>
+  <path d="M274 281c18 12 39 11 55-2" stroke="#A45D56" stroke-width="7" stroke-linecap="round"/>
+  <path d="M225 200c15-9 30-10 44-3M322 196c17-6 32-3 43 4" stroke="#17233A" stroke-width="8" stroke-linecap="round"/>
+  <path d="M292 221c-3 21-7 42-14 61 11 6 21 7 32 1" stroke="#CD8F73" stroke-width="5" stroke-linecap="round"/>
+  <path d="M133 678c4-118 8-209 75-273l59 85 59-85c67 42 109 129 135 273H133Z" stroke="#2E4166" stroke-width="4"/>
+</svg>

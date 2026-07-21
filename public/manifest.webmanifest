@@ -1,0 +1,9 @@
+{
+  "name": "白鸽在线 · 智能电子名片",
+  "short_name": "白鸽名片",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f7fb",
+  "theme_color": "#2f6bf2",
+  "icons": []
+}
