@@ -86,6 +86,7 @@ const defaultMembers = employeeDirectory.map(employee => ({
   role: employee.phone === PRIMARY_ADMIN_PHONE ? 'admin' : 'employee',
   status: 'active',
   cardValidUntil: defaultValidUntil(),
+  cardApprovalStatus: 'approved',
 }))
 
 const visitors = [
@@ -122,12 +123,25 @@ function validUntilAfterMonths(months) {
 }
 
 function normalizeMember(member) {
-  return {
+  const role = member.role || 'employee'
+  const normalized = {
     email: '',
     title: '',
-    cardValidUntil: defaultValidUntil(),
+    role,
+    status: 'active',
     ...member,
   }
+  return {
+    ...normalized,
+    cardValidUntil: role === 'broker' ? (normalized.cardValidUntil || '') : (normalized.cardValidUntil || defaultValidUntil()),
+    cardApprovalStatus: role === 'broker' ? (normalized.cardApprovalStatus || 'draft') : 'approved',
+  }
+}
+
+function roleLabel(role) {
+  if (role === 'admin') return '管理员'
+  if (role === 'broker') return '经纪人'
+  return '员工'
 }
 
 function isCardExpired(value) {
@@ -212,10 +226,14 @@ function OwnerApp() {
 
   const currentMember = session ? members.find(item => item.phone === session.phone) : null
   const isAdmin = currentMember?.role === 'admin'
+  const isEmployee = currentMember?.role === 'employee'
+  const isBroker = currentMember?.role === 'broker'
   const displayCard = mergeCard(card, fixedContent, currentMember)
   const cardExpired = Boolean(currentMember && isCardExpired(currentMember.cardValidUntil))
   const pendingTitleRequest = requests.find(item => item.phone === session?.phone && item.type === 'title_change' && item.status === 'pending')
   const pendingRenewalRequest = requests.find(item => item.phone === session?.phone && item.type === 'renewal' && item.status === 'pending')
+  const brokerApprovalState = isBroker ? (currentMember.cardApprovalStatus || 'draft') : 'approved'
+  const shareBlocked = Boolean(pendingTitleRequest || isBroker && brokerApprovalState !== 'approved')
   const editorInitial = currentMember ? {
     ...emptyCard,
     ...(card || {}),
@@ -237,18 +255,34 @@ function OwnerApp() {
       notify('职位变更审核中，管理员通过后才可对外分享')
       return
     }
+    if (isBroker && brokerApprovalState !== 'approved') {
+      notify(brokerApprovalState === 'rejected' ? '名片申请未通过，请修改后重新提交' : '经纪人名片审核通过后才可使用')
+      return
+    }
     setShareOpen(true)
   }
 
   const login = phone => {
-    const existing = members.find(item => item.phone === phone)
+    let existing = members.find(item => item.phone === phone)
     if (existing?.status === 'disabled') {
       notify('该账号已停用，请联系管理员')
       return
     }
     if (!existing) {
-      notify('该手机号不在员工清单中，请联系管理员导入')
-      return
+      existing = normalizeMember({
+        id: `broker-${phone}`,
+        phone,
+        name: '',
+        title: '',
+        email: '',
+        role: 'broker',
+        status: 'active',
+        cardValidUntil: '',
+        cardApprovalStatus: 'draft',
+      })
+      const nextMembers = [...members, existing]
+      localStorage.setItem(MEMBERS_KEY, JSON.stringify(nextMembers))
+      setMembers(nextMembers)
     }
     const next = { phone, loginAt: Date.now() }
     localStorage.setItem(SESSION_KEY, JSON.stringify(next))
@@ -256,15 +290,15 @@ function OwnerApp() {
     const savedCard = loadLocal(cardKey(phone), null)
     const hydratedCard = savedCard && existing ? {
       ...savedCard,
-      name: existing.name || savedCard.name,
-      title: existing.title || savedCard.title,
-      phone: existing.phone,
+      name: savedCard.name || existing.name,
+      title: existing.role === 'employee' ? (existing.title || savedCard.title) : (savedCard.title || existing.title),
+      phone: savedCard.phone || existing.phone,
       email: existing.email || savedCard.email,
     } : savedCard
     if (hydratedCard) localStorage.setItem(cardKey(phone), JSON.stringify(hydratedCard))
     setCard(hydratedCard)
     setTab('card')
-    notify('登录成功')
+    notify(existing.role === 'broker' && !savedCard ? '经纪人登录成功，请先完善个人信息' : '登录成功')
   }
 
   const logout = () => {
@@ -275,10 +309,10 @@ function OwnerApp() {
   }
 
   const saveCard = nextCard => {
-    const titleChanged = !isAdmin && nextCard.title.trim() !== (currentMember.title || '').trim()
+    const titleChanged = isEmployee && nextCard.title.trim() !== (currentMember.title || '').trim()
+    const brokerNeedsInitialApproval = isBroker && brokerApprovalState !== 'approved'
     const savedCard = {
       ...nextCard,
-      phone: currentMember.phone,
       title: titleChanged ? currentMember.title : nextCard.title,
       cardValidUntil: currentMember.cardValidUntil,
     }
@@ -288,7 +322,8 @@ function OwnerApp() {
       ...item,
       name: nextCard.name,
       email: nextCard.email,
-      title: isAdmin ? nextCard.title : item.title,
+      title: isAdmin || isBroker ? nextCard.title : item.title,
+      cardApprovalStatus: brokerNeedsInitialApproval ? 'pending' : item.cardApprovalStatus,
     } : item)
     localStorage.setItem(MEMBERS_KEY, JSON.stringify(nextMembers))
     setMembers(nextMembers)
@@ -311,21 +346,46 @@ function OwnerApp() {
       localStorage.setItem(REQUESTS_KEY, JSON.stringify(nextRequests))
       setRequests(nextRequests)
     }
+    if (brokerNeedsInitialApproval) {
+      const existingRequest = requests.find(item => item.phone === session.phone && item.type === 'broker_initial' && item.status === 'pending')
+      const request = {
+        id: existingRequest?.id || `broker-initial-${Date.now()}`,
+        type: 'broker_initial',
+        phone: session.phone,
+        memberId: currentMember.id,
+        role: 'broker',
+        name: nextCard.name,
+        requestedTitle: nextCard.title.trim(),
+        contactPhone: nextCard.phone.trim(),
+        submittedAt: Date.now(),
+        status: 'pending',
+      }
+      const nextRequests = existingRequest
+        ? requests.map(item => item.id === existingRequest.id ? request : item)
+        : [request, ...requests]
+      localStorage.setItem(REQUESTS_KEY, JSON.stringify(nextRequests))
+      setRequests(nextRequests)
+    }
     setEditorOpen(false)
     setTab('card')
-    notify(titleChanged ? '个人信息已保存，职位变更已提交管理员审批' : '名片生成成功')
+    notify(brokerNeedsInitialApproval ? '个人信息已保存，名片已提交管理员审核' : titleChanged ? '个人信息已保存，职位变更已提交管理员审批' : '名片生成成功')
   }
 
   const saveFixedContent = nextContent => {
     localStorage.setItem(FIXED_CONTENT_KEY, JSON.stringify(nextContent))
     setFixedContent(nextContent)
     setFixedEditorOpen(false)
-    notify('企业介绍已更新')
+    notify('企业配置已更新')
   }
 
   const saveMember = nextMember => {
     if (nextMember.phone === session.phone && (nextMember.role !== 'admin' || nextMember.status === 'disabled')) {
       notify('不能降级或停用当前管理员账号')
+      return
+    }
+    const previousMember = members.find(item => item.id === nextMember.id)
+    if (previousMember?.phone === session.phone && nextMember.phone !== session.phone) {
+      notify('不能在当前登录状态修改自己的登录手机号')
       return
     }
     const normalized = normalizeMember({ ...nextMember, id: nextMember.id || `employee-${Date.now()}` })
@@ -334,14 +394,27 @@ function OwnerApp() {
       : [...members, normalized]
     localStorage.setItem(MEMBERS_KEY, JSON.stringify(nextMembers))
     setMembers(nextMembers)
-    const savedCard = loadLocal(cardKey(normalized.phone), null)
+    const previousPhone = previousMember?.phone || normalized.phone
+    const savedCard = loadLocal(cardKey(previousPhone), null)
     if (savedCard) {
-      const syncedCard = {...savedCard, name: normalized.name, title: normalized.title, phone: normalized.phone, email: normalized.email, cardValidUntil: normalized.cardValidUntil}
+      const syncedCard = {
+        ...savedCard,
+        name: normalized.name || savedCard.name,
+        title: normalized.role === 'employee' || normalized.role === 'admin' ? normalized.title : savedCard.title,
+        email: normalized.email || savedCard.email,
+        cardValidUntil: normalized.cardValidUntil,
+      }
       localStorage.setItem(cardKey(normalized.phone), JSON.stringify(syncedCard))
+      if (previousPhone !== normalized.phone) localStorage.removeItem(cardKey(previousPhone))
       if (normalized.phone === session.phone) setCard(syncedCard)
     }
+    if (previousPhone !== normalized.phone) {
+      const nextRequests = requests.map(item => item.memberId === normalized.id || item.phone === previousPhone ? {...item, phone: normalized.phone} : item)
+      localStorage.setItem(REQUESTS_KEY, JSON.stringify(nextRequests))
+      setRequests(nextRequests)
+    }
     setMemberEditor(null)
-    notify(nextMember.id ? '员工信息已更新' : '员工已添加')
+    notify(nextMember.id ? '成员信息已更新' : '成员已添加')
   }
 
   const requestRenewal = () => {
@@ -351,7 +424,8 @@ function OwnerApp() {
       type: 'renewal',
       phone: session.phone,
       memberId: currentMember.id,
-      name: card?.name || currentMember.name || '员工',
+      role: currentMember.role,
+      name: card?.name || currentMember.name || roleLabel(currentMember.role),
       currentTitle: currentMember.title || '',
       submittedAt: Date.now(),
       status: 'pending',
@@ -372,8 +446,9 @@ function OwnerApp() {
     if (decision === 'approved') {
       const nextMembers = members.map(item => item.phone === request.phone ? {
         ...item,
-        title: request.type === 'title_change' ? request.requestedTitle : item.title,
+        title: request.type === 'title_change' || request.type === 'broker_initial' ? request.requestedTitle : item.title,
         cardValidUntil: validUntil,
+        cardApprovalStatus: request.type === 'broker_initial' ? 'approved' : item.cardApprovalStatus,
       } : item)
       localStorage.setItem(MEMBERS_KEY, JSON.stringify(nextMembers))
       setMembers(nextMembers)
@@ -381,12 +456,20 @@ function OwnerApp() {
       if (savedCard) {
         localStorage.setItem(cardKey(request.phone), JSON.stringify({
           ...savedCard,
-          title: request.type === 'title_change' ? request.requestedTitle : savedCard.title,
+          title: request.type === 'title_change' || request.type === 'broker_initial' ? request.requestedTitle : savedCard.title,
           cardValidUntil: validUntil,
         }))
       }
+    } else if (request.type === 'broker_initial') {
+      const nextMembers = members.map(item => item.phone === request.phone ? {
+        ...item,
+        cardApprovalStatus: 'rejected',
+        cardValidUntil: '',
+      } : item)
+      localStorage.setItem(MEMBERS_KEY, JSON.stringify(nextMembers))
+      setMembers(nextMembers)
     }
-    notify(decision === 'approved' ? '申请已通过，名片有效期已更新' : '申请已拒绝')
+    notify(decision === 'approved' ? '申请已通过，名片已按设置的有效期生效' : '申请已拒绝')
   }
 
   if (!session) {
@@ -397,18 +480,18 @@ function OwnerApp() {
 
   return <div className="app-shell">
     <main className="phone-stage">
-      <TopBar tab={tab} card={cardExpired ? null : displayCard} shareBlocked={Boolean(pendingTitleRequest)} onEdit={() => setEditorOpen(true)} onShare={openShare} />
+      <TopBar tab={tab} card={cardExpired ? null : displayCard} shareBlocked={shareBlocked} onEdit={() => setEditorOpen(true)} onShare={openShare} />
       <div className="screen">
-        {tab === 'card' && <CardPage card={displayCard} expired={cardExpired} pendingRenewal={pendingRenewalRequest} pendingTitle={pendingTitleRequest} member={currentMember} notify={notify} onCreate={() => setEditorOpen(true)} onRenew={requestRenewal} />}
-        {tab === 'visitors' && <VisitorPage card={cardExpired ? null : displayCard} onSelect={setVisitor} />}
-        {tab === 'admin' && isAdmin && <AdminPage fixedContent={fixedContent} members={members} requests={requests} onReview={reviewRequest} onEditFixed={() => setFixedEditorOpen(true)} onAddMember={() => setMemberEditor({ id: '', phone: '', name: '', title: '', email: '', cardValidUntil: defaultValidUntil(), role: 'employee', status: 'active' })} onEditMember={setMemberEditor} />}
+        {tab === 'card' && <CardPage card={displayCard} expired={cardExpired} pendingRenewal={pendingRenewalRequest} pendingTitle={pendingTitleRequest} brokerApprovalState={brokerApprovalState} member={currentMember} notify={notify} onCreate={() => setEditorOpen(true)} onEdit={() => setEditorOpen(true)} onRenew={requestRenewal} />}
+        {tab === 'visitors' && <VisitorPage card={cardExpired || isBroker && brokerApprovalState !== 'approved' ? null : displayCard} onSelect={setVisitor} />}
+        {tab === 'admin' && isAdmin && <AdminPage fixedContent={fixedContent} members={members} requests={requests} onReview={reviewRequest} onEditFixed={() => setFixedEditorOpen(true)} onAddMember={() => setMemberEditor({ id: '', phone: '', name: '', title: '', email: '', cardValidUntil: defaultValidUntil(), cardApprovalStatus: 'approved', role: 'employee', status: 'active' })} onEditMember={setMemberEditor} />}
         {tab === 'me' && <MePage session={session} card={card} member={currentMember} onLogout={logout} />}
       </div>
       <BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} />
-      {editorOpen && <CardEditor initial={editorInitial} titleApprovalRequired={!isAdmin} approvedTitle={currentMember.title || ''} pendingTitle={pendingTitleRequest?.requestedTitle || ''} onClose={() => setEditorOpen(false)} onSave={saveCard} />}
+      {editorOpen && <CardEditor initial={editorInitial} titleApprovalRequired={isEmployee} initialApprovalRequired={isBroker && brokerApprovalState !== 'approved'} approvalStatus={brokerApprovalState} loginPhone={session.phone} approvedTitle={currentMember.title || ''} pendingTitle={pendingTitleRequest?.requestedTitle || ''} onClose={() => setEditorOpen(false)} onSave={saveCard} />}
       {fixedEditorOpen && isAdmin && <FixedContentEditor initial={fixedContent} onClose={() => setFixedEditorOpen(false)} onSave={saveFixedContent} />}
       {memberEditor && isAdmin && <MemberEditor initial={memberEditor} members={members} onClose={() => setMemberEditor(null)} onSave={saveMember} />}
-      {shareOpen && displayCard && !pendingTitleRequest && <ShareSheet card={displayCard} onClose={() => setShareOpen(false)} notify={notify} />}
+      {shareOpen && displayCard && !shareBlocked && <ShareSheet card={displayCard} onClose={() => setShareOpen(false)} notify={notify} />}
       {visitor && <VisitorDetail visitor={visitor} onClose={() => setVisitor(null)} notify={notify} />}
       {toast && <div className="toast"><Check size={17}/>{toast}</div>}
     </main>
@@ -455,8 +538,8 @@ function DesktopRail({ card, role }) {
     <Brand />
     <p>白鸽在线智能电子名片</p>
     <div className="rail-stat"><strong>{card ? '已生成' : '待创建'}</strong><span>当前名片状态</span></div>
-    <div className="rail-stat"><strong>{role === 'admin' ? '管理员' : '员工'}</strong><span>当前账号角色</span></div>
-    <div className="rail-tip"><Sparkles size={20}/><b>使用建议</b><span>{role === 'admin' ? '统一维护企业介绍和员工角色，员工只需完善个人资料。' : card ? '企业介绍由管理员维护，你只需及时更新个人信息。' : '先完成个人资料，即可生成第一张电子名片。'}</span></div>
+    <div className="rail-stat"><strong>{roleLabel(role)}</strong><span>当前账号角色</span></div>
+    <div className="rail-tip"><Sparkles size={20}/><b>使用建议</b><span>{role === 'admin' ? '维护企业配置、成员角色与名片审批。' : role === 'broker' ? '首次填写个人信息后，需等待管理员审核名片。' : card ? '企业配置由管理员维护，你只需及时更新个人信息。' : '预设资料已带入，完善个人信息即可生成名片。'}</span></div>
   </aside>
 }
 
@@ -483,7 +566,7 @@ function LoginPage({ onLogin }) {
     </div>
     <section className="login-card">
       <h1>欢迎使用</h1>
-      <p>手机号验证后进入你的专属电子名片</p>
+      <p>员工自动匹配预设信息，经纪人可直接填写并申请名片</p>
       <label className="phone-input">
         <span>+86</span>
         <input inputMode="numeric" value={digits} onChange={e => setPhone(e.target.value)} placeholder="请输入手机号" aria-label="手机号" />
@@ -500,20 +583,32 @@ function LoginPage({ onLogin }) {
 }
 
 function TopBar({ tab, card, shareBlocked = false, onEdit, onShare }) {
-  const titles = { visitors: '访客雷达', admin: '角色与内容', me: '我的' }
+  const titles = { visitors: '访客雷达', admin: '企业与审批', me: '我的' }
   return <header className="topbar">
     {tab === 'card' ? <Brand /> : <div className="page-heading"><b>{titles[tab]}</b>{tab === 'visitors' && <span className="live"><i/>实时</span>}</div>}
-    {tab === 'card' && card ? <div className="topbar-actions"><button className="icon-button" onClick={onEdit} aria-label="编辑名片"><Edit3 size={18}/></button><button className={`icon-button share-top-button ${shareBlocked ? 'blocked' : ''}`} onClick={onShare} aria-label={shareBlocked ? '职位审核中，暂不可分享' : '分享名片'}><Share2 size={18}/></button></div> : <button className="icon-button passive" aria-label="更多"><MoreHorizontal size={22}/></button>}
+    {tab === 'card' && card ? <div className="topbar-actions"><button className="icon-button" onClick={onEdit} aria-label="编辑名片"><Edit3 size={18}/></button><button className={`icon-button share-top-button ${shareBlocked ? 'blocked' : ''}`} onClick={onShare} aria-label={shareBlocked ? '名片审核中，暂不可分享' : '分享名片'}><Share2 size={18}/></button></div> : <button className="icon-button passive" aria-label="更多"><MoreHorizontal size={22}/></button>}
   </header>
 }
 
-function CardPage({ card, expired, pendingRenewal, pendingTitle, member, notify, onCreate, onRenew }) {
+function CardPage({ card, expired, pendingRenewal, pendingTitle, brokerApprovalState, member, notify, onCreate, onEdit, onRenew }) {
   if (expired) return <ExpiredCard member={member} pending={pendingRenewal} onRenew={onRenew}/>
-  if (!card) return <EmptyCard onCreate={onCreate}/>
+  if (!card) return <EmptyCard role={member.role} onCreate={onCreate}/>
+  if (member.role === 'broker' && brokerApprovalState !== 'approved') return <BrokerApprovalCard state={brokerApprovalState} onEdit={onEdit}/>
   return <div className="card-page page-pad">
     <GeneratedCard card={card} notify={notify} />
     {pendingTitle && <section className="share-review-lock"><LockKeyhole size={16}/><div><b>职位变更审核中，暂不可对外分享</b><p>当前名片继续展示“{pendingTitle.currentTitle}”；管理员通过“{pendingTitle.requestedTitle}”后，分享功能会自动恢复。</p></div></section>}
   </div>
+}
+
+function BrokerApprovalCard({ state, onEdit }) {
+  const rejected = state === 'rejected'
+  return <div className="expired-card-page page-pad"><section className={`expired-card-state broker-review-state ${rejected ? 'rejected' : ''}`}>
+    <span>{rejected ? <X size={31}/> : <Clock3 size={31}/>}</span>
+    <small>{rejected ? '名片申请未通过' : '经纪人名片审核中'}</small>
+    <h1>{rejected ? '修改后可以重新提交' : '等待管理员审核'}</h1>
+    <p>{rejected ? '请检查并调整个人信息，重新保存后会再次进入审批中心。' : '管理员审核通过并设置有效期后，名片才可查看、分享和对外使用。'}</p>
+    <button className="button primary" onClick={onEdit}>{rejected ? '修改并重新提交' : '修改个人信息'}</button>
+  </section></div>
 }
 
 function ExpiredCard({ member, pending, onRenew }) {
@@ -535,14 +630,15 @@ function ExpiredPublicCard() {
   </section></div>
 }
 
-function EmptyCard({ onCreate }) {
+function EmptyCard({ role, onCreate }) {
+  const broker = role === 'broker'
   return <div className="empty-card-page page-pad">
     <section className="empty-card-hero">
       <div className="empty-card-art"><div/><UserRound size={44}/><Plus size={20}/></div>
       <span>还没有电子名片</span>
       <h1>完善你的个人信息</h1>
-      <p>填写姓名和职位即可生成；企业介绍会由系统自动合并。</p>
-      <button className="button primary create-card-button" onClick={onCreate}><Plus size={18}/>完善个人信息</button>
+      <p>{broker ? '填写个人信息后提交管理员审核；通过后自动拼接企业配置并生效。' : '员工预设信息已自动带入；完善其他内容后会自动拼接企业配置。'}</p>
+      <button className="button primary create-card-button" onClick={onCreate}><Plus size={18}/>{broker ? '填写并申请名片' : '完善个人信息'}</button>
     </section>
   </div>
 }
@@ -604,7 +700,7 @@ function normalMediaUrl(value) {
   return /^(https?:|blob:|data:|\/|\.\/)/i.test(value) ? value : `https://${value}`
 }
 
-function CardEditor({ initial, titleApprovalRequired = false, approvedTitle = '', pendingTitle = '', onClose, onSave }) {
+function CardEditor({ initial, titleApprovalRequired = false, initialApprovalRequired = false, approvalStatus = 'approved', loginPhone = '', approvedTitle = '', pendingTitle = '', onClose, onSave }) {
   const [form, setForm] = useState(() => ({...emptyCard, ...initial, addresses: initial.addresses || (initial.address ? [initial.address] : [])}))
   const [errors, setErrors] = useState({})
   const [activeAddress, setActiveAddress] = useState(null)
@@ -682,13 +778,15 @@ function CardEditor({ initial, titleApprovalRequired = false, approvedTitle = ''
           <Field label="职位" required error={errors.title}><input value={form.title} onChange={e => set('title', e.target.value)} placeholder="例如：董事长 / CEO"/></Field>
         </div>
         {titleApprovalRequired && <section className={`title-approval-tip ${pendingTitle ? 'pending' : ''}`}><ShieldCheck size={15}/><div><b>{pendingTitle ? '职位变更正在审核' : '职位变更需要管理员确认'}</b><p>{pendingTitle ? `当前名片仍展示“${approvedTitle || '未设置'}”，申请职位为“${pendingTitle}”。` : `当前已通过职位：${approvedTitle || '未设置'}。修改后会生成审批申请，通过后才更新名片。`}</p></div></section>}
+        {initialApprovalRequired && <section className={`title-approval-tip broker-approval-tip ${approvalStatus === 'pending' ? 'pending' : ''}`}><ShieldCheck size={15}/><div><b>{approvalStatus === 'rejected' ? '修改后将重新提交审核' : approvalStatus === 'pending' ? '经纪人名片正在审核' : '首次生成需要管理员审核'}</b><p>管理员通过并设置名片有效期后，才能查看、分享和对外使用。</p></div></section>}
 
         <EditorTitle title="联系方式" />
         <div className="form-grid editor-form">
-          <Field label="手机号"><input inputMode="tel" value={form.phone} readOnly={titleApprovalRequired} onChange={e => set('phone', e.target.value)} placeholder="请输入手机号"/></Field>
+          <Field label="手机号"><input inputMode="tel" value={form.phone} onChange={e => set('phone', e.target.value.replace(/[^\d+\-\s]/g, '').slice(0, 24))} placeholder="请输入名片展示手机号"/></Field>
           <Field label="邮箱"><input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="请输入邮箱"/></Field>
           <Field label="微信号" wide><input value={form.wechat} onChange={e => set('wechat', e.target.value)} placeholder="请输入微信号"/></Field>
         </div>
+        <section className="login-phone-tip"><Smartphone size={15}/><div><b>名片手机号可自行修改</b><p>当前登录手机号为 {loginPhone}；登录手机号由账号资料决定，如需变更请联系管理员在后台更新。</p></div></section>
 
         <EditorTitle title="个人简介" />
         <label className="textarea-label editor-textarea"><textarea rows="5" value={form.intro} onChange={e => set('intro', e.target.value)} placeholder="介绍你的经历、专长或理念；未填写则不展示该模块"/><small>{form.intro.length}/500</small></label>
@@ -699,7 +797,7 @@ function CardEditor({ initial, titleApprovalRequired = false, approvedTitle = ''
           {activeAddress === index && <div className="address-suggestions">{suggestionsFor(address).map(suggestion => <button key={suggestion} onClick={() => { updateAddress(index,suggestion); setActiveAddress(null) }}><MapPin size={13}/><span>{suggestion}</span></button>)}</div>}
         </div>)}</div>}
       </div>
-      <footer><button className="button secondary" onClick={onClose}>取消</button><button className="button primary" onClick={submit}><Check size={17}/>保存个人信息</button></footer>
+      <footer><button className="button secondary" onClick={onClose}>取消</button><button className="button primary" onClick={submit}><Check size={17}/>{initialApprovalRequired ? '保存并提交审核' : '保存个人信息'}</button></footer>
     </section>
   </div>
 }
@@ -756,7 +854,7 @@ function FixedContentEditor({ initial, onClose, onSave }) {
 
   return <div className="modal-layer editor-layer">
     <section className="modal-sheet card-editor-sheet">
-      <header><button onClick={onClose}><ArrowLeft size={21}/></button><h2>企业介绍配置</h2><button onClick={onClose}><X size={20}/></button></header>
+      <header><button onClick={onClose}><ArrowLeft size={21}/></button><h2>企业配置</h2><button onClick={onClose}><X size={20}/></button></header>
       <div className="modal-body card-editor-body">
         <EditorTitle title="公司信息" />
         <div className="form-grid editor-form">
@@ -790,20 +888,21 @@ function FixedContentEditor({ initial, onClose, onSave }) {
 }
 
 function MemberEditor({ initial, members, onClose, onSave }) {
-  const [form, setForm] = useState({...initial})
+  const [form, setForm] = useState(() => normalizeMember(initial))
   const [errors, setErrors] = useState({})
   const set = (key, value) => setForm(prev => ({...prev, [key]: value}))
   const primaryAdmin = form.phone === PRIMARY_ADMIN_PHONE
+  const broker = form.role === 'broker'
 
   const submit = () => {
     const phone = form.phone.replace(/\D/g, '').slice(0, 11)
     const nextErrors = {}
     if (!/^1\d{10}$/.test(phone)) nextErrors.phone = '请输入正确的11位手机号'
     if (members.some(item => item.phone === phone && item.id !== form.id)) nextErrors.phone = '该手机号已经添加'
-    if (!form.name.trim()) nextErrors.name = '请填写员工姓名'
-    if (!form.title.trim()) nextErrors.title = '请填写默认职位'
+    if (!broker && !form.name.trim()) nextErrors.name = '请填写成员姓名'
+    if (!broker && !form.title.trim()) nextErrors.title = '请填写默认职位'
     if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) nextErrors.email = '请填写正确的邮箱'
-    if (!form.cardValidUntil) nextErrors.cardValidUntil = '请设置名片有效期'
+    if (!broker && !form.cardValidUntil) nextErrors.cardValidUntil = '请设置名片有效期'
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length) return
     onSave({
@@ -814,53 +913,58 @@ function MemberEditor({ initial, members, onClose, onSave }) {
       email: form.email.trim(),
       cardValidUntil: form.cardValidUntil,
       role: primaryAdmin ? 'admin' : form.role,
+      cardApprovalStatus: broker ? (form.cardApprovalStatus || 'draft') : 'approved',
     })
   }
 
-  return <Modal title={initial.id ? '编辑员工预置信息' : '导入员工'} onClose={onClose} footer={<><button className="button secondary" onClick={onClose}>取消</button><button className="button primary" onClick={submit}><Check size={17}/>保存员工</button></>}>
-    <section className="member-editor-note"><UserCog size={20}/><div><b>员工预置信息</b><p>姓名、默认职位和手机号会在员工登录时自动带入；如配置邮箱也会同步填写。员工修改职位后需要管理员审批。</p></div></section>
+  return <Modal title={initial.id ? '编辑成员资料' : '添加成员'} onClose={onClose} footer={<><button className="button secondary" onClick={onClose}>取消</button><button className="button primary" onClick={submit}><Check size={17}/>保存成员</button></>}>
+    <section className="member-editor-note"><UserCog size={20}/><div><b>{broker ? '经纪人账号' : '员工预置信息'}</b><p>{broker ? '经纪人没有姓名和职位预设，首次填写个人信息并生成名片后进入管理员审核。' : '姓名、默认职位和登录手机号会在员工登录时自动带入；修改登录手机号只能由管理员在此更新。'}</p></div></section>
     <div className="form-grid editor-form member-form">
-      <Field label="手机号" required wide error={errors.phone}><input inputMode="numeric" value={form.phone} onChange={event => set('phone', event.target.value.replace(/\D/g, '').slice(0,11))} placeholder="员工登录手机号"/></Field>
-      <Field label="员工姓名" required error={errors.name}><input value={form.name} onChange={event => set('name', event.target.value)} placeholder="请输入员工姓名"/></Field>
-      <Field label="默认职位" required error={errors.title}><input value={form.title} onChange={event => set('title', event.target.value)} placeholder="员工名片默认职位"/></Field>
-      <Field label="邮箱" wide error={errors.email}><input type="email" value={form.email} onChange={event => set('email', event.target.value)} placeholder="员工企业邮箱"/></Field>
-      <Field label="名片有效期" required wide error={errors.cardValidUntil}><input type="date" value={form.cardValidUntil} onChange={event => set('cardValidUntil', event.target.value)}/></Field>
-      <Field label="角色"><select value={primaryAdmin ? 'admin' : form.role} disabled={primaryAdmin} onChange={event => set('role', event.target.value)}><option value="employee">员工</option><option value="admin">管理员</option></select></Field>
+      <Field label="登录手机号" required wide error={errors.phone}><input inputMode="numeric" value={form.phone} onChange={event => set('phone', event.target.value.replace(/\D/g, '').slice(0,11))} placeholder="用于登录和识别账号"/></Field>
+      <Field label="姓名" required={!broker} error={errors.name}><input value={form.name} onChange={event => set('name', event.target.value)} placeholder={broker ? '由经纪人自行填写' : '请输入员工姓名'}/></Field>
+      <Field label="默认职位" required={!broker} error={errors.title}><input value={form.title} onChange={event => set('title', event.target.value)} placeholder={broker ? '由经纪人自行填写' : '员工名片默认职位'}/></Field>
+      <Field label="邮箱" wide error={errors.email}><input type="email" value={form.email} onChange={event => set('email', event.target.value)} placeholder={broker ? '由经纪人自行填写' : '员工企业邮箱'}/></Field>
+      <Field label="名片有效期" required={!broker} wide error={errors.cardValidUntil}><input type="date" value={form.cardValidUntil} onChange={event => set('cardValidUntil', event.target.value)}/></Field>
+      <Field label="角色"><select value={primaryAdmin ? 'admin' : form.role} disabled={primaryAdmin} onChange={event => { const role = event.target.value; setForm(prev => ({...prev, role, cardValidUntil: role === 'broker' && !prev.id ? '' : prev.cardValidUntil || defaultValidUntil(), cardApprovalStatus: role === 'broker' ? (prev.role === 'broker' ? prev.cardApprovalStatus : 'draft') : 'approved'})) }}><option value="employee">员工</option><option value="broker">经纪人</option><option value="admin">管理员</option></select></Field>
       <Field label="账号状态"><select value={form.status} onChange={event => set('status', event.target.value)}><option value="active">正常</option><option value="disabled">已停用</option></select></Field>
     </div>
+    {broker && <p className="primary-admin-tip"><Clock3 size={13}/>经纪人有效期由管理员在首次名片审批时设置</p>}
     {primaryAdmin && <p className="primary-admin-tip"><LockKeyhole size={13}/>主管理员角色不可降级</p>}
   </Modal>
 }
 
 function AdminPage({ fixedContent, members, requests, onReview, onEditFixed, onAddMember, onEditMember }) {
-  const adminCount = members.filter(item => item.role === 'admin').length
+  const [showAllRequests, setShowAllRequests] = useState(false)
+  const brokerCount = members.filter(item => item.role === 'broker').length
   const pendingRequests = requests.filter(item => item.status === 'pending')
-  const shownRequests = [...requests].sort((a, b) => (a.status === 'pending' ? -1 : 1) - (b.status === 'pending' ? -1 : 1) || b.submittedAt - a.submittedAt).slice(0, 6)
+  const latestPendingRequests = [...pendingRequests].sort((a, b) => b.submittedAt - a.submittedAt).slice(0, 5)
+  const allRequests = [...requests].sort((a, b) => b.submittedAt - a.submittedAt)
+  const shownRequests = showAllRequests ? allRequests : latestPendingRequests
   return <div className="admin-page page-pad">
     <section className="admin-hero">
-      <div><span><ShieldCheck size={16}/>管理员控制台</span><h1>企业信息统一，职位变更审批</h1><p>员工预置信息、职位申请和名片有效期均由管理员维护。</p></div>
-      <div className="admin-summary"><div><b>{members.length}</b><span>全部账号</span></div><div><b>{adminCount}</b><span>管理员</span></div><div><b>{pendingRequests.length}</b><span>待审批</span></div></div>
+      <div><span><ShieldCheck size={16}/>管理员控制台</span><h1>企业配置与名片审批</h1><p>统一维护企业内容、成员身份、申请状态与名片有效期。</p></div>
+      <div className="admin-summary"><div><b>{members.length}</b><span>全部账号</span></div><div><b>{brokerCount}</b><span>经纪人</span></div><div><b>{pendingRequests.length}</b><span>待审批</span></div></div>
     </section>
 
     <section className="section-card fixed-control-card">
-      <div className="fixed-control-head"><span><Settings2 size={20}/></span><div><b>企业介绍配置</b><p>应用到所有管理员和员工名片</p></div><button onClick={onEditFixed}>配置</button></div>
+      <div className="fixed-control-head"><span><Settings2 size={20}/></span><div><b>企业配置</b><p>自动拼接到管理员、员工和经纪人名片</p></div><button onClick={onEditFixed}>配置</button></div>
       <div className="fixed-content-preview"><div><span>公司名称</span><b>{fixedContent.company}</b></div><div><span>公司介绍</span><b>{fixedContent.companyPdfName ? 'PDF已设置' : '未设置'}</b></div><div><span>公司风采</span><b>{fixedContent.videoUrl ? '已配置' : '待上传'}</b></div></div>
     </section>
 
-    <div className="member-list-title approval-list-title"><div><h2>申请审批</h2><span>{pendingRequests.length} 条待处理</span></div></div>
+    <div className="member-list-title approval-list-title"><div><h2>审批中心</h2><span>{showAllRequests ? `全部 ${requests.length} 条申请` : `最新 ${Math.min(pendingRequests.length, 5)} / ${pendingRequests.length} 条待处理`}</span></div>{requests.length > 0 && <button onClick={() => setShowAllRequests(value => !value)}>{showAllRequests ? '仅看待审批' : '查看更多'}</button>}</div>
     <section className="approval-list">
-      {shownRequests.length === 0 ? <div className="approval-empty"><ShieldCheck size={24}/><b>暂无申请信息</b><span>员工修改职位或名片到期后，申请会出现在这里。</span></div> : shownRequests.map(request => <ApprovalRow key={request.id} request={request} onReview={onReview}/>) }
+      {shownRequests.length === 0 ? <div className="approval-empty"><ShieldCheck size={24}/><b>{requests.length > 0 ? '暂无待审批申请' : '暂无申请信息'}</b><span>{requests.length > 0 ? '已审批记录请点击“查看更多”查看。' : '职位变更、经纪人首次名片或续期申请会出现在这里。'}</span></div> : shownRequests.map(request => <ApprovalRow key={request.id} request={request} onReview={onReview}/>) }
     </section>
 
-    <div className="member-list-title"><div><h2>员工与角色</h2><span>手机号对应唯一账号</span></div><button onClick={onAddMember}><Upload size={15}/>导入员工</button></div>
+    <div className="member-list-title"><div><h2>成员与角色</h2><span>登录手机号对应唯一账号</span></div><button onClick={onAddMember}><Plus size={15}/>添加成员</button></div>
     <section className="member-list section-card">
       {members.map(member => <button className="member-row" key={member.id} onClick={() => onEditMember(member)}>
         <span className={`member-avatar ${member.role}`}>{member.name ? member.name.slice(0,1) : <UserRound size={18}/>}</span>
-        <div><b>{member.name || '待完善姓名'}<em className={`role-chip ${member.role}`}>{member.role === 'admin' ? '管理员' : '员工'}</em></b><p>{member.phone.replace(/(\d{3})\d{4}(\d{4})/,'$1****$2')}{member.title ? ` · ${member.title}` : ''}</p><small>有效期至 {member.cardValidUntil}</small></div>
-        <span className={`status-dot ${member.status === 'disabled' || isCardExpired(member.cardValidUntil) ? 'disabled' : 'active'}`}>{member.status === 'disabled' ? '停用' : isCardExpired(member.cardValidUntil) ? '已过期' : '正常'}</span><ChevronRight size={16}/>
+        <div><b>{member.name || '待完善姓名'}<em className={`role-chip ${member.role}`}>{roleLabel(member.role)}</em></b><p>{member.phone.replace(/(\d{3})\d{4}(\d{4})/,'$1****$2')}{member.title ? ` · ${member.title}` : ''}</p><small>{member.cardValidUntil ? `有效期至 ${member.cardValidUntil}` : member.role === 'broker' ? '名片待首次审核' : '待设置有效期'}</small></div>
+        <span className={`status-dot ${member.status === 'disabled' || isCardExpired(member.cardValidUntil) || member.role === 'broker' && member.cardApprovalStatus !== 'approved' ? 'disabled' : 'active'}`}>{member.status === 'disabled' ? '停用' : member.role === 'broker' && member.cardApprovalStatus === 'pending' ? '审核中' : member.role === 'broker' && member.cardApprovalStatus === 'rejected' ? '未通过' : member.role === 'broker' && member.cardApprovalStatus !== 'approved' ? '待申请' : isCardExpired(member.cardValidUntil) ? '已过期' : '正常'}</span><ChevronRight size={16}/>
       </button>)}
     </section>
-    <section className="role-rule-note"><LockKeyhole size={17}/><div><b>权限边界</b><p>管理员导入员工资料、审批职位和续期；员工维护个人内容，职位通过审批后才会对外更新。</p></div></section>
+    <section className="role-rule-note"><LockKeyhole size={17}/><div><b>权限边界</b><p>员工使用清单预设信息，只有修改默认职位才需审批；经纪人无预设信息，首次生成名片必须审核，所有名片到期后均不可使用。</p></div></section>
   </div>
 }
 
@@ -868,9 +972,10 @@ function ApprovalRow({ request, onReview }) {
   const [validUntil, setValidUntil] = useState(request.validUntil || defaultValidUntil())
   const pending = request.status === 'pending'
   const statusText = request.status === 'approved' ? '已通过' : request.status === 'rejected' ? '已拒绝' : '待审批'
+  const typeText = request.type === 'title_change' ? '职位变更' : request.type === 'broker_initial' ? '经纪人名片' : '名片续期'
   return <article className={`approval-row ${request.status}`}>
-    <header><span className="approval-avatar">{request.name?.slice(0, 1) || '员'}</span><div><b>{request.name || '员工'}<em>{request.type === 'title_change' ? '职位变更' : '名片续期'}</em></b><p>{request.phone.replace(/(\d{3})\d{4}(\d{4})/,'$1****$2')} · {formatDateTime(request.submittedAt)}</p></div><strong>{statusText}</strong></header>
-    {request.type === 'title_change' ? <div className="title-change-line"><span>{request.currentTitle || '未设置'}</span><ChevronRight size={14}/><b>{request.requestedTitle}</b></div> : <p className="renewal-copy">原有效期已结束，员工申请重新启用电子名片。</p>}
+    <header><span className="approval-avatar">{request.name?.slice(0, 1) || (request.role === 'broker' ? '经' : '员')}</span><div><b>{request.name || roleLabel(request.role)}<em>{typeText}</em></b><p>{request.phone.replace(/(\d{3})\d{4}(\d{4})/,'$1****$2')} · {formatDateTime(request.submittedAt)}</p></div><strong>{statusText}</strong></header>
+    {request.type === 'title_change' ? <div className="title-change-line"><span>{request.currentTitle || '未设置'}</span><ChevronRight size={14}/><b>{request.requestedTitle}</b></div> : request.type === 'broker_initial' ? <p className="renewal-copy">首次申请名片 · {request.requestedTitle || '未填写职位'}{request.contactPhone ? ` · 展示手机号 ${request.contactPhone}` : ''}</p> : <p className="renewal-copy">原有效期已结束，{roleLabel(request.role)}申请重新启用电子名片。</p>}
     <label className="approval-validity"><span>名片有效期</span><input type="date" value={validUntil} disabled={!pending} onChange={event => setValidUntil(event.target.value)}/></label>
     {pending && <div className="validity-presets"><span>快捷设置</span>{[[3,'3个月'],[12,'1年'],[24,'2年']].map(([months,label]) => <button key={months} onClick={() => setValidUntil(validUntilAfterMonths(months))}>{label}</button>)}</div>}
     {pending && <div className="approval-actions"><button onClick={() => onReview(request.id, 'rejected', validUntil)}><X size={14}/>拒绝</button><button onClick={() => onReview(request.id, 'approved', validUntil)} disabled={!validUntil}><Check size={14}/>通过并生效</button></div>}
@@ -939,8 +1044,12 @@ function VisitorRow({ visitor, onClick }) {
 }
 
 function MePage({ session, card, member, onLogout }) {
+  const brokerState = member.role === 'broker' ? member.cardApprovalStatus || 'draft' : 'approved'
+  const cardStateText = member.role === 'broker' && brokerState !== 'approved'
+    ? brokerState === 'pending' ? '名片审核中，审核通过后可使用' : brokerState === 'rejected' ? '名片申请未通过，请修改后重新提交' : '等待填写个人信息并申请名片'
+    : isCardExpired(member.cardValidUntil) ? '名片已过期，请申请续期' : card ? `个人信息已完善 · 有效期至 ${member.cardValidUntil}` : `等待完善个人信息 · 有效期至 ${member.cardValidUntil}`
   return <div className="me-page page-pad">
-    <section className="account-panel"><div className="account-avatar">{card?.avatar ? <img src={card.avatar}/> : <UserRound size={25}/>}</div><div><h2>{card?.name || member.name || '未创建名片'}<em className={`account-role ${member.role}`}>{member.role === 'admin' ? '管理员' : '员工'}</em></h2><p>登录手机号：{session.phone.replace(/(\d{3})\d{4}(\d{4})/,'$1****$2')}</p><span>{isCardExpired(member.cardValidUntil) ? '名片已过期，请申请续期' : card ? `个人信息已完善 · 有效期至 ${member.cardValidUntil}` : `等待完善个人信息 · 有效期至 ${member.cardValidUntil}`}</span></div></section>
+    <section className="account-panel"><div className="account-avatar">{card?.avatar ? <img src={card.avatar}/> : <UserRound size={25}/>}</div><div><h2>{card?.name || member.name || '未创建名片'}<em className={`account-role ${member.role}`}>{roleLabel(member.role)}</em></h2><p>登录手机号：{session.phone.replace(/(\d{3})\d{4}(\d{4})/,'$1****$2')}</p><span>{cardStateText}</span></div></section>
     <button className="logout-button" onClick={onLogout}><LogOut size={17}/>退出登录</button>
   </div>
 }
