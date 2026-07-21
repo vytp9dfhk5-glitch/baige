@@ -317,6 +317,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .desktop-rail { display: none !important; }
 .topbar-actions { display: flex; align-items: center; gap: 7px; }
 .share-top-button { color: #fff; background: linear-gradient(135deg,#4b87fa,#2d6def); box-shadow: 0 7px 15px rgba(52,120,246,.22); }
+.share-top-button.blocked { color: #7f8ca0; background: #e7ebf1; box-shadow: none; }
 .code-input { height: 49px; display: grid; grid-template-columns: 1fr auto; align-items: center; margin-top: 10px; padding: 0 6px 0 14px; background: #f5f7fb; border: 1px solid #e6eaf1; border-radius: 14px; }
 .code-input input { min-width: 0; border: 0; outline: 0; background: transparent; font-size: 12px; letter-spacing: 1px; }
 .code-input button { min-width: 88px; height: 36px; color: #3478f6; background: #e8f0ff; border: 0; border-radius: 10px; font-size: 9px; font-weight: 700; }
@@ -352,6 +353,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .card-contact-add svg { flex: none; }
 .card-validity-bar { display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 10px; padding: 9px 12px; color: #557096; background: #edf4ff; border: 1px solid #dfeafa; border-radius: 12px; font-size: 8px; font-weight: 700; }
 .card-validity-bar svg { color: #3478f6; }
+.share-review-lock { display: flex; gap: 8px; margin-top: 10px; padding: 11px 12px; color: #8a651e; background: #fff7e8; border: 1px solid #f1dfb8; border-radius: 13px; }.share-review-lock > svg { flex: none; margin-top: 1px; }.share-review-lock b { font-size: 9px; }.share-review-lock p { margin: 3px 0 0; font-size: 7px; line-height: 1.55; }
 
 .expired-card-page { height: 100%; display: grid; place-items: center; }
 .expired-card-state { padding: 34px 24px; text-align: center; background: #fff; border: 1px solid #e8ecf2; border-radius: 22px; box-shadow: 0 14px 30px rgba(37,61,97,.08); }

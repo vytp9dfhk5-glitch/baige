@@ -7,12 +7,13 @@ import {
   Settings2, Smartphone, Sparkles, Trash2, TrendingUp, Upload,
   UserCog, UserRound, UsersRound, Video, X
 } from './icons'
+import { employeeDirectory } from './employeeData'
 import { addToContacts } from './vcard'
 
 const SESSION_KEY = 'baige-card-session-v2'
 const FIXED_CONTENT_KEY = 'baige-card-fixed-content-v3'
-const MEMBERS_KEY = 'baige-card-members-v2'
-const REQUESTS_KEY = 'baige-card-requests-v1'
+const MEMBERS_KEY = 'baige-card-members-v3'
+const REQUESTS_KEY = 'baige-card-requests-v2'
 const PRIMARY_ADMIN_PHONE = '18059880224'
 
 const emptyCard = {
@@ -78,9 +79,14 @@ const defaultFixedContent = {
   news: defaultNews,
 }
 
-const defaultMembers = [
-  { id: 'primary-admin', phone: PRIMARY_ADMIN_PHONE, name: '系统管理员', title: '', email: '', role: 'admin', status: 'active', cardValidUntil: defaultValidUntil() },
-]
+const defaultMembers = employeeDirectory.map(employee => ({
+  ...employee,
+  id: employee.phone === PRIMARY_ADMIN_PHONE ? 'primary-admin' : `directory-${employee.phone}`,
+  email: '',
+  role: employee.phone === PRIMARY_ADMIN_PHONE ? 'admin' : 'employee',
+  status: 'active',
+  cardValidUntil: defaultValidUntil(),
+}))
 
 const visitors = [
   { id: 1, wechatAuthorized: true, wechatName: '陈志远', avatar: '陈', color: '#3478f6', openTime: '今天 10:42', duration: '8分24秒', score: 92, visits: 4, content: '公司介绍', status: '重点关注', path: ['打开电子名片', '查看个人简介', '浏览公司介绍 4分12秒', '查看企业资讯'] },
@@ -188,11 +194,13 @@ function App() {
 }
 
 function OwnerApp() {
-  const initialSession = loadLocal(SESSION_KEY, null)
+  const initialMembers = loadLocal(MEMBERS_KEY, defaultMembers).map(normalizeMember)
+  const storedSession = loadLocal(SESSION_KEY, null)
+  const initialSession = storedSession && initialMembers.some(item => item.phone === storedSession.phone) ? storedSession : null
   const [session, setSession] = useState(initialSession)
   const [card, setCard] = useState(() => initialSession ? loadLocal(cardKey(initialSession.phone), null) : null)
   const [fixedContent, setFixedContent] = useState(() => ({...defaultFixedContent, ...loadLocal(FIXED_CONTENT_KEY, {})}))
-  const [members, setMembers] = useState(() => loadLocal(MEMBERS_KEY, defaultMembers).map(normalizeMember))
+  const [members, setMembers] = useState(initialMembers)
   const [requests, setRequests] = useState(() => loadLocal(REQUESTS_KEY, []))
   const [tab, setTab] = useState('card')
   const [editorOpen, setEditorOpen] = useState(false)
@@ -202,9 +210,7 @@ function OwnerApp() {
   const [visitor, setVisitor] = useState(null)
   const [toast, setToast] = useState('')
 
-  const currentMember = session ? members.find(item => item.phone === session.phone) || normalizeMember({
-    id: `employee-${session.phone}`, phone: session.phone, name: card?.name || '', title: card?.title || '', email: card?.email || '', role: session.phone === PRIMARY_ADMIN_PHONE ? 'admin' : 'employee', status: 'active'
-  }) : null
+  const currentMember = session ? members.find(item => item.phone === session.phone) : null
   const isAdmin = currentMember?.role === 'admin'
   const displayCard = mergeCard(card, fixedContent, currentMember)
   const cardExpired = Boolean(currentMember && isCardExpired(currentMember.cardValidUntil))
@@ -226,6 +232,13 @@ function OwnerApp() {
   }, [toast])
 
   const notify = text => setToast(text)
+  const openShare = () => {
+    if (pendingTitleRequest) {
+      notify('职位变更审核中，管理员通过后才可对外分享')
+      return
+    }
+    setShareOpen(true)
+  }
 
   const login = phone => {
     const existing = members.find(item => item.phone === phone)
@@ -234,9 +247,8 @@ function OwnerApp() {
       return
     }
     if (!existing) {
-      const nextMembers = [...members, normalizeMember({ id: `employee-${Date.now()}`, phone, name: '', title: '', email: '', role: phone === PRIMARY_ADMIN_PHONE ? 'admin' : 'employee', status: 'active' })]
-      setMembers(nextMembers)
-      localStorage.setItem(MEMBERS_KEY, JSON.stringify(nextMembers))
+      notify('该手机号不在员工清单中，请联系管理员导入')
+      return
     }
     const next = { phone, loginAt: Date.now() }
     localStorage.setItem(SESSION_KEY, JSON.stringify(next))
@@ -385,9 +397,9 @@ function OwnerApp() {
 
   return <div className="app-shell">
     <main className="phone-stage">
-      <TopBar tab={tab} card={cardExpired ? null : displayCard} onEdit={() => setEditorOpen(true)} onShare={() => setShareOpen(true)} />
+      <TopBar tab={tab} card={cardExpired ? null : displayCard} shareBlocked={Boolean(pendingTitleRequest)} onEdit={() => setEditorOpen(true)} onShare={openShare} />
       <div className="screen">
-        {tab === 'card' && <CardPage card={displayCard} expired={cardExpired} pendingRenewal={pendingRenewalRequest} member={currentMember} notify={notify} onCreate={() => setEditorOpen(true)} onRenew={requestRenewal} />}
+        {tab === 'card' && <CardPage card={displayCard} expired={cardExpired} pendingRenewal={pendingRenewalRequest} pendingTitle={pendingTitleRequest} member={currentMember} notify={notify} onCreate={() => setEditorOpen(true)} onRenew={requestRenewal} />}
         {tab === 'visitors' && <VisitorPage card={cardExpired ? null : displayCard} onSelect={setVisitor} />}
         {tab === 'admin' && isAdmin && <AdminPage fixedContent={fixedContent} members={members} requests={requests} onReview={reviewRequest} onEditFixed={() => setFixedEditorOpen(true)} onAddMember={() => setMemberEditor({ id: '', phone: '', name: '', title: '', email: '', cardValidUntil: defaultValidUntil(), role: 'employee', status: 'active' })} onEditMember={setMemberEditor} />}
         {tab === 'me' && <MePage session={session} card={card} member={currentMember} onLogout={logout} />}
@@ -396,7 +408,7 @@ function OwnerApp() {
       {editorOpen && <CardEditor initial={editorInitial} titleApprovalRequired={!isAdmin} approvedTitle={currentMember.title || ''} pendingTitle={pendingTitleRequest?.requestedTitle || ''} onClose={() => setEditorOpen(false)} onSave={saveCard} />}
       {fixedEditorOpen && isAdmin && <FixedContentEditor initial={fixedContent} onClose={() => setFixedEditorOpen(false)} onSave={saveFixedContent} />}
       {memberEditor && isAdmin && <MemberEditor initial={memberEditor} members={members} onClose={() => setMemberEditor(null)} onSave={saveMember} />}
-      {shareOpen && displayCard && <ShareSheet card={displayCard} onClose={() => setShareOpen(false)} notify={notify} />}
+      {shareOpen && displayCard && !pendingTitleRequest && <ShareSheet card={displayCard} onClose={() => setShareOpen(false)} notify={notify} />}
       {visitor && <VisitorDetail visitor={visitor} onClose={() => setVisitor(null)} notify={notify} />}
       {toast && <div className="toast"><Check size={17}/>{toast}</div>}
     </main>
@@ -487,19 +499,20 @@ function LoginPage({ onLogin }) {
   </div>
 }
 
-function TopBar({ tab, card, onEdit, onShare }) {
+function TopBar({ tab, card, shareBlocked = false, onEdit, onShare }) {
   const titles = { visitors: '访客雷达', admin: '角色与内容', me: '我的' }
   return <header className="topbar">
     {tab === 'card' ? <Brand /> : <div className="page-heading"><b>{titles[tab]}</b>{tab === 'visitors' && <span className="live"><i/>实时</span>}</div>}
-    {tab === 'card' && card ? <div className="topbar-actions"><button className="icon-button" onClick={onEdit} aria-label="编辑名片"><Edit3 size={18}/></button><button className="icon-button share-top-button" onClick={onShare} aria-label="分享名片"><Share2 size={18}/></button></div> : <button className="icon-button passive" aria-label="更多"><MoreHorizontal size={22}/></button>}
+    {tab === 'card' && card ? <div className="topbar-actions"><button className="icon-button" onClick={onEdit} aria-label="编辑名片"><Edit3 size={18}/></button><button className={`icon-button share-top-button ${shareBlocked ? 'blocked' : ''}`} onClick={onShare} aria-label={shareBlocked ? '职位审核中，暂不可分享' : '分享名片'}><Share2 size={18}/></button></div> : <button className="icon-button passive" aria-label="更多"><MoreHorizontal size={22}/></button>}
   </header>
 }
 
-function CardPage({ card, expired, pendingRenewal, member, notify, onCreate, onRenew }) {
+function CardPage({ card, expired, pendingRenewal, pendingTitle, member, notify, onCreate, onRenew }) {
   if (expired) return <ExpiredCard member={member} pending={pendingRenewal} onRenew={onRenew}/>
   if (!card) return <EmptyCard onCreate={onCreate}/>
   return <div className="card-page page-pad">
     <GeneratedCard card={card} notify={notify} />
+    {pendingTitle && <section className="share-review-lock"><LockKeyhole size={16}/><div><b>职位变更审核中，暂不可对外分享</b><p>当前名片继续展示“{pendingTitle.currentTitle}”；管理员通过“{pendingTitle.requestedTitle}”后，分享功能会自动恢复。</p></div></section>}
   </div>
 }
 
@@ -789,7 +802,7 @@ function MemberEditor({ initial, members, onClose, onSave }) {
     if (members.some(item => item.phone === phone && item.id !== form.id)) nextErrors.phone = '该手机号已经添加'
     if (!form.name.trim()) nextErrors.name = '请填写员工姓名'
     if (!form.title.trim()) nextErrors.title = '请填写默认职位'
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) nextErrors.email = '请填写正确的邮箱'
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) nextErrors.email = '请填写正确的邮箱'
     if (!form.cardValidUntil) nextErrors.cardValidUntil = '请设置名片有效期'
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length) return
@@ -805,12 +818,12 @@ function MemberEditor({ initial, members, onClose, onSave }) {
   }
 
   return <Modal title={initial.id ? '编辑员工预置信息' : '导入员工'} onClose={onClose} footer={<><button className="button secondary" onClick={onClose}>取消</button><button className="button primary" onClick={submit}><Check size={17}/>保存员工</button></>}>
-    <section className="member-editor-note"><UserCog size={20}/><div><b>员工预置信息</b><p>姓名、默认职位、手机号和邮箱会在员工登录时自动带入；员工修改职位后需要管理员审批。</p></div></section>
+    <section className="member-editor-note"><UserCog size={20}/><div><b>员工预置信息</b><p>姓名、默认职位和手机号会在员工登录时自动带入；如配置邮箱也会同步填写。员工修改职位后需要管理员审批。</p></div></section>
     <div className="form-grid editor-form member-form">
       <Field label="手机号" required wide error={errors.phone}><input inputMode="numeric" value={form.phone} onChange={event => set('phone', event.target.value.replace(/\D/g, '').slice(0,11))} placeholder="员工登录手机号"/></Field>
       <Field label="员工姓名" required error={errors.name}><input value={form.name} onChange={event => set('name', event.target.value)} placeholder="请输入员工姓名"/></Field>
       <Field label="默认职位" required error={errors.title}><input value={form.title} onChange={event => set('title', event.target.value)} placeholder="员工名片默认职位"/></Field>
-      <Field label="邮箱" required wide error={errors.email}><input type="email" value={form.email} onChange={event => set('email', event.target.value)} placeholder="员工企业邮箱"/></Field>
+      <Field label="邮箱" wide error={errors.email}><input type="email" value={form.email} onChange={event => set('email', event.target.value)} placeholder="员工企业邮箱"/></Field>
       <Field label="名片有效期" required wide error={errors.cardValidUntil}><input type="date" value={form.cardValidUntil} onChange={event => set('cardValidUntil', event.target.value)}/></Field>
       <Field label="角色"><select value={primaryAdmin ? 'admin' : form.role} disabled={primaryAdmin} onChange={event => set('role', event.target.value)}><option value="employee">员工</option><option value="admin">管理员</option></select></Field>
       <Field label="账号状态"><select value={form.status} onChange={event => set('status', event.target.value)}><option value="active">正常</option><option value="disabled">已停用</option></select></Field>
