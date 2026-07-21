@@ -4,10 +4,14 @@ import {
   Clock3, Copy, Edit3, ExternalLink, Eye, Flame, Home, ImageIcon,
   Lightbulb, LockKeyhole, LogOut, Mail, MapPin, MessageCircle,
   MoreHorizontal, Newspaper, Phone, Plus, Share2, ShieldCheck,
-  Smartphone, Sparkles, Trash2, TrendingUp, Upload, UserRound, Video, X
+  Settings2, Smartphone, Sparkles, Trash2, TrendingUp, Upload,
+  UserCog, UserRound, UsersRound, Video, X
 } from './icons'
 
 const SESSION_KEY = 'baige-card-session-v2'
+const FIXED_CONTENT_KEY = 'baige-card-fixed-content-v1'
+const MEMBERS_KEY = 'baige-card-members-v1'
+const PRIMARY_ADMIN_PHONE = '18650111999'
 
 const emptyCard = {
   avatar: '', name: '', title: '', company: '', address: '', phone: '',
@@ -35,6 +39,20 @@ const publicCard = {
   news: [],
 }
 
+const defaultFixedContent = {
+  company: publicCard.company,
+  address: publicCard.address,
+  businesses: publicCard.businesses,
+  videoUrl: '',
+  news: [],
+}
+
+const defaultMembers = [
+  { id: 'admin-tjb', phone: PRIMARY_ADMIN_PHONE, name: '涂锦波', title: '董事长 / CEO', role: 'admin', status: 'active' },
+  { id: 'member-zhang', phone: '13800138000', name: '张敏', title: '副总裁', role: 'member', status: 'active' },
+  { id: 'member-li', phone: '13900139000', name: '李晨', title: '业务总监', role: 'member', status: 'active' },
+]
+
 const visitors = [
   { id: 1, name: '陈志远', company: '海辰保险科技', role: '采购总监', avatar: '陈', color: '#3478f6', time: '10:42', duration: '8分24秒', score: 92, visits: 4, content: '风险治理平台', status: '重点关注', path: ['打开电子名片', '查看个人简介', '浏览风险治理平台 4分12秒', '点击联系电话'] },
   { id: 2, name: '刘雯', company: '启明金融科技', role: '运营负责人', avatar: '刘', color: '#8b5cf6', time: '09:18', duration: '5分06秒', score: 81, visits: 2, content: 'MaaS 模型平台', status: '持续关注', path: ['微信分享进入', '查看 MaaS 模型平台', '浏览介绍视频 2分03秒', '再次打开名片'] },
@@ -54,6 +72,18 @@ function loadLocal(key, fallback) {
 
 function cardKey(phone) { return `baige-card-v2:${phone}` }
 
+function mergeCard(personal, fixedContent) {
+  if (!personal) return null
+  return {
+    ...personal,
+    company: fixedContent.company,
+    address: fixedContent.address,
+    businesses: fixedContent.businesses,
+    videoUrl: fixedContent.videoUrl,
+    news: fixedContent.news,
+  }
+}
+
 function App() {
   const publicView = new URLSearchParams(window.location.search).get('view') === 'visitor'
   return publicView ? <PublicCardView card={publicCard} /> : <OwnerApp />
@@ -63,11 +93,21 @@ function OwnerApp() {
   const initialSession = loadLocal(SESSION_KEY, null)
   const [session, setSession] = useState(initialSession)
   const [card, setCard] = useState(() => initialSession ? loadLocal(cardKey(initialSession.phone), null) : null)
+  const [fixedContent, setFixedContent] = useState(() => loadLocal(FIXED_CONTENT_KEY, defaultFixedContent))
+  const [members, setMembers] = useState(() => loadLocal(MEMBERS_KEY, defaultMembers))
   const [tab, setTab] = useState('card')
   const [editorOpen, setEditorOpen] = useState(false)
+  const [fixedEditorOpen, setFixedEditorOpen] = useState(false)
+  const [memberEditor, setMemberEditor] = useState(null)
   const [shareOpen, setShareOpen] = useState(false)
   const [visitor, setVisitor] = useState(null)
   const [toast, setToast] = useState('')
+
+  const currentMember = session ? members.find(item => item.phone === session.phone) || {
+    id: `member-${session.phone}`, phone: session.phone, name: card?.name || '', title: card?.title || '', role: session.phone === PRIMARY_ADMIN_PHONE ? 'admin' : 'member', status: 'active'
+  } : null
+  const isAdmin = currentMember?.role === 'admin'
+  const displayCard = mergeCard(card, fixedContent)
 
   useEffect(() => {
     if (!toast) return
@@ -78,6 +118,16 @@ function OwnerApp() {
   const notify = text => setToast(text)
 
   const login = phone => {
+    const existing = members.find(item => item.phone === phone)
+    if (existing?.status === 'disabled') {
+      notify('该账号已停用，请联系管理员')
+      return
+    }
+    if (!existing) {
+      const nextMembers = [...members, { id: `member-${Date.now()}`, phone, name: '', title: '', role: phone === PRIMARY_ADMIN_PHONE ? 'admin' : 'member', status: 'active' }]
+      setMembers(nextMembers)
+      localStorage.setItem(MEMBERS_KEY, JSON.stringify(nextMembers))
+    }
     const next = { phone, loginAt: Date.now() }
     localStorage.setItem(SESSION_KEY, JSON.stringify(next))
     setSession(next)
@@ -96,32 +146,61 @@ function OwnerApp() {
   const saveCard = nextCard => {
     localStorage.setItem(cardKey(session.phone), JSON.stringify(nextCard))
     setCard(nextCard)
+    const nextMembers = members.map(item => item.phone === session.phone ? {...item, name: nextCard.name, title: nextCard.title} : item)
+    localStorage.setItem(MEMBERS_KEY, JSON.stringify(nextMembers))
+    setMembers(nextMembers)
     setEditorOpen(false)
     setTab('card')
     notify('名片生成成功')
+  }
+
+  const saveFixedContent = nextContent => {
+    localStorage.setItem(FIXED_CONTENT_KEY, JSON.stringify(nextContent))
+    setFixedContent(nextContent)
+    setFixedEditorOpen(false)
+    notify('固定展示内容已更新')
+  }
+
+  const saveMember = nextMember => {
+    if (nextMember.phone === session.phone && (nextMember.role !== 'admin' || nextMember.status === 'disabled')) {
+      notify('不能降级或停用当前管理员账号')
+      return
+    }
+    const normalized = { ...nextMember, id: nextMember.id || `member-${Date.now()}` }
+    const nextMembers = members.some(item => item.id === normalized.id)
+      ? members.map(item => item.id === normalized.id ? normalized : item)
+      : [...members, normalized]
+    localStorage.setItem(MEMBERS_KEY, JSON.stringify(nextMembers))
+    setMembers(nextMembers)
+    setMemberEditor(null)
+    notify(nextMember.id ? '成员信息已更新' : '成员已添加')
   }
 
   if (!session) {
     return <div className="app-shell login-shell">
       <LoginRail />
       <main className="phone-stage login-stage"><LoginPage onLogin={login} /></main>
+      {toast && <div className="toast"><Check size={17}/>{toast}</div>}
     </div>
   }
 
   return <div className="app-shell">
-    <DesktopRail card={card} />
+    <DesktopRail card={displayCard} role={currentMember.role} />
     <main className="phone-stage">
-      <TopBar tab={tab} card={card} onEdit={() => setEditorOpen(true)} />
+      <TopBar tab={tab} card={displayCard} onEdit={() => setEditorOpen(true)} />
       <div className="screen">
-        {tab === 'card' && <CardPage card={card} notify={notify} onCreate={() => setEditorOpen(true)} onEdit={() => setEditorOpen(true)} onShare={() => setShareOpen(true)} />}
-        {tab === 'visitors' && <VisitorPage card={card} onSelect={setVisitor} />}
-        {tab === 'me' && <MePage session={session} card={card} onEdit={() => setEditorOpen(true)} onShare={() => setShareOpen(true)} onLogout={logout} notify={notify} />}
+        {tab === 'card' && <CardPage card={displayCard} notify={notify} onCreate={() => setEditorOpen(true)} onEdit={() => setEditorOpen(true)} onShare={() => setShareOpen(true)} />}
+        {tab === 'visitors' && <VisitorPage card={displayCard} onSelect={setVisitor} />}
+        {tab === 'admin' && isAdmin && <AdminPage fixedContent={fixedContent} members={members} onEditFixed={() => setFixedEditorOpen(true)} onAddMember={() => setMemberEditor({ id: '', phone: '', name: '', title: '', role: 'member', status: 'active' })} onEditMember={setMemberEditor} />}
+        {tab === 'me' && <MePage session={session} card={card} member={currentMember} onEdit={() => setEditorOpen(true)} onShare={() => setShareOpen(true)} onLogout={logout} notify={notify} />}
       </div>
-      <BottomNav tab={tab} setTab={setTab} />
+      <BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} />
     </main>
 
-    {editorOpen && <CardEditor initial={card || emptyCard} onClose={() => setEditorOpen(false)} onSave={saveCard} />}
-    {shareOpen && card && <ShareSheet card={card} onClose={() => setShareOpen(false)} notify={notify} />}
+    {editorOpen && <CardEditor initial={card || {...emptyCard, name: currentMember.name || '', title: currentMember.title || ''}} fixedContent={fixedContent} onClose={() => setEditorOpen(false)} onSave={saveCard} />}
+    {fixedEditorOpen && isAdmin && <FixedContentEditor initial={fixedContent} onClose={() => setFixedEditorOpen(false)} onSave={saveFixedContent} />}
+    {memberEditor && isAdmin && <MemberEditor initial={memberEditor} members={members} onClose={() => setMemberEditor(null)} onSave={saveMember} />}
+    {shareOpen && displayCard && <ShareSheet card={displayCard} onClose={() => setShareOpen(false)} notify={notify} />}
     {visitor && <VisitorDetail visitor={visitor} onClose={() => setVisitor(null)} notify={notify} />}
     {toast && <div className="toast"><Check size={17}/>{toast}</div>}
   </div>
@@ -171,13 +250,13 @@ function LoginRail() {
   </aside>
 }
 
-function DesktopRail({ card }) {
+function DesktopRail({ card, role }) {
   return <aside className="desktop-rail">
     <Brand />
     <p>白鸽在线智能电子名片</p>
     <div className="rail-stat"><strong>{card ? '已生成' : '待创建'}</strong><span>当前名片状态</span></div>
-    <div className="rail-stat"><strong>24</strong><span>今日名片访问</span></div>
-    <div className="rail-tip"><Sparkles size={20}/><b>使用建议</b><span>{card ? '保持个人信息与核心业务及时更新，让每次分享都传递准确内容。' : '先完成基础资料，即可生成第一张电子名片。'}</span></div>
+    <div className="rail-stat"><strong>{role === 'admin' ? '管理员' : '成员'}</strong><span>当前账号角色</span></div>
+    <div className="rail-tip"><Sparkles size={20}/><b>使用建议</b><span>{role === 'admin' ? '统一维护公司展示内容和成员权限，成员只需完善个人资料。' : card ? '公司统一内容由管理员维护，你只需及时更新个人信息。' : '先完成个人资料，即可生成第一张电子名片。'}</span></div>
   </aside>
 }
 
@@ -208,7 +287,7 @@ function LoginPage({ onLogin }) {
 }
 
 function TopBar({ tab, card, onEdit }) {
-  const titles = { visitors: '访客雷达', me: '我的' }
+  const titles = { visitors: '访客雷达', admin: '角色与内容', me: '我的' }
   return <header className="topbar">
     {tab === 'card' ? <Brand /> : <div className="page-heading"><b>{titles[tab]}</b>{tab === 'visitors' && <span className="live"><i/>实时</span>}</div>}
     {tab === 'card' && card ? <button className="icon-button" onClick={onEdit} aria-label="编辑名片"><Edit3 size={19}/></button> : <button className="icon-button passive" aria-label="更多"><MoreHorizontal size={22}/></button>}
@@ -218,7 +297,7 @@ function TopBar({ tab, card, onEdit }) {
 function CardPage({ card, notify, onCreate, onEdit, onShare }) {
   if (!card) return <EmptyCard onCreate={onCreate}/>
   return <div className="card-page page-pad">
-    <GeneratedCard card={card} notify={notify} onEdit={onEdit} onShare={onShare}/>
+    <GeneratedCard card={card} notify={notify} onEdit={onEdit} onShare={onShare} fixedLocked />
   </div>
 }
 
@@ -227,20 +306,20 @@ function EmptyCard({ onCreate }) {
     <section className="empty-card-hero">
       <div className="empty-card-art"><div/><UserRound size={44}/><Plus size={20}/></div>
       <span>还没有电子名片</span>
-      <h1>创建你的第一张名片</h1>
-      <p>填写基础信息即可生成；没有填写的内容将自动隐藏，不会出现空模块。</p>
-      <button className="button primary create-card-button" onClick={onCreate}><Plus size={18}/>添加名片</button>
+      <h1>完善你的个人信息</h1>
+      <p>填写姓名和职位即可生成；公司统一内容会由系统自动合并。</p>
+      <button className="button primary create-card-button" onClick={onCreate}><Plus size={18}/>完善个人信息</button>
     </section>
     <section className="creation-guide">
       <h2>三步完成</h2>
-      <div><i>1</i><span><b>填写身份信息</b><small>姓名、职位、公司名称</small></span></div>
-      <div><i>2</i><span><b>丰富名片内容</b><small>头像、联系方式、业务、视频与资讯</small></span></div>
+      <div><i>1</i><span><b>填写个人信息</b><small>头像、姓名、职位与联系方式</small></span></div>
+      <div><i>2</i><span><b>合并统一内容</b><small>公司信息与核心业务由管理员维护</small></span></div>
       <div><i>3</i><span><b>生成并发送</b><small>一键分享给微信联系人</small></span></div>
     </section>
   </div>
 }
 
-function GeneratedCard({ card, notify, onEdit, onShare, readonly = false, showStats = false }) {
+function GeneratedCard({ card, notify, onEdit, onShare, readonly = false, showStats = false, fixedLocked = false }) {
   const actions = [
     card.phone && { key: 'phone', icon: <Phone/>, label: '打电话', tone: 'amber', action: () => { window.location.href = `tel:${card.phone}` } },
     card.wechat && { key: 'wechat', icon: <MessageCircle/>, label: '加微信', tone: 'green', action: () => notify(`微信号：${card.wechat}`) },
@@ -279,7 +358,7 @@ function GeneratedCard({ card, notify, onEdit, onShare, readonly = false, showSt
     </section>}
 
     {businesses.length > 0 && <section className="section-card content-section generated-section">
-      <div className="section-head"><h2>公司核心业务</h2>{!readonly && <button className="manage-content" onClick={onEdit}><Edit3 size={13}/>编辑</button>}</div>
+      <div className="section-head"><h2>公司核心业务</h2>{!readonly && !fixedLocked && <button className="manage-content" onClick={onEdit}><Edit3 size={13}/>编辑</button>}{!readonly && fixedLocked && <span className="fixed-label"><LockKeyhole size={11}/>统一配置</span>}</div>
       <div className="content-grid">{businesses.map((item, index) => <BusinessCard key={item.id} item={item} index={index}/>)}</div>
     </section>}
 
@@ -327,16 +406,12 @@ function BusinessCard({ item, index }) {
   </article>
 }
 
-function CardEditor({ initial, onClose, onSave }) {
-  const [form, setForm] = useState(() => ({...emptyCard, ...initial, businesses: initial.businesses || [], news: initial.news || []}))
+function CardEditor({ initial, fixedContent, onClose, onSave }) {
+  const [form, setForm] = useState(() => ({...emptyCard, ...initial}))
   const [errors, setErrors] = useState({})
   const fileRef = useRef(null)
 
   const set = (key, value) => setForm(prev => ({...prev, [key]: value}))
-  const addBusiness = () => set('businesses', [...form.businesses, {id: Date.now(), title:'', desc:'', short:''}])
-  const updateBusiness = (id, key, value) => set('businesses', form.businesses.map(x => x.id === id ? {...x, [key]: value} : x))
-  const addNews = () => set('news', [...form.news, {id: Date.now(), title:'', url:''}])
-  const updateNews = (id, key, value) => set('news', form.news.map(x => x.id === id ? {...x, [key]: value} : x))
 
   const uploadAvatar = file => {
     if (!file) return
@@ -362,14 +437,16 @@ function CardEditor({ initial, onClose, onSave }) {
     const nextErrors = {}
     if (!form.name.trim()) nextErrors.name = '请填写姓名'
     if (!form.title.trim()) nextErrors.title = '请填写职位'
-    if (!form.company.trim()) nextErrors.company = '请填写公司名称'
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length) return
     onSave({
-      ...form,
-      name: form.name.trim(), title: form.title.trim(), company: form.company.trim(),
-      businesses: form.businesses.filter(x => x.title.trim()),
-      news: form.news.filter(x => x.title.trim())
+      avatar: form.avatar,
+      name: form.name.trim(),
+      title: form.title.trim(),
+      phone: form.phone.trim(),
+      email: form.email.trim(),
+      wechat: form.wechat.trim(),
+      intro: form.intro.trim(),
     })
   }
 
@@ -383,12 +460,10 @@ function CardEditor({ initial, onClose, onSave }) {
           <input ref={fileRef} hidden type="file" accept="image/*" onChange={e => uploadAvatar(e.target.files?.[0])}/>
         </section>
 
-        <EditorTitle title="基础信息" />
+        <EditorTitle title="个人基础信息" />
         <div className="form-grid editor-form">
           <Field label="姓名" required error={errors.name}><input value={form.name} onChange={e => set('name', e.target.value)} placeholder="请输入姓名"/></Field>
           <Field label="职位" required error={errors.title}><input value={form.title} onChange={e => set('title', e.target.value)} placeholder="例如：董事长 / CEO"/></Field>
-          <Field label="公司名称" required wide error={errors.company}><input value={form.company} onChange={e => set('company', e.target.value)} placeholder="请输入公司全称"/></Field>
-          <Field label="公司地址" wide><input value={form.address} onChange={e => set('address', e.target.value)} placeholder="未填写则不展示地址"/></Field>
         </div>
 
         <EditorTitle title="联系方式" />
@@ -401,20 +476,13 @@ function CardEditor({ initial, onClose, onSave }) {
         <EditorTitle title="个人简介" />
         <label className="textarea-label editor-textarea"><textarea rows="5" value={form.intro} onChange={e => set('intro', e.target.value)} placeholder="介绍你的经历、专长或理念；未填写则不展示该模块"/><small>{form.intro.length}/500</small></label>
 
-        <EditorTitle title="公司核心业务" action={<button onClick={addBusiness}><Plus size={14}/>添加业务</button>} />
-        {form.businesses.length === 0 ? <AddEmpty text="还没有业务内容" onClick={addBusiness}/> : <div className="repeat-editor-list">{form.businesses.map((item, i) => <div className="repeat-editor business-editor" key={item.id}>
-          <i>{i + 1}</i><div><input value={item.title} onChange={e => updateBusiness(item.id,'title',e.target.value)} placeholder="业务名称"/><input value={item.desc} onChange={e => updateBusiness(item.id,'desc',e.target.value)} placeholder="业务简介"/></div><button onClick={() => set('businesses', form.businesses.filter(x => x.id !== item.id))}><Trash2 size={15}/></button>
-        </div>)}</div>}
-
-        <EditorTitle title="视频链接" />
-        <label className="single-editor-input"><Video size={17}/><input value={form.videoUrl} onChange={e => set('videoUrl', e.target.value)} placeholder="粘贴视频链接，未填写则不展示"/></label>
-
-        <EditorTitle title="相关资讯" action={<button onClick={addNews}><Plus size={14}/>添加资讯</button>} />
-        {form.news.length === 0 ? <AddEmpty text="还没有相关资讯" onClick={addNews}/> : <div className="repeat-editor-list">{form.news.map((item, i) => <div className="repeat-editor news-editor-item" key={item.id}>
-          <span><Newspaper size={15}/></span><div><input value={item.title} onChange={e => updateNews(item.id,'title',e.target.value)} placeholder="资讯标题"/><input value={item.url} onChange={e => updateNews(item.id,'url',e.target.value)} placeholder="资讯链接"/></div><button onClick={() => set('news', form.news.filter(x => x.id !== item.id))}><Trash2 size={15}/></button>
-        </div>)}</div>}
+        <section className="fixed-content-lock">
+          <span><LockKeyhole size={19}/></span>
+          <div><b>公司统一内容由管理员维护</b><p>{fixedContent.company} · {fixedContent.businesses.length} 项核心业务</p></div>
+          <ShieldCheck size={18}/>
+        </section>
       </div>
-      <footer><button className="button secondary" onClick={onClose}>取消</button><button className="button primary" onClick={submit}><Check size={17}/>生成名片</button></footer>
+      <footer><button className="button secondary" onClick={onClose}>取消</button><button className="button primary" onClick={submit}><Check size={17}/>保存个人信息</button></footer>
     </section>
   </div>
 }
@@ -429,6 +497,125 @@ function Field({ label, required, error, wide, children }) {
 
 function AddEmpty({ text, onClick }) {
   return <button className="add-empty" onClick={onClick}><Plus size={17}/><span>{text}，点击添加</span></button>
+}
+
+function FixedContentEditor({ initial, onClose, onSave }) {
+  const [form, setForm] = useState(() => ({
+    ...defaultFixedContent,
+    ...initial,
+    businesses: (initial.businesses || []).map(item => ({...item})),
+    news: (initial.news || []).map(item => ({...item})),
+  }))
+  const [errors, setErrors] = useState({})
+  const set = (key, value) => setForm(prev => ({...prev, [key]: value}))
+  const addBusiness = () => set('businesses', [...form.businesses, {id: Date.now(), title:'', desc:'', short:''}])
+  const updateBusiness = (id, key, value) => set('businesses', form.businesses.map(item => item.id === id ? {...item, [key]: value} : item))
+  const addNews = () => set('news', [...form.news, {id: Date.now(), title:'', url:''}])
+  const updateNews = (id, key, value) => set('news', form.news.map(item => item.id === id ? {...item, [key]: value} : item))
+
+  const submit = () => {
+    const nextErrors = {}
+    if (!form.company.trim()) nextErrors.company = '请填写公司名称'
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length) return
+    onSave({
+      company: form.company.trim(),
+      address: form.address.trim(),
+      businesses: form.businesses.filter(item => item.title.trim()).map(item => ({...item, title:item.title.trim(), desc:item.desc.trim(), short:item.short?.trim() || ''})),
+      videoUrl: form.videoUrl.trim(),
+      news: form.news.filter(item => item.title.trim()).map(item => ({...item, title:item.title.trim(), url:item.url.trim()})),
+    })
+  }
+
+  return <div className="modal-layer editor-layer">
+    <section className="modal-sheet card-editor-sheet">
+      <header><button onClick={onClose}><ArrowLeft size={21}/></button><h2>固定展示内容</h2><button onClick={onClose}><X size={20}/></button></header>
+      <div className="modal-body card-editor-body">
+        <section className="admin-scope-note"><ShieldCheck size={20}/><div><b>对所有成员名片生效</b><p>保存后，所有成员都会展示同一套公司信息和业务内容。</p></div></section>
+
+        <EditorTitle title="公司信息" />
+        <div className="form-grid editor-form">
+          <Field label="公司名称" required wide error={errors.company}><input value={form.company} onChange={event => set('company', event.target.value)} placeholder="请输入公司全称"/></Field>
+          <Field label="公司地址" wide><input value={form.address} onChange={event => set('address', event.target.value)} placeholder="未填写则不展示地址"/></Field>
+        </div>
+
+        <EditorTitle title="公司核心业务" action={<button onClick={addBusiness}><Plus size={14}/>添加业务</button>} />
+        {form.businesses.length === 0 ? <AddEmpty text="还没有业务内容" onClick={addBusiness}/> : <div className="repeat-editor-list">{form.businesses.map((item, index) => <div className="repeat-editor fixed-business-editor" key={item.id}>
+          <i>{index + 1}</i><div><input value={item.title} onChange={event => updateBusiness(item.id,'title',event.target.value)} placeholder="业务名称"/><input value={item.desc} onChange={event => updateBusiness(item.id,'desc',event.target.value)} placeholder="业务简介"/></div><button onClick={() => set('businesses', form.businesses.filter(current => current.id !== item.id))}><Trash2 size={15}/></button>
+        </div>)}</div>}
+
+        <EditorTitle title="统一视频链接" />
+        <label className="single-editor-input"><Video size={17}/><input value={form.videoUrl} onChange={event => set('videoUrl', event.target.value)} placeholder="粘贴视频链接，未填写则不展示"/></label>
+
+        <EditorTitle title="统一相关资讯" action={<button onClick={addNews}><Plus size={14}/>添加资讯</button>} />
+        {form.news.length === 0 ? <AddEmpty text="还没有相关资讯" onClick={addNews}/> : <div className="repeat-editor-list">{form.news.map(item => <div className="repeat-editor news-editor-item" key={item.id}>
+          <span><Newspaper size={15}/></span><div><input value={item.title} onChange={event => updateNews(item.id,'title',event.target.value)} placeholder="资讯标题"/><input value={item.url} onChange={event => updateNews(item.id,'url',event.target.value)} placeholder="资讯链接"/></div><button onClick={() => set('news', form.news.filter(current => current.id !== item.id))}><Trash2 size={15}/></button>
+        </div>)}</div>}
+      </div>
+      <footer><button className="button secondary" onClick={onClose}>取消</button><button className="button primary" onClick={submit}><Check size={17}/>应用到所有名片</button></footer>
+    </section>
+  </div>
+}
+
+function MemberEditor({ initial, members, onClose, onSave }) {
+  const [form, setForm] = useState({...initial})
+  const [errors, setErrors] = useState({})
+  const set = (key, value) => setForm(prev => ({...prev, [key]: value}))
+  const primaryAdmin = form.phone === PRIMARY_ADMIN_PHONE
+
+  const submit = () => {
+    const phone = form.phone.replace(/\D/g, '').slice(0, 11)
+    const nextErrors = {}
+    if (!/^1\d{10}$/.test(phone)) nextErrors.phone = '请输入正确的11位手机号'
+    if (members.some(item => item.phone === phone && item.id !== form.id)) nextErrors.phone = '该手机号已经添加'
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length) return
+    onSave({
+      ...form,
+      phone,
+      name: form.name.trim(),
+      title: form.title.trim(),
+      role: primaryAdmin ? 'admin' : form.role,
+    })
+  }
+
+  return <Modal title={initial.id ? '编辑成员' : '添加成员'} onClose={onClose} footer={<><button className="button secondary" onClick={onClose}>取消</button><button className="button primary" onClick={submit}><Check size={17}/>保存成员</button></>}>
+    <section className="member-editor-note"><UserCog size={20}/><div><b>成员权限</b><p>管理员维护统一内容和角色；成员只维护自己的个人信息。</p></div></section>
+    <div className="form-grid editor-form member-form">
+      <Field label="手机号" required wide error={errors.phone}><input inputMode="numeric" value={form.phone} onChange={event => set('phone', event.target.value.replace(/\D/g, '').slice(0,11))} placeholder="成员登录手机号"/></Field>
+      <Field label="成员姓名"><input value={form.name} onChange={event => set('name', event.target.value)} placeholder="可由成员完善"/></Field>
+      <Field label="职位"><input value={form.title} onChange={event => set('title', event.target.value)} placeholder="可由成员完善"/></Field>
+      <Field label="角色"><select value={primaryAdmin ? 'admin' : form.role} disabled={primaryAdmin} onChange={event => set('role', event.target.value)}><option value="member">成员</option><option value="admin">管理员</option></select></Field>
+      <Field label="账号状态"><select value={form.status} onChange={event => set('status', event.target.value)}><option value="active">正常</option><option value="disabled">已停用</option></select></Field>
+    </div>
+    {primaryAdmin && <p className="primary-admin-tip"><LockKeyhole size={13}/>主管理员角色不可降级</p>}
+  </Modal>
+}
+
+function AdminPage({ fixedContent, members, onEditFixed, onAddMember, onEditMember }) {
+  const adminCount = members.filter(item => item.role === 'admin').length
+  const activeCount = members.filter(item => item.status === 'active').length
+  return <div className="admin-page page-pad">
+    <section className="admin-hero">
+      <div><span><ShieldCheck size={16}/>管理员控制台</span><h1>统一内容，分角色维护</h1><p>公司内容统一配置，个人资料由成员自行完善。</p></div>
+      <div className="admin-summary"><div><b>{members.length}</b><span>全部成员</span></div><div><b>{adminCount}</b><span>管理员</span></div><div><b>{activeCount}</b><span>正常账号</span></div></div>
+    </section>
+
+    <section className="section-card fixed-control-card">
+      <div className="fixed-control-head"><span><Settings2 size={20}/></span><div><b>名片固定展示内容</b><p>应用到所有管理员和成员名片</p></div><button onClick={onEditFixed}>配置</button></div>
+      <div className="fixed-content-preview"><div><span>公司名称</span><b>{fixedContent.company}</b></div><div><span>核心业务</span><b>{fixedContent.businesses.length} 项</b></div><div><span>相关资讯</span><b>{fixedContent.news.length} 条</b></div></div>
+    </section>
+
+    <div className="member-list-title"><div><h2>成员与角色</h2><span>手机号对应唯一账号</span></div><button onClick={onAddMember}><Plus size={15}/>添加成员</button></div>
+    <section className="member-list section-card">
+      {members.map(member => <button className="member-row" key={member.id} onClick={() => onEditMember(member)}>
+        <span className={`member-avatar ${member.role}`}>{member.name ? member.name.slice(0,1) : <UserRound size={18}/>}</span>
+        <div><b>{member.name || '待完善姓名'}<em className={`role-chip ${member.role}`}>{member.role === 'admin' ? '管理员' : '成员'}</em></b><p>{member.phone.replace(/(\d{3})\d{4}(\d{4})/,'$1****$2')}{member.title ? ` · ${member.title}` : ''}</p></div>
+        <span className={`status-dot ${member.status}`}>{member.status === 'active' ? '正常' : '停用'}</span><ChevronRight size={16}/>
+      </button>)}
+    </section>
+    <section className="role-rule-note"><LockKeyhole size={17}/><div><b>权限边界</b><p>管理员：固定内容、成员和角色；成员：仅个人信息、分享和访客查看。</p></div></section>
+  </div>
 }
 
 function ShareSheet({ card, onClose, notify }) {
@@ -481,23 +668,23 @@ function VisitorRow({ visitor, onClick }) {
   return <button className="visitor-row" onClick={onClick}><span className="visitor-avatar" style={{background:visitor.color}}>{visitor.avatar}</span><div className="visitor-main"><div><b>{visitor.name}</b><span className={`intent intent-${visitor.score>=80?'hot':visitor.score>=50?'warm':'cold'}`}>{visitor.status}</span></div><p>{visitor.company} · {visitor.role}</p><small><Eye size={13}/>查看了「{visitor.content}」</small></div><div className="visitor-side"><time>{visitor.time}</time><b>{visitor.duration}</b><ChevronRight size={16}/></div></button>
 }
 
-function MePage({ session, card, onEdit, onShare, onLogout, notify }) {
+function MePage({ session, card, member, onEdit, onShare, onLogout, notify }) {
   return <div className="me-page page-pad">
-    <section className="account-panel"><div className="account-avatar">{card?.avatar ? <img src={card.avatar}/> : <UserRound size={25}/>}</div><div><h2>{card?.name || '未创建名片'}</h2><p>登录手机号：{session.phone.replace(/(\d{3})\d{4}(\d{4})/,'$1****$2')}</p><span>{card ? '名片已生成' : '等待添加名片'}</span></div></section>
+    <section className="account-panel"><div className="account-avatar">{card?.avatar ? <img src={card.avatar}/> : <UserRound size={25}/>}</div><div><h2>{card?.name || member.name || '未创建名片'}<em className={`account-role ${member.role}`}>{member.role === 'admin' ? '管理员' : '成员'}</em></h2><p>登录手机号：{session.phone.replace(/(\d{3})\d{4}(\d{4})/,'$1****$2')}</p><span>{card ? '个人信息已完善' : '等待完善个人信息'}</span></div></section>
     <section className="my-actions section-card">
-      <button onClick={onEdit}><span className="mg-icon blue"><Edit3/></span><div><b>{card?'编辑名片':'添加名片'}</b><small>{card?'更新个人资料和展示内容':'填写资料并生成电子名片'}</small></div><ChevronRight/></button>
+      <button onClick={onEdit}><span className="mg-icon blue"><Edit3/></span><div><b>{card?'编辑个人信息':'完善个人信息'}</b><small>头像、姓名、职位与个人联系方式</small></div><ChevronRight/></button>
       {card && <button onClick={onShare}><span className="mg-icon green"><Share2/></span><div><b>分享名片</b><small>发送给微信联系人</small></div><ChevronRight/></button>}
       <button onClick={() => notify('隐私设置已打开')}><span className="mg-icon violet"><ShieldCheck/></span><div><b>隐私与数据</b><small>管理访客数据和内容展示范围</small></div><ChevronRight/></button>
     </section>
-    <section className="account-note"><LockKeyhole size={17}/><div><b>数据按手机号独立保存</b><p>不同手机号登录后拥有各自独立的名片与访客数据。</p></div></section>
+    <section className="account-note"><LockKeyhole size={17}/><div><b>角色权限已生效</b><p>{member.role === 'admin' ? '你可以配置公司统一内容、成员和角色，也可以维护自己的个人信息。' : '公司统一内容由管理员维护，你只能修改自己的个人信息。'}</p></div></section>
     <button className="logout-button" onClick={onLogout}><LogOut size={17}/>退出登录</button>
-    <p className="version">白鸽在线智能电子名片 · Prototype 2.0</p>
+    <p className="version">白鸽在线智能电子名片 · Prototype 3.0</p>
   </div>
 }
 
-function BottomNav({ tab, setTab }) {
-  const items = [['card',<Home/>,'名片'],['visitors',<BarChart3/>,'访客'],['me',<UserRound/>,'我的']]
-  return <nav className="bottom-nav three-tabs">{items.map(([id,icon,label])=><button key={id} className={tab===id?'active':''} onClick={()=>setTab(id)}><span>{icon}{id==='visitors'&&<i/>}</span><b>{label}</b></button>)}</nav>
+function BottomNav({ tab, setTab, isAdmin }) {
+  const items = [['card',<Home/>,'名片'],['visitors',<BarChart3/>,'访客'],...(isAdmin ? [['admin',<UsersRound/>,'管理']] : []),['me',<UserRound/>,'我的']]
+  return <nav className={`bottom-nav ${isAdmin ? 'four-tabs' : 'three-tabs'}`}>{items.map(([id,icon,label])=><button key={id} className={tab===id?'active':''} onClick={()=>setTab(id)}><span>{icon}{id==='visitors'&&<i/>}</span><b>{label}</b></button>)}</nav>
 }
 
 function VisitorDetail({ visitor, onClose, notify }) {
