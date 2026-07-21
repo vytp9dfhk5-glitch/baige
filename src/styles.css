@@ -189,6 +189,13 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .toast{position:fixed;z-index:80;left:50%;bottom:40px;transform:translateX(-50%);display:flex;align-items:center;gap:7px;padding:10px 16px;color:#fff;background:rgba(22,32,51,.92);backdrop-filter:blur(8px);border-radius:12px;box-shadow:0 10px 30px rgba(18,28,46,.3);font-size:11px;white-space:nowrap;animation:toastIn .22s ease-out}.toast svg{color:#65dcaa}@keyframes toastIn{from{transform:translate(-50%,20px);opacity:0}}
 .preview-bar{height:55px;position:absolute;z-index:9;inset:auto 0 0;display:flex;align-items:center;justify-content:space-between;padding:0 14px;color:#fff;background:#172033}.preview-bar button{display:flex;align-items:center;gap:5px;padding:7px 9px;color:#fff;border:0;border-radius:8px;background:rgba(255,255,255,.1);font-size:9px}.preview-bar span{font-size:9px;color:#abb6c8}
 
+/* Read-only visitor card opened from a shared link */
+.public-topbar > span { padding: 5px 9px; color: #4772b9; background: #edf4ff; border-radius: 9px; font-size: 9px; font-weight: 700; }
+.public-screen { inset: 69px 0 0; }
+.public-actions { margin-top: 12px; }
+.public-rail .rail-tip span { line-height: 1.65; }
+.public-stage .privacy-note { margin-bottom: 8px; }
+
 @media (max-width: 800px) {
   body { background: var(--bg); }
   .app-shell { display:block;padding:0; }

@@ -14,6 +14,27 @@ const emptyCard = {
   email: '', wechat: '', intro: '', videoUrl: '', businesses: [], news: []
 }
 
+const publicCard = {
+  avatar: './tu-jinbo.jpg',
+  name: '涂锦波',
+  title: '创始人 / 董事长 / CEO',
+  company: '白鸽在线（厦门）数字科技股份有限公司',
+  address: '厦门市湖里区高林中路491号白鸽天地金融（保险）科技产业园24层',
+  phone: '18650111999',
+  email: 'tjb@baigebao.com',
+  wechat: '',
+  intro: '白鸽在线创始人、董事长、执行董事兼首席执行官，拥有超过24年保险行业及企业管理经验，负责集团整体战略规划、业务方向及经营管理，推动白鸽在线向AI风控基础设施提供商和全球化数字风险管理解决方案商迈进。',
+  slogan: '算法的终点不是效率，而是人的安心；技术的价值不是替代，而是更好地守护。',
+  videoUrl: '',
+  businesses: [
+    { id: 1, title: '白鸽大数据风险治理平台', desc: '事前预警、事中干预、事后补偿的全流程智能服务', short: 'DATA' },
+    { id: 2, title: 'MaaS 模型平台', desc: '数据驱动、算法赋能、智能决策一体化闭环', short: 'MaaS' },
+    { id: 3, title: '白鸽 e保', desc: '全流程风险管理，定制化方案赋能', short: 'e保' },
+    { id: 4, title: 'SaaS 应用平台', desc: '面向保险机构的一站式数字化应用平台', short: 'SaaS' },
+  ],
+  news: [],
+}
+
 const visitors = [
   { id: 1, name: '陈志远', company: '海辰保险科技', role: '采购总监', avatar: '陈', color: '#3478f6', time: '10:42', duration: '8分24秒', score: 92, visits: 4, content: '风险治理平台', status: '重点关注', path: ['打开电子名片', '查看个人简介', '浏览风险治理平台 4分12秒', '点击联系电话'] },
   { id: 2, name: '刘雯', company: '启明金融科技', role: '运营负责人', avatar: '刘', color: '#8b5cf6', time: '09:18', duration: '5分06秒', score: 81, visits: 2, content: 'MaaS 模型平台', status: '持续关注', path: ['微信分享进入', '查看 MaaS 模型平台', '浏览介绍视频 2分03秒', '再次打开名片'] },
@@ -34,6 +55,11 @@ function loadLocal(key, fallback) {
 function cardKey(phone) { return `baige-card-v2:${phone}` }
 
 function App() {
+  const publicView = new URLSearchParams(window.location.search).get('view') === 'visitor'
+  return publicView ? <PublicCardView card={publicCard} /> : <OwnerApp />
+}
+
+function OwnerApp() {
   const initialSession = loadLocal(SESSION_KEY, null)
   const [session, setSession] = useState(initialSession)
   const [card, setCard] = useState(() => initialSession ? loadLocal(cardKey(initialSession.phone), null) : null)
@@ -97,6 +123,35 @@ function App() {
     {editorOpen && <CardEditor initial={card || emptyCard} onClose={() => setEditorOpen(false)} onSave={saveCard} />}
     {shareOpen && card && <ShareSheet card={card} onClose={() => setShareOpen(false)} notify={notify} />}
     {visitor && <VisitorDetail visitor={visitor} onClose={() => setVisitor(null)} notify={notify} />}
+    {toast && <div className="toast"><Check size={17}/>{toast}</div>}
+  </div>
+}
+
+function PublicCardView({ card }) {
+  const [toast, setToast] = useState('')
+
+  useEffect(() => {
+    if (!toast) return
+    const timer = setTimeout(() => setToast(''), 2400)
+    return () => clearTimeout(timer)
+  }, [toast])
+
+  return <div className="app-shell public-shell">
+    <aside className="desktop-rail public-rail">
+      <Brand />
+      <p>白鸽在线智能电子名片</p>
+      <div className="rail-stat"><strong>24年+</strong><span>保险行业与企业管理经验</span></div>
+      <div className="rail-stat"><strong>AI × 风控</strong><span>数字风险治理与保险科技</span></div>
+      <div className="rail-tip"><Sparkles size={20}/><b>白鸽在线</b><span>以大数据、AI模型与SaaS应用，持续建设全场景数字风险治理能力。</span></div>
+    </aside>
+    <main className="phone-stage public-stage">
+      <header className="topbar public-topbar"><Brand /><span>电子名片</span></header>
+      <div className="screen public-screen">
+        <div className="card-page page-pad">
+          <GeneratedCard card={card} notify={setToast} readonly showStats />
+        </div>
+      </div>
+    </main>
     {toast && <div className="toast"><Check size={17}/>{toast}</div>}
   </div>
 }
@@ -185,7 +240,7 @@ function EmptyCard({ onCreate }) {
   </div>
 }
 
-function GeneratedCard({ card, notify, onEdit, onShare }) {
+function GeneratedCard({ card, notify, onEdit, onShare, readonly = false, showStats = false }) {
   const actions = [
     card.phone && { key: 'phone', icon: <Phone/>, label: '打电话', tone: 'amber', action: () => { window.location.href = `tel:${card.phone}` } },
     card.wechat && { key: 'wechat', icon: <MessageCircle/>, label: '加微信', tone: 'green', action: () => notify(`微信号：${card.wechat}`) },
@@ -209,20 +264,22 @@ function GeneratedCard({ card, notify, onEdit, onShare }) {
       {card.avatar ? <img className="portrait portrait-photo" src={card.avatar} alt={`${card.name}的头像`}/> : <div className="portrait-placeholder">{card.name.slice(0, 1)}</div>}
     </section>
 
-    <div className="social-proof simple-proof"><span><Eye size={14}/>访客数据在“访客”模块单独查看</span></div>
+    {!readonly && <div className="social-proof simple-proof"><span><Eye size={14}/>访客数据在“访客”模块单独查看</span></div>}
 
-    {actions.length > 0 && <section className="quick-actions dynamic-actions" style={{gridTemplateColumns:`repeat(${actions.length}, 1fr)`}}>
+    {actions.length > 0 && <section className={`quick-actions dynamic-actions ${readonly ? 'public-actions' : ''}`} style={{gridTemplateColumns:`repeat(${actions.length}, 1fr)`}}>
       {actions.map(x => <Action key={x.key} {...x} onClick={x.action}/>) }
     </section>}
 
     {hasIntro && <section className="section-card intro-card generated-section">
       <div className="section-head"><h2>个人简介</h2></div>
       {card.intro && <p>{card.intro}</p>}
+      {card.slogan && <blockquote className="leader-quote">“{card.slogan}”</blockquote>}
       {card.address && <div className="address"><MapPin size={16}/><span>{card.address}</span></div>}
+      {showStats && <CompanyStats />}
     </section>}
 
     {businesses.length > 0 && <section className="section-card content-section generated-section">
-      <div className="section-head"><h2>公司核心业务</h2><button className="manage-content" onClick={onEdit}><Edit3 size={13}/>编辑</button></div>
+      <div className="section-head"><h2>公司核心业务</h2>{!readonly && <button className="manage-content" onClick={onEdit}><Edit3 size={13}/>编辑</button>}</div>
       <div className="content-grid">{businesses.map((item, index) => <BusinessCard key={item.id} item={item} index={index}/>)}</div>
     </section>}
 
@@ -236,9 +293,21 @@ function GeneratedCard({ card, notify, onEdit, onShare }) {
       {news.map(item => <a key={item.id} className="news-row" href={normalUrl(item.url)} target="_blank" rel="noreferrer"><span><Newspaper size={16}/></span><b>{item.title}</b><ChevronRight size={15}/></a>)}
     </section>}
 
-    <button className="share-card-button" onClick={onShare}><Share2 size={18}/>分享名片</button>
-    <p className="privacy-note"><ShieldCheck size={13}/>仅展示你主动填写并保存的内容</p>
+    {!readonly && <button className="share-card-button" onClick={onShare}><Share2 size={18}/>分享名片</button>}
+    <p className="privacy-note"><ShieldCheck size={13}/>{readonly ? '信息由本人维护，仅展示已公开内容' : '仅展示你主动填写并保存的内容'}</p>
   </>
+}
+
+function CompanyStats() {
+  return <div className="company-stats">
+    <div className="stats-title"><b>白鸽在线</b><span>全场景 AI 风控应用企业</span></div>
+    <div className="proof-grid">
+      <div><b>90亿+</b><span>电子保单</span></div>
+      <div><b>3.98亿+</b><span>保障用户</span></div>
+      <div><b>230+</b><span>渠道平台</span></div>
+      <div><b>72+</b><span>保险公司</span></div>
+    </div>
+  </div>
 }
 
 function normalUrl(value) {
