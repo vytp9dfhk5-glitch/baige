@@ -255,7 +255,7 @@ function OwnerApp() {
         {tab === 'card' && <CardPage card={displayCard} notify={notify} onCreate={() => setEditorOpen(true)} onEdit={() => setEditorOpen(true)} onShare={() => setShareOpen(true)} />}
         {tab === 'visitors' && <VisitorPage card={displayCard} onSelect={setVisitor} />}
         {tab === 'admin' && isAdmin && <AdminPage fixedContent={fixedContent} members={members} onEditFixed={() => setFixedEditorOpen(true)} onAddMember={() => setMemberEditor({ id: '', phone: '', name: '', title: '', role: 'employee', status: 'active' })} onEditMember={setMemberEditor} />}
-        {tab === 'me' && <MePage session={session} card={card} member={currentMember} onEdit={() => setEditorOpen(true)} onLogout={logout} notify={notify} />}
+        {tab === 'me' && <MePage session={session} card={card} member={currentMember} onLogout={logout} />}
       </div>
       <BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} />
       {editorOpen && <CardEditor initial={card || {...emptyCard, name: currentMember.name || '', title: currentMember.title || ''}} onClose={() => setEditorOpen(false)} onSave={saveCard} />}
@@ -414,11 +414,6 @@ function GeneratedCard({ card, notify, readonly = false }) {
       {addresses.length > 0 && <div className="personal-address-list">{addresses.map((address,index) => <div className="address" key={`${address}-${index}`}><MapPin size={16}/><span>{address}</span></div>)}</div>}
     </section>}
 
-    {card.companyIntroductionImage && <section className="section-card company-profile-section generated-section">
-      <div className="section-head"><h2>公司介绍</h2>{card.companyPdfName && <span>PDF · 15页</span>}</div>
-      <img className="company-profile-long-image" src={card.companyIntroductionImage} alt="白鸽在线2026版企业介绍长图"/>
-    </section>}
-
     {card.videoUrl && <section className="section-card media-section generated-section">
       <div className="section-head"><h2>公司风采</h2>{card.videoName && <span>{card.videoName}</span>}</div>
       <video className="company-video" src={normalMediaUrl(card.videoUrl)} controls playsInline preload="metadata">你的浏览器暂不支持视频播放</video>
@@ -427,6 +422,11 @@ function GeneratedCard({ card, notify, readonly = false }) {
     {news.length > 0 && <section className="section-card news-section generated-section">
       <div className="section-head"><h2>企业资讯</h2><span>{news.length} 条</span></div>
       {news.map(item => <a key={item.id} className="news-row" href={normalUrl(item.url)} target="_blank" rel="noreferrer"><span><Newspaper size={16}/></span><b>{item.title}</b><ChevronRight size={15}/></a>)}
+    </section>}
+
+    {card.companyIntroductionImage && <section className="section-card company-profile-section generated-section">
+      <div className="section-head"><h2>公司介绍</h2>{card.companyPdfName && <span>PDF · 15页</span>}</div>
+      <img className="company-profile-long-image" src={card.companyIntroductionImage} alt="白鸽在线2026版企业介绍长图"/>
     </section>}
 
   </>
@@ -514,7 +514,7 @@ function CardEditor({ initial, onClose, onSave }) {
           </div>
         </section>
 
-        <EditorTitle title="个人基础信息" />
+        <EditorTitle title="个人信息" />
         <div className="form-grid editor-form">
           <Field label="姓名" required error={errors.name}><input value={form.name} onChange={e => set('name', e.target.value)} placeholder="请输入姓名"/></Field>
           <Field label="职位" required error={errors.title}><input value={form.title} onChange={e => set('title', e.target.value)} placeholder="例如：董事长 / CEO"/></Field>
@@ -522,16 +522,16 @@ function CardEditor({ initial, onClose, onSave }) {
 
         <EditorTitle title="联系方式" />
         <div className="form-grid editor-form">
-          <Field label="个人电话"><input inputMode="tel" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="请输入电话"/></Field>
-          <Field label="个人邮箱"><input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="请输入邮箱"/></Field>
-          <Field label="个人微信" wide><input value={form.wechat} onChange={e => set('wechat', e.target.value)} placeholder="请输入微信号"/></Field>
+          <Field label="手机号"><input inputMode="tel" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="请输入手机号"/></Field>
+          <Field label="邮箱"><input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="请输入邮箱"/></Field>
+          <Field label="微信号" wide><input value={form.wechat} onChange={e => set('wechat', e.target.value)} placeholder="请输入微信号"/></Field>
         </div>
 
         <EditorTitle title="个人简介" />
         <label className="textarea-label editor-textarea"><textarea rows="5" value={form.intro} onChange={e => set('intro', e.target.value)} placeholder="介绍你的经历、专长或理念；未填写则不展示该模块"/><small>{form.intro.length}/500</small></label>
 
-        <EditorTitle title="个人地址" action={<button onClick={addAddress}><Plus size={14}/>添加地址</button>} />
-        {form.addresses.length === 0 ? <AddEmpty text="还没有个人地址" onClick={addAddress}/> : <div className="repeat-editor-list">{form.addresses.map((address, index) => <div className="address-editor-wrap" key={`${index}-${form.addresses.length}`}>
+        <EditorTitle title="公司地址" action={<button onClick={addAddress}><Plus size={14}/>添加地址</button>} />
+        {form.addresses.length === 0 ? <AddEmpty text="还没有公司地址" onClick={addAddress}/> : <div className="repeat-editor-list">{form.addresses.map((address, index) => <div className="address-editor-wrap" key={`${index}-${form.addresses.length}`}>
           <div className="repeat-editor address-editor-item"><span><MapPin size={15}/></span><div><input value={address} onFocus={() => setActiveAddress(index)} onChange={event => { updateAddress(index,event.target.value); setActiveAddress(index) }} placeholder={`搜索或输入地址 ${index + 1}`}/></div><button onClick={() => set('addresses', form.addresses.filter((_, currentIndex) => currentIndex !== index))}><Trash2 size={15}/></button></div>
           {activeAddress === index && <div className="address-suggestions">{suggestionsFor(address).map(suggestion => <button key={suggestion} onClick={() => { updateAddress(index,suggestion); setActiveAddress(null) }}><MapPin size={13}/><span>{suggestion}</span></button>)}</div>}
         </div>)}</div>}
@@ -748,16 +748,10 @@ function VisitorRow({ visitor, onClick }) {
   return <button className="visitor-row" onClick={onClick}><span className="visitor-avatar" style={{background:visitor.color}}>{visitor.avatar}</span><div className="visitor-main"><div><b>{displayName}</b><span className={`visitor-auth ${visitor.wechatAuthorized ? 'authorized' : 'anonymous'}`}>{visitor.wechatAuthorized ? '微信已授权' : '未授权'}</span></div><p><Clock3 size={12}/>打开时间：{visitor.openTime}</p><small><Eye size={13}/>查看了「{visitor.content}」</small></div><div className="visitor-side"><span>浏览时长</span><b>{visitor.duration}</b><ChevronRight size={16}/></div></button>
 }
 
-function MePage({ session, card, member, onEdit, onLogout, notify }) {
+function MePage({ session, card, member, onLogout }) {
   return <div className="me-page page-pad">
     <section className="account-panel"><div className="account-avatar">{card?.avatar ? <img src={card.avatar}/> : <UserRound size={25}/>}</div><div><h2>{card?.name || member.name || '未创建名片'}<em className={`account-role ${member.role}`}>{member.role === 'admin' ? '管理员' : '员工'}</em></h2><p>登录手机号：{session.phone.replace(/(\d{3})\d{4}(\d{4})/,'$1****$2')}</p><span>{card ? '个人信息已完善' : '等待完善个人信息'}</span></div></section>
-    <section className="my-actions section-card">
-      <button onClick={onEdit}><span className="mg-icon blue"><Edit3/></span><div><b>{card?'编辑个人信息':'完善个人信息'}</b><small>头像、姓名、职位与个人联系方式</small></div><ChevronRight/></button>
-      <button onClick={() => notify('隐私设置已打开')}><span className="mg-icon violet"><ShieldCheck/></span><div><b>隐私与数据</b><small>管理访客数据和内容展示范围</small></div><ChevronRight/></button>
-    </section>
-    <section className="account-note"><LockKeyhole size={17}/><div><b>角色权限已生效</b><p>{member.role === 'admin' ? '你可以配置企业介绍、员工和角色，也可以维护自己的个人信息。' : '企业介绍由管理员维护，你只能修改自己的个人信息。'}</p></div></section>
     <button className="logout-button" onClick={onLogout}><LogOut size={17}/>退出登录</button>
-    <p className="version">白鸽在线智能电子名片 · Prototype 3.0</p>
   </div>
 }
 
