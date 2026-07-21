@@ -311,3 +311,54 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .login-stage { height: 100dvh; }
   .card-editor-sheet { max-height: 96dvh; }
 }
+
+/* Prototype 4.0: centered single-screen app */
+.app-shell { grid-template-columns: minmax(390px,440px); gap: 0; justify-content: center; }
+.desktop-rail { display: none !important; }
+.topbar-actions { display: flex; align-items: center; gap: 7px; }
+.share-top-button { color: #fff; background: linear-gradient(135deg,#4b87fa,#2d6def); box-shadow: 0 7px 15px rgba(52,120,246,.22); }
+.code-input { height: 49px; display: grid; grid-template-columns: 1fr auto; align-items: center; margin-top: 10px; padding: 0 6px 0 14px; background: #f5f7fb; border: 1px solid #e6eaf1; border-radius: 14px; }
+.code-input input { min-width: 0; border: 0; outline: 0; background: transparent; font-size: 12px; letter-spacing: 1px; }
+.code-input button { min-width: 88px; height: 36px; color: #3478f6; background: #e8f0ff; border: 0; border-radius: 10px; font-size: 9px; font-weight: 700; }
+.code-input button:disabled { color: #a1aab7; background: #eceff3; }
+
+.phone-stage .modal-layer { position: absolute; inset: 0; align-items: center; justify-content: center; padding: 10px; overflow: hidden; border-radius: 32px; }
+.phone-stage .modal-sheet { width: 100%; max-height: calc(100% - 20px); border-radius: 23px; }
+.phone-stage .card-editor-sheet { max-height: calc(100% - 20px); }
+.phone-stage .toast { position: absolute; bottom: 88px; }
+
+.default-avatar-picker { margin-top: 10px; padding: 12px; background: #fff; border: 1px solid #eaedf2; border-radius: 15px; }
+.default-avatar-picker > span { display: block; margin-bottom: 9px; color: #66758d; font-size: 9px; font-weight: 700; }
+.default-avatar-picker > div { display: grid; grid-template-columns: repeat(6,1fr); gap: 7px; }
+.default-avatar-picker button { aspect-ratio: 1; position: relative; overflow: hidden; padding: 0; background: #eef3fa; border: 2px solid transparent; border-radius: 11px; }
+.default-avatar-picker button.active { border-color: #3478f6; box-shadow: 0 0 0 3px rgba(52,120,246,.09); }
+.default-avatar-picker img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.default-avatar-picker button > svg { position: absolute; right: 2px; bottom: 2px; padding: 2px; color: #fff; background: #3478f6; border-radius: 50%; }
+
+.address-editor-wrap { position: relative; }
+.address-suggestions { position: relative; z-index: 6; overflow: hidden; margin: 4px 3px 0 34px; background: #fff; border: 1px solid #dce4f0; border-radius: 11px; box-shadow: 0 10px 24px rgba(32,55,89,.12); }
+.address-suggestions button { width: 100%; display: grid; grid-template-columns: 18px 1fr; align-items: start; gap: 5px; padding: 8px 9px; text-align: left; color: #55657d; background: #fff; border: 0; border-bottom: 1px solid #f0f2f5; font-size: 8px; line-height: 1.45; }
+.address-suggestions button:last-child { border-bottom: 0; }.address-suggestions svg { color: #3478f6; }
+
+.card-quick-copy { position: absolute; z-index: 5; right: 12px; top: 12px; display: flex; align-items: center; gap: 4px; padding: 7px 9px; color: #fff; background: rgba(11,31,70,.48); border: 1px solid rgba(255,255,255,.24); border-radius: 10px; backdrop-filter: blur(8px); font-size: 8px; font-weight: 700; }
+.company-profile-section { overflow: hidden; padding: 16px 12px 12px; }
+.company-profile-section .section-head { padding: 0 4px; }
+.company-profile-long-image { width: 100%; height: auto; display: block; margin-top: 12px; border: 1px solid #e5eaf2; border-radius: 12px; background: #fff; }
+
+.pdf-introduction-editor { overflow: hidden; background: #fff; border: 1px solid #e2e8f1; border-radius: 15px; }
+.pdf-file-row { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 8px; padding: 11px; background: #f5f8fc; }
+.pdf-file-row > span { width: 32px; height: 32px; display: grid; place-items: center; color: #3478f6; background: #e8f0ff; border-radius: 9px; }
+.pdf-file-row > div { min-width: 0; }.pdf-file-row b { display: block; font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }.pdf-file-row p { margin: 3px 0 0; color: #8c97a8; font-size: 7px; }
+.pdf-actions { display: flex; align-items: center; gap: 5px; }.pdf-actions a, .pdf-actions button { display: flex; align-items: center; gap: 4px; padding: 7px 8px; color: #3478f6; background: #fff; border: 1px solid #d7e3f8; border-radius: 8px; font-size: 8px; font-weight: 700; text-decoration: none; white-space: nowrap; }
+.pdf-introduction-editor > img { width: 100%; max-height: 260px; display: block; object-fit: cover; object-position: top; border-top: 1px solid #e6eaf1; }
+
+.wechat-picker-title { display: flex; align-items: center; gap: 6px; margin: 14px 2px 9px; }.wechat-picker-title svg { color: #12a765; }.wechat-picker-title b { font-size: 11px; }.wechat-picker-title span { margin-left: auto; color: #98a2b1; font-size: 7px; }
+.wechat-contact-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+.wechat-contact-grid button { min-width: 0; padding: 11px 4px; display: flex; flex-direction: column; align-items: center; gap: 7px; background: #f7f9fc; border: 1px solid #edf0f5; border-radius: 13px; }
+.wechat-contact-grid button > span { width: 40px; height: 40px; display: grid; place-items: center; color: #fff; border-radius: 13px; font-size: 13px; font-weight: 800; }.wechat-contact-grid button > b { max-width: 100%; font-size: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+@media (max-width: 800px) {
+  .app-shell { display: block; padding: 0; }
+  .phone-stage .modal-layer { border-radius: 0; }
+  .phone-stage .modal-sheet { max-height: calc(100dvh - 20px); }
+}
