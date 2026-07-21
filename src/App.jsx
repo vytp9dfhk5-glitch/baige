@@ -9,7 +9,7 @@ import {
 } from './icons'
 
 const SESSION_KEY = 'baige-card-session-v2'
-const FIXED_CONTENT_KEY = 'baige-card-fixed-content-v2'
+const FIXED_CONTENT_KEY = 'baige-card-fixed-content-v3'
 const MEMBERS_KEY = 'baige-card-members-v2'
 const PRIMARY_ADMIN_PHONE = '18059880224'
 
@@ -32,6 +32,19 @@ const addressCandidates = [
   '广州市天河区珠江新城',
 ]
 
+const defaultNews = [
+  {
+    id: 'baige-hk-listing',
+    title: '白鸽在线正式在香港联交所主板挂牌上市',
+    url: 'https://mp.weixin.qq.com/s/N1YPtMQt3mjCe_W4BTTZwQ',
+  },
+  {
+    id: 'xiamen-data-association',
+    title: '厦门市数据发展协会正式成立 白鸽在线为主要发起单位',
+    url: 'https://mp.weixin.qq.com/s/HJ9TK02aa2VSAaJN7GSOIA',
+  },
+]
+
 const publicCard = {
   avatar: './tu-jinbo.jpg',
   name: '涂锦波',
@@ -47,8 +60,9 @@ const publicCard = {
   companyIntroductionImage: './company-introduction-2026.webp',
   companyPdfName: '【企业简介】白鸽在线（2026版）.pdf',
   companyPdfUrl: './company-introduction-2026.pdf',
-  videoUrl: '',
-  news: [],
+  videoUrl: './company-promo-2026.mp4',
+  videoName: '白鸽在线企业宣传视频',
+  news: defaultNews,
 }
 
 const defaultFixedContent = {
@@ -57,9 +71,9 @@ const defaultFixedContent = {
   companyIntroductionImage: './company-introduction-2026.webp',
   companyPdfName: '【企业简介】白鸽在线（2026版）.pdf',
   companyPdfUrl: './company-introduction-2026.pdf',
-  videoUrl: '',
-  videoName: '',
-  news: [],
+  videoUrl: './company-promo-2026.mp4',
+  videoName: '白鸽在线企业宣传视频',
+  news: defaultNews,
 }
 
 const defaultMembers = [
@@ -67,12 +81,16 @@ const defaultMembers = [
 ]
 
 const visitors = [
-  { id: 1, name: '陈志远', company: '海辰保险科技', role: '采购总监', avatar: '陈', color: '#3478f6', time: '10:42', duration: '8分24秒', score: 92, visits: 4, content: '风险治理平台', status: '重点关注', path: ['打开电子名片', '查看个人简介', '浏览风险治理平台 4分12秒', '点击联系电话'] },
-  { id: 2, name: '刘雯', company: '启明金融科技', role: '运营负责人', avatar: '刘', color: '#8b5cf6', time: '09:18', duration: '5分06秒', score: 81, visits: 2, content: 'MaaS 模型平台', status: '持续关注', path: ['微信分享进入', '查看 MaaS 模型平台', '浏览介绍视频 2分03秒', '再次打开名片'] },
-  { id: 3, name: '王先生', company: '某保险机构', role: '新访客', avatar: '王', color: '#12b981', time: '昨天', duration: '2分18秒', score: 56, visits: 1, content: '个人简介', status: '待了解', path: ['扫码进入', '查看个人信息', '浏览个人简介'] },
-  { id: 4, name: '孙晓琳', company: '嘉禾产业集团', role: '副总经理', avatar: '孙', color: '#f59e0b', time: '昨天', duration: '6分45秒', score: 87, visits: 3, content: 'SaaS 应用平台', status: '重点关注', path: ['好友分享进入', '浏览核心业务 3分08秒', '查看相关资讯', '复制邮箱'] },
-  { id: 5, name: '匿名访客', company: '福建 · 厦门', role: '微信访客', avatar: '访', color: '#94a3b8', time: '周三', duration: '0分46秒', score: 28, visits: 1, content: '名片首页', status: '快速浏览', path: ['微信进入', '查看名片首页', '离开'] },
+  { id: 1, wechatAuthorized: true, wechatName: '陈志远', avatar: '陈', color: '#3478f6', openTime: '今天 10:42', duration: '8分24秒', score: 92, visits: 4, content: '公司介绍', status: '重点关注', path: ['打开电子名片', '查看个人简介', '浏览公司介绍 4分12秒', '查看企业资讯'] },
+  { id: 2, wechatAuthorized: true, wechatName: '刘雯', avatar: '刘', color: '#8b5cf6', openTime: '今天 09:18', duration: '5分06秒', score: 81, visits: 2, content: '公司风采', status: '持续关注', path: ['微信分享进入', '查看公司介绍', '播放企业宣传视频 2分03秒', '再次打开名片'] },
+  { id: 3, wechatAuthorized: false, wechatName: '', avatar: '访', color: '#12b981', openTime: '昨天 16:20', duration: '2分18秒', score: 56, visits: 1, content: '个人简介', status: '待了解', path: ['微信分享进入', '查看个人信息', '浏览个人简介'] },
+  { id: 4, wechatAuthorized: true, wechatName: '孙晓琳', avatar: '孙', color: '#f59e0b', openTime: '昨天 11:36', duration: '6分45秒', score: 87, visits: 3, content: '企业资讯', status: '重点关注', path: ['好友分享进入', '浏览公司介绍 3分08秒', '查看企业资讯', '返回名片首页'] },
+  { id: 5, wechatAuthorized: false, wechatName: '', avatar: '访', color: '#94a3b8', openTime: '周三 14:08', duration: '0分46秒', score: 28, visits: 1, content: '名片首页', status: '快速浏览', path: ['微信分享进入', '查看名片首页', '离开'] },
 ]
+
+function visitorDisplayName(visitor) {
+  return visitor.wechatAuthorized && visitor.wechatName ? visitor.wechatName : '匿名访客'
+}
 
 const trend = [23, 35, 29, 48, 45, 67, 72]
 
@@ -364,10 +382,6 @@ function EmptyCard({ onCreate }) {
 }
 
 function GeneratedCard({ card, notify, readonly = false }) {
-  const actions = [
-    card.wechat && { key: 'wechat', icon: <MessageCircle/>, label: '加微信', tone: 'green', action: () => notify(`微信号：${card.wechat}`) },
-    card.email && { key: 'email', icon: <Mail/>, label: '发邮件', tone: 'violet', action: () => { window.location.href = `mailto:${card.email}` } },
-  ].filter(Boolean)
   const news = (card.news || []).filter(x => x.title.trim())
   const addresses = (card.addresses || []).filter(Boolean)
   const hasIntro = card.intro || addresses.length > 0
@@ -392,10 +406,6 @@ function GeneratedCard({ card, notify, readonly = false }) {
       {card.avatar ? <img className="portrait portrait-photo" src={card.avatar} alt={`${card.name}的头像`}/> : <div className="portrait-placeholder">{card.name.slice(0, 1)}</div>}
       <button className="card-quick-copy" onClick={copyKeyInfo} aria-label="一键复制名片信息"><Copy size={16}/><span>复制</span></button>
     </section>
-
-    {actions.length > 0 && <section className={`quick-actions dynamic-actions ${readonly ? 'public-actions' : ''}`} style={{gridTemplateColumns:`repeat(${actions.length}, 1fr)`, marginTop:'11px'}}>
-      {actions.map(x => <Action key={x.key} {...x} onClick={x.action}/>) }
-    </section>}
 
     {hasIntro && <section className="section-card intro-card generated-section">
       <div className="section-head"><h2>个人简介</h2></div>
@@ -431,11 +441,6 @@ function normalMediaUrl(value) {
   if (!value) return ''
   return /^(https?:|blob:|data:|\/|\.\/)/i.test(value) ? value : `https://${value}`
 }
-
-function Action({ icon, label, tone, onClick }) {
-  return <button className="quick-action" onClick={onClick}><span className={`action-icon ${tone}`}>{icon}</span><b>{label}</b></button>
-}
-
 
 function CardEditor({ initial, onClose, onSave }) {
   const [form, setForm] = useState(() => ({...emptyCard, ...initial, addresses: initial.addresses || (initial.address ? [initial.address] : [])}))
@@ -497,16 +502,17 @@ function CardEditor({ initial, onClose, onSave }) {
     <section className="modal-sheet card-editor-sheet">
       <header><button onClick={onClose}><ArrowLeft size={21}/></button><h2>{initial.name ? '编辑名片' : '添加名片'}</h2><button onClick={onClose}><X size={20}/></button></header>
       <div className="modal-body card-editor-body">
-        <section className="editor-section avatar-editor">
-          <div className="avatar-preview" onClick={() => fileRef.current?.click()}>{form.avatar ? <img src={form.avatar}/> : <><ImageIcon size={28}/><span>上传头像</span></>}</div>
-          <div><b>个人头像</b><p>可选择默认头像，也可以上传 JPG、PNG 图片</p><button onClick={() => fileRef.current?.click()}><Upload size={15}/>{form.avatar ? '上传新头像' : '上传头像'}</button></div>
+        <section className="editor-section avatar-config-card">
+          <div className="avatar-editor">
+            <div className="avatar-preview" onClick={() => fileRef.current?.click()}>{form.avatar ? <img src={form.avatar}/> : <><ImageIcon size={28}/><span>上传头像</span></>}</div>
+            <div><b>个人头像</b><p>可选择默认头像，也可以上传 JPG、PNG 图片</p><button onClick={() => fileRef.current?.click()}><Upload size={15}/>{form.avatar ? '上传新头像' : '上传头像'}</button></div>
+          </div>
           <input ref={fileRef} hidden type="file" accept="image/*" onChange={e => uploadAvatar(e.target.files?.[0])}/>
+          <div className="default-avatar-picker">
+            <span>选择默认头像</span>
+            <div>{defaultAvatars.map((avatar,index) => <button className={form.avatar === avatar ? 'active' : ''} key={avatar} onClick={() => set('avatar',avatar)} aria-label={`默认头像 ${index + 1}`}><img src={avatar} alt=""/>{form.avatar === avatar && <Check size={13}/>}</button>)}</div>
+          </div>
         </section>
-
-        <div className="default-avatar-picker">
-          <span>选择默认头像</span>
-          <div>{defaultAvatars.map((avatar,index) => <button className={form.avatar === avatar ? 'active' : ''} key={avatar} onClick={() => set('avatar',avatar)} aria-label={`默认头像 ${index + 1}`}><img src={avatar} alt=""/>{form.avatar === avatar && <Check size={13}/>}</button>)}</div>
-        </div>
 
         <EditorTitle title="个人基础信息" />
         <div className="form-grid editor-form">
@@ -738,7 +744,8 @@ function TrendChart() {
 }
 
 function VisitorRow({ visitor, onClick }) {
-  return <button className="visitor-row" onClick={onClick}><span className="visitor-avatar" style={{background:visitor.color}}>{visitor.avatar}</span><div className="visitor-main"><div><b>{visitor.name}</b><span className={`intent intent-${visitor.score>=80?'hot':visitor.score>=50?'warm':'cold'}`}>{visitor.status}</span></div><p>{visitor.company} · {visitor.role}</p><small><Eye size={13}/>查看了「{visitor.content}」</small></div><div className="visitor-side"><time>{visitor.time}</time><b>{visitor.duration}</b><ChevronRight size={16}/></div></button>
+  const displayName = visitorDisplayName(visitor)
+  return <button className="visitor-row" onClick={onClick}><span className="visitor-avatar" style={{background:visitor.color}}>{visitor.avatar}</span><div className="visitor-main"><div><b>{displayName}</b><span className={`visitor-auth ${visitor.wechatAuthorized ? 'authorized' : 'anonymous'}`}>{visitor.wechatAuthorized ? '微信已授权' : '未授权'}</span></div><p><Clock3 size={12}/>打开时间：{visitor.openTime}</p><small><Eye size={13}/>查看了「{visitor.content}」</small></div><div className="visitor-side"><span>浏览时长</span><b>{visitor.duration}</b><ChevronRight size={16}/></div></button>
 }
 
 function MePage({ session, card, member, onEdit, onLogout, notify }) {
@@ -760,9 +767,10 @@ function BottomNav({ tab, setTab, isAdmin }) {
 }
 
 function VisitorDetail({ visitor, onClose, notify }) {
-  return <Modal title="访客详情" onClose={onClose} footer={<><button className="button secondary" onClick={()=>notify('已复制沟通建议')}><Copy size={17}/>沟通建议</button><button className="button primary" onClick={()=>notify(`正在联系 ${visitor.name}`)}><MessageCircle size={17}/>发起联系</button></>}>
-    <section className="visitor-profile"><span className="visitor-avatar large" style={{background:visitor.color}}>{visitor.avatar}</span><div><h2>{visitor.name}<span className="intent intent-hot">{visitor.status}</span></h2><p>{visitor.company} · {visitor.role}</p></div><div className="score-ring" style={{'--score':`${visitor.score*3.6}deg`}}><span><b>{visitor.score}</b><small>关注度</small></span></div></section>
-    <div className="detail-metrics"><div><b>{visitor.visits}</b><span>访问次数</span></div><div><b>{visitor.duration}</b><span>浏览时长</span></div><div><b>{visitor.content}</b><span>最关注内容</span></div></div>
+  const displayName = visitorDisplayName(visitor)
+  return <Modal title="访客详情" onClose={onClose} footer={<button className="button primary" onClick={()=>notify('已复制沟通建议')}><Copy size={17}/>复制沟通建议</button>}>
+    <section className="visitor-profile"><span className="visitor-avatar large" style={{background:visitor.color}}>{visitor.avatar}</span><div><h2>{displayName}<span className={`visitor-auth ${visitor.wechatAuthorized ? 'authorized' : 'anonymous'}`}>{visitor.wechatAuthorized ? '微信已授权' : '匿名'}</span></h2><p>{visitor.wechatAuthorized ? `授权微信名：${visitor.wechatName}` : '访客未授权微信信息'}</p></div><div className="score-ring" style={{'--score':`${visitor.score*3.6}deg`}}><span><b>{visitor.score}</b><small>关注度</small></span></div></section>
+    <div className="detail-metrics visitor-time-metrics"><div><b>{visitor.openTime}</b><span>打开时间</span></div><div><b>{visitor.duration}</b><span>浏览时长</span></div><div><b>{visitor.visits}</b><span>访问次数</span></div></div>
     <section className="ai-judgement"><Sparkles size={20}/><div><b>访客关注判断</b><p>{visitor.score>=80?'近期多次深入浏览名片内容，建议及时建立联系。':visitor.score>=50?'已产生初步兴趣，可发送相关资料继续沟通。':'当前互动较浅，建议先通过内容建立认知。'}</p></div></section>
     <h3 className="timeline-title">本次浏览轨迹</h3><div className="timeline">{visitor.path.map((x,i)=><div key={x}><i className={i===visitor.path.length-1?'last':''}/><span>{x}</span><time>{i===0?'10:42':`10:${43+i}`}</time></div>)}</div>
     <section className="follow-tip"><Lightbulb size={18}/><div><b>推荐沟通方向</b><p>从「{visitor.content}」切入，了解对方当前关注点。</p></div></section>

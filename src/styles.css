@@ -255,7 +255,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .qualification-section { padding: 16px; }.qualification-image { width: 100%; height: auto; display: block; margin-top: 13px; object-fit: contain; border: 1px solid #e7ebf2; border-radius: 13px; background: #fff; }
 .company-video { width: 100%; max-height: 240px; display: block; margin-top: 13px; border-radius: 13px; background: #13203a; }
 
-.card-editor-sheet { max-height: 96vh; }.card-editor-body { padding: 13px 15px 24px; }.editor-section { background: #fff; border: 1px solid #eaedf2; border-radius: 16px; }.avatar-editor { display: grid; grid-template-columns: 72px 1fr; gap: 12px; padding: 13px; }.avatar-preview { width: 72px; height: 82px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; overflow: hidden; color: #7d91b2; background: #edf3ff; border: 1px dashed #a9c3ee; border-radius: 16px; cursor: pointer; }.avatar-preview img { width: 100%; height: 100%; object-fit: cover; }.avatar-preview span { font-size: 7px; }.avatar-editor > div:nth-child(2) { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; }.avatar-editor b { font-size: 11px; }.avatar-editor p { margin: 4px 0 8px; color: #929dac; font-size: 7px; }.avatar-editor button, .editor-title > button { display: flex; align-items: center; gap: 4px; padding: 6px 8px; color: #3478f6; background: #edf3ff; border: 0; border-radius: 8px; font-size: 8px; cursor: pointer; }
+.card-editor-sheet { max-height: 96vh; }.card-editor-body { padding: 13px 15px 24px; }.editor-section { background: #fff; border: 1px solid #eaedf2; border-radius: 16px; }.avatar-config-card { overflow: hidden; }.avatar-editor { display: grid; grid-template-columns: 72px 1fr; gap: 12px; padding: 13px; }.avatar-preview { width: 72px; height: 82px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; overflow: hidden; color: #7d91b2; background: #edf3ff; border: 1px dashed #a9c3ee; border-radius: 16px; cursor: pointer; }.avatar-preview img { width: 100%; height: 100%; object-fit: cover; }.avatar-preview span { font-size: 7px; }.avatar-editor > div:nth-child(2) { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; }.avatar-editor b { font-size: 11px; }.avatar-editor p { margin: 4px 0 8px; color: #929dac; font-size: 7px; }.avatar-editor button, .editor-title > button { display: flex; align-items: center; gap: 4px; padding: 6px 8px; color: #3478f6; background: #edf3ff; border: 0; border-radius: 8px; font-size: 8px; cursor: pointer; }
 .editor-title { display: flex; align-items: center; justify-content: space-between; margin: 18px 2px 9px; }.editor-title > div { display: flex; align-items: baseline; gap: 7px; }.editor-title h3 { margin: 0; font-size: 12px; }.editor-title span { color: #9aa4b3; font-size: 7px; }
 .editor-form label.wide { grid-column: span 2 !important; }.editor-form label.has-error input { border-color: #f29a94; background: #fff9f8; }.editor-form label > span em { margin-left: 2px; color: #ef5d55; font-style: normal; }.field-error { display: block; margin: 4px 0 0 2px; color: #e95b52; font-size: 7px; }.editor-textarea { margin-top: 0; }.editor-textarea textarea { min-height: 92px; }
 .repeat-editor-list { display: flex; flex-direction: column; gap: 8px; }.repeat-editor { display: grid; grid-template-columns: 26px 1fr 25px; align-items: center; gap: 8px; padding: 10px; background: #fff; border: 1px solid #eaedf2; border-radius: 13px; }.repeat-editor > i, .repeat-editor > span { width: 25px; height: 25px; display: grid; place-items: center; color: #3478f6; background: #edf3ff; border-radius: 8px; font-size: 8px; font-style: normal; font-weight: 800; }.repeat-editor > div { min-width: 0; }.repeat-editor input { width: 100%; display: block; padding: 4px 0; border: 0; outline: 0; font-size: 9px; }.repeat-editor input:first-child { font-size: 10px; font-weight: 700; }.repeat-editor input + input { color: #8290a4; border-top: 1px solid #f0f2f5; }.repeat-editor > button { width: 25px; height: 25px; display: grid; place-items: center; color: #e07a72; background: #fff1ef; border: 0; border-radius: 8px; cursor: pointer; }
@@ -327,13 +327,21 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .phone-stage .card-editor-sheet { max-height: calc(100% - 20px); }
 .phone-stage .toast { position: absolute; bottom: 88px; }
 
-.default-avatar-picker { margin-top: 10px; padding: 12px; background: #fff; border: 1px solid #eaedf2; border-radius: 15px; }
+.default-avatar-picker { margin: 0 12px 12px; padding: 12px 0 0; border-top: 1px solid #edf0f5; }
 .default-avatar-picker > span { display: block; margin-bottom: 9px; color: #66758d; font-size: 9px; font-weight: 700; }
 .default-avatar-picker > div { display: grid; grid-template-columns: repeat(6,1fr); gap: 7px; }
 .default-avatar-picker button { aspect-ratio: 1; position: relative; overflow: hidden; padding: 0; background: #eef3fa; border: 2px solid transparent; border-radius: 11px; }
 .default-avatar-picker button.active { border-color: #3478f6; box-shadow: 0 0 0 3px rgba(52,120,246,.09); }
 .default-avatar-picker img { width: 100%; height: 100%; display: block; object-fit: cover; }
 .default-avatar-picker button > svg { position: absolute; right: 2px; bottom: 2px; padding: 2px; color: #fff; background: #3478f6; border-radius: 50%; }
+
+.visitor-auth { display: inline-flex; align-items: center; padding: 2px 5px; border-radius: 5px; font-size: 7px; font-weight: 700; white-space: nowrap; }
+.visitor-auth.authorized { color: #0b9a6b; background: #eaf8f3; }
+.visitor-auth.anonymous { color: #78869a; background: #eef1f5; }
+.visitor-main p { display: flex; align-items: center; gap: 3px; }
+.visitor-main p svg { color: #8695aa; }
+.visitor-side > span { grid-column: span 2; color: #a6afbd; font-size: 7px; }
+.visitor-time-metrics { grid-template-columns: 1.5fr 1fr .8fr; }
 
 .address-editor-wrap { position: relative; }
 .address-suggestions { position: relative; z-index: 6; overflow: hidden; margin: 4px 3px 0 34px; background: #fff; border: 1px solid #dce4f0; border-radius: 11px; box-shadow: 0 10px 24px rgba(32,55,89,.12); }
