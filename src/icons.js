@@ -6,6 +6,7 @@ export { default as CalendarDays } from 'lucide-react/dist/esm/icons/calendar-da
 export { default as Check } from 'lucide-react/dist/esm/icons/check.js'
 export { default as ChevronRight } from 'lucide-react/dist/esm/icons/chevron-right.js'
 export { default as Clock3 } from 'lucide-react/dist/esm/icons/clock-3.js'
+export { default as ContactRound } from 'lucide-react/dist/esm/icons/contact-round.js'
 export { default as Copy } from 'lucide-react/dist/esm/icons/copy.js'
 export { default as Edit3 } from 'lucide-react/dist/esm/icons/edit-3.js'
 export { default as Eye } from 'lucide-react/dist/esm/icons/eye.js'

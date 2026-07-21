@@ -1,16 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react'
 import {
   Activity, ArrowLeft, BarChart3, CalendarDays, Check, ChevronRight,
-  Clock3, Copy, Edit3, Eye, Flame, Home, ImageIcon,
+  Clock3, ContactRound, Copy, Edit3, Eye, Flame, Home, ImageIcon,
   Lightbulb, LockKeyhole, LogOut, Mail, MapPin, MessageCircle,
   MoreHorizontal, Newspaper, Phone, Plus, Share2, ShieldCheck,
   Settings2, Smartphone, Sparkles, Trash2, TrendingUp, Upload,
   UserCog, UserRound, UsersRound, Video, X
 } from './icons'
+import { addToContacts } from './vcard'
 
 const SESSION_KEY = 'baige-card-session-v2'
 const FIXED_CONTENT_KEY = 'baige-card-fixed-content-v3'
 const MEMBERS_KEY = 'baige-card-members-v2'
+const REQUESTS_KEY = 'baige-card-requests-v1'
 const PRIMARY_ADMIN_PHONE = '18059880224'
 
 const emptyCard = {
@@ -77,7 +79,7 @@ const defaultFixedContent = {
 }
 
 const defaultMembers = [
-  { id: 'primary-admin', phone: PRIMARY_ADMIN_PHONE, name: '系统管理员', title: '', role: 'admin', status: 'active' },
+  { id: 'primary-admin', phone: PRIMARY_ADMIN_PHONE, name: '系统管理员', title: '', email: '', role: 'admin', status: 'active', cardValidUntil: defaultValidUntil() },
 ]
 
 const visitors = [
@@ -103,7 +105,36 @@ function loadLocal(key, fallback) {
 
 function cardKey(phone) { return `baige-card-v2:${phone}` }
 
-function mergeCard(personal, fixedContent) {
+function defaultValidUntil() {
+  return validUntilAfterMonths(12)
+}
+
+function validUntilAfterMonths(months) {
+  const date = new Date()
+  date.setMonth(date.getMonth() + months)
+  return date.toISOString().slice(0, 10)
+}
+
+function normalizeMember(member) {
+  return {
+    email: '',
+    title: '',
+    cardValidUntil: defaultValidUntil(),
+    ...member,
+  }
+}
+
+function isCardExpired(value) {
+  if (!value) return false
+  return Date.now() > new Date(`${value}T23:59:59`).getTime()
+}
+
+function formatDateTime(value) {
+  if (!value) return ''
+  return new Intl.DateTimeFormat('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(value))
+}
+
+function mergeCard(personal, fixedContent, member) {
   if (!personal) return null
   return {
     ...personal,
@@ -115,6 +146,7 @@ function mergeCard(personal, fixedContent) {
     videoUrl: fixedContent.videoUrl,
     videoName: fixedContent.videoName,
     news: fixedContent.news,
+    cardValidUntil: member?.cardValidUntil || personal.cardValidUntil || '',
   }
 }
 
@@ -160,7 +192,8 @@ function OwnerApp() {
   const [session, setSession] = useState(initialSession)
   const [card, setCard] = useState(() => initialSession ? loadLocal(cardKey(initialSession.phone), null) : null)
   const [fixedContent, setFixedContent] = useState(() => ({...defaultFixedContent, ...loadLocal(FIXED_CONTENT_KEY, {})}))
-  const [members, setMembers] = useState(() => loadLocal(MEMBERS_KEY, defaultMembers))
+  const [members, setMembers] = useState(() => loadLocal(MEMBERS_KEY, defaultMembers).map(normalizeMember))
+  const [requests, setRequests] = useState(() => loadLocal(REQUESTS_KEY, []))
   const [tab, setTab] = useState('card')
   const [editorOpen, setEditorOpen] = useState(false)
   const [fixedEditorOpen, setFixedEditorOpen] = useState(false)
@@ -169,11 +202,22 @@ function OwnerApp() {
   const [visitor, setVisitor] = useState(null)
   const [toast, setToast] = useState('')
 
-  const currentMember = session ? members.find(item => item.phone === session.phone) || {
-    id: `employee-${session.phone}`, phone: session.phone, name: card?.name || '', title: card?.title || '', role: session.phone === PRIMARY_ADMIN_PHONE ? 'admin' : 'employee', status: 'active'
-  } : null
+  const currentMember = session ? members.find(item => item.phone === session.phone) || normalizeMember({
+    id: `employee-${session.phone}`, phone: session.phone, name: card?.name || '', title: card?.title || '', email: card?.email || '', role: session.phone === PRIMARY_ADMIN_PHONE ? 'admin' : 'employee', status: 'active'
+  }) : null
   const isAdmin = currentMember?.role === 'admin'
-  const displayCard = mergeCard(card, fixedContent)
+  const displayCard = mergeCard(card, fixedContent, currentMember)
+  const cardExpired = Boolean(currentMember && isCardExpired(currentMember.cardValidUntil))
+  const pendingTitleRequest = requests.find(item => item.phone === session?.phone && item.type === 'title_change' && item.status === 'pending')
+  const pendingRenewalRequest = requests.find(item => item.phone === session?.phone && item.type === 'renewal' && item.status === 'pending')
+  const editorInitial = currentMember ? {
+    ...emptyCard,
+    ...(card || {}),
+    name: card?.name || currentMember.name || '',
+    title: pendingTitleRequest?.requestedTitle || card?.title || currentMember.title || '',
+    phone: card?.phone || currentMember.phone || '',
+    email: card?.email || currentMember.email || '',
+  } : emptyCard
 
   useEffect(() => {
     if (!toast) return
@@ -190,14 +234,23 @@ function OwnerApp() {
       return
     }
     if (!existing) {
-      const nextMembers = [...members, { id: `employee-${Date.now()}`, phone, name: '', title: '', role: phone === PRIMARY_ADMIN_PHONE ? 'admin' : 'employee', status: 'active' }]
+      const nextMembers = [...members, normalizeMember({ id: `employee-${Date.now()}`, phone, name: '', title: '', email: '', role: phone === PRIMARY_ADMIN_PHONE ? 'admin' : 'employee', status: 'active' })]
       setMembers(nextMembers)
       localStorage.setItem(MEMBERS_KEY, JSON.stringify(nextMembers))
     }
     const next = { phone, loginAt: Date.now() }
     localStorage.setItem(SESSION_KEY, JSON.stringify(next))
     setSession(next)
-    setCard(loadLocal(cardKey(phone), null))
+    const savedCard = loadLocal(cardKey(phone), null)
+    const hydratedCard = savedCard && existing ? {
+      ...savedCard,
+      name: existing.name || savedCard.name,
+      title: existing.title || savedCard.title,
+      phone: existing.phone,
+      email: existing.email || savedCard.email,
+    } : savedCard
+    if (hydratedCard) localStorage.setItem(cardKey(phone), JSON.stringify(hydratedCard))
+    setCard(hydratedCard)
     setTab('card')
     notify('登录成功')
   }
@@ -210,14 +263,45 @@ function OwnerApp() {
   }
 
   const saveCard = nextCard => {
-    localStorage.setItem(cardKey(session.phone), JSON.stringify(nextCard))
-    setCard(nextCard)
-    const nextMembers = members.map(item => item.phone === session.phone ? {...item, name: nextCard.name, title: nextCard.title} : item)
+    const titleChanged = !isAdmin && nextCard.title.trim() !== (currentMember.title || '').trim()
+    const savedCard = {
+      ...nextCard,
+      phone: currentMember.phone,
+      title: titleChanged ? currentMember.title : nextCard.title,
+      cardValidUntil: currentMember.cardValidUntil,
+    }
+    localStorage.setItem(cardKey(session.phone), JSON.stringify(savedCard))
+    setCard(savedCard)
+    const nextMembers = members.map(item => item.phone === session.phone ? {
+      ...item,
+      name: nextCard.name,
+      email: nextCard.email,
+      title: isAdmin ? nextCard.title : item.title,
+    } : item)
     localStorage.setItem(MEMBERS_KEY, JSON.stringify(nextMembers))
     setMembers(nextMembers)
+    if (titleChanged) {
+      const existingRequest = requests.find(item => item.phone === session.phone && item.type === 'title_change' && item.status === 'pending')
+      const request = {
+        id: existingRequest?.id || `title-${Date.now()}`,
+        type: 'title_change',
+        phone: session.phone,
+        memberId: currentMember.id,
+        name: nextCard.name,
+        currentTitle: currentMember.title || '未设置',
+        requestedTitle: nextCard.title.trim(),
+        submittedAt: Date.now(),
+        status: 'pending',
+      }
+      const nextRequests = existingRequest
+        ? requests.map(item => item.id === existingRequest.id ? request : item)
+        : [request, ...requests]
+      localStorage.setItem(REQUESTS_KEY, JSON.stringify(nextRequests))
+      setRequests(nextRequests)
+    }
     setEditorOpen(false)
     setTab('card')
-    notify('名片生成成功')
+    notify(titleChanged ? '个人信息已保存，职位变更已提交管理员审批' : '名片生成成功')
   }
 
   const saveFixedContent = nextContent => {
@@ -232,14 +316,65 @@ function OwnerApp() {
       notify('不能降级或停用当前管理员账号')
       return
     }
-    const normalized = { ...nextMember, id: nextMember.id || `employee-${Date.now()}` }
+    const normalized = normalizeMember({ ...nextMember, id: nextMember.id || `employee-${Date.now()}` })
     const nextMembers = members.some(item => item.id === normalized.id)
       ? members.map(item => item.id === normalized.id ? normalized : item)
       : [...members, normalized]
     localStorage.setItem(MEMBERS_KEY, JSON.stringify(nextMembers))
     setMembers(nextMembers)
+    const savedCard = loadLocal(cardKey(normalized.phone), null)
+    if (savedCard) {
+      const syncedCard = {...savedCard, name: normalized.name, title: normalized.title, phone: normalized.phone, email: normalized.email, cardValidUntil: normalized.cardValidUntil}
+      localStorage.setItem(cardKey(normalized.phone), JSON.stringify(syncedCard))
+      if (normalized.phone === session.phone) setCard(syncedCard)
+    }
     setMemberEditor(null)
     notify(nextMember.id ? '员工信息已更新' : '员工已添加')
+  }
+
+  const requestRenewal = () => {
+    if (pendingRenewalRequest) return
+    const request = {
+      id: `renewal-${Date.now()}`,
+      type: 'renewal',
+      phone: session.phone,
+      memberId: currentMember.id,
+      name: card?.name || currentMember.name || '员工',
+      currentTitle: currentMember.title || '',
+      submittedAt: Date.now(),
+      status: 'pending',
+    }
+    const nextRequests = [request, ...requests]
+    localStorage.setItem(REQUESTS_KEY, JSON.stringify(nextRequests))
+    setRequests(nextRequests)
+    notify('名片续期申请已提交，请等待管理员审核')
+  }
+
+  const reviewRequest = (requestId, decision, validUntil) => {
+    const request = requests.find(item => item.id === requestId)
+    if (!request) return
+    const reviewedAt = Date.now()
+    const nextRequests = requests.map(item => item.id === requestId ? {...item, status: decision, validUntil: decision === 'approved' ? validUntil : item.validUntil, reviewedAt} : item)
+    localStorage.setItem(REQUESTS_KEY, JSON.stringify(nextRequests))
+    setRequests(nextRequests)
+    if (decision === 'approved') {
+      const nextMembers = members.map(item => item.phone === request.phone ? {
+        ...item,
+        title: request.type === 'title_change' ? request.requestedTitle : item.title,
+        cardValidUntil: validUntil,
+      } : item)
+      localStorage.setItem(MEMBERS_KEY, JSON.stringify(nextMembers))
+      setMembers(nextMembers)
+      const savedCard = loadLocal(cardKey(request.phone), null)
+      if (savedCard) {
+        localStorage.setItem(cardKey(request.phone), JSON.stringify({
+          ...savedCard,
+          title: request.type === 'title_change' ? request.requestedTitle : savedCard.title,
+          cardValidUntil: validUntil,
+        }))
+      }
+    }
+    notify(decision === 'approved' ? '申请已通过，名片有效期已更新' : '申请已拒绝')
   }
 
   if (!session) {
@@ -250,15 +385,15 @@ function OwnerApp() {
 
   return <div className="app-shell">
     <main className="phone-stage">
-      <TopBar tab={tab} card={displayCard} onEdit={() => setEditorOpen(true)} onShare={() => setShareOpen(true)} />
+      <TopBar tab={tab} card={cardExpired ? null : displayCard} onEdit={() => setEditorOpen(true)} onShare={() => setShareOpen(true)} />
       <div className="screen">
-        {tab === 'card' && <CardPage card={displayCard} notify={notify} onCreate={() => setEditorOpen(true)} onEdit={() => setEditorOpen(true)} onShare={() => setShareOpen(true)} />}
-        {tab === 'visitors' && <VisitorPage card={displayCard} onSelect={setVisitor} />}
-        {tab === 'admin' && isAdmin && <AdminPage fixedContent={fixedContent} members={members} onEditFixed={() => setFixedEditorOpen(true)} onAddMember={() => setMemberEditor({ id: '', phone: '', name: '', title: '', role: 'employee', status: 'active' })} onEditMember={setMemberEditor} />}
+        {tab === 'card' && <CardPage card={displayCard} expired={cardExpired} pendingRenewal={pendingRenewalRequest} member={currentMember} notify={notify} onCreate={() => setEditorOpen(true)} onRenew={requestRenewal} />}
+        {tab === 'visitors' && <VisitorPage card={cardExpired ? null : displayCard} onSelect={setVisitor} />}
+        {tab === 'admin' && isAdmin && <AdminPage fixedContent={fixedContent} members={members} requests={requests} onReview={reviewRequest} onEditFixed={() => setFixedEditorOpen(true)} onAddMember={() => setMemberEditor({ id: '', phone: '', name: '', title: '', email: '', cardValidUntil: defaultValidUntil(), role: 'employee', status: 'active' })} onEditMember={setMemberEditor} />}
         {tab === 'me' && <MePage session={session} card={card} member={currentMember} onLogout={logout} />}
       </div>
       <BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} />
-      {editorOpen && <CardEditor initial={card || {...emptyCard, name: currentMember.name || '', title: currentMember.title || ''}} onClose={() => setEditorOpen(false)} onSave={saveCard} />}
+      {editorOpen && <CardEditor initial={editorInitial} titleApprovalRequired={!isAdmin} approvedTitle={currentMember.title || ''} pendingTitle={pendingTitleRequest?.requestedTitle || ''} onClose={() => setEditorOpen(false)} onSave={saveCard} />}
       {fixedEditorOpen && isAdmin && <FixedContentEditor initial={fixedContent} onClose={() => setFixedEditorOpen(false)} onSave={saveFixedContent} />}
       {memberEditor && isAdmin && <MemberEditor initial={memberEditor} members={members} onClose={() => setMemberEditor(null)} onSave={saveMember} />}
       {shareOpen && displayCard && <ShareSheet card={displayCard} onClose={() => setShareOpen(false)} notify={notify} />}
@@ -281,9 +416,7 @@ function PublicCardView({ card, shared = false }) {
     <main className="phone-stage public-stage">
       <header className="topbar public-topbar"><Brand /><span>电子名片</span></header>
       <div className="screen public-screen">
-        <div className="card-page page-pad">
-          <GeneratedCard card={card} notify={setToast} readonly />
-        </div>
+        {isCardExpired(card.cardValidUntil) ? <ExpiredPublicCard /> : <div className="card-page page-pad"><GeneratedCard card={card} notify={setToast} readonly /></div>}
       </div>
       {toast && <div className="toast"><Check size={17}/>{toast}</div>}
     </main>
@@ -362,11 +495,31 @@ function TopBar({ tab, card, onEdit, onShare }) {
   </header>
 }
 
-function CardPage({ card, notify, onCreate }) {
+function CardPage({ card, expired, pendingRenewal, member, notify, onCreate, onRenew }) {
+  if (expired) return <ExpiredCard member={member} pending={pendingRenewal} onRenew={onRenew}/>
   if (!card) return <EmptyCard onCreate={onCreate}/>
   return <div className="card-page page-pad">
     <GeneratedCard card={card} notify={notify} />
   </div>
+}
+
+function ExpiredCard({ member, pending, onRenew }) {
+  return <div className="expired-card-page page-pad"><section className="expired-card-state">
+    <span><Clock3 size={31}/></span>
+    <small>名片有效期已结束</small>
+    <h1>需要重新申请使用</h1>
+    <p>本名片有效期至 {member.cardValidUntil}。续期申请通过前，访客无法继续查看和保存这张名片。</p>
+    <button className="button primary" disabled={Boolean(pending)} onClick={onRenew}>{pending ? '续期申请审核中' : '申请续期'}</button>
+  </section></div>
+}
+
+function ExpiredPublicCard() {
+  return <div className="expired-card-page page-pad"><section className="expired-card-state public-expired-state">
+    <span><LockKeyhole size={31}/></span>
+    <small>名片暂不可用</small>
+    <h1>该电子名片已过期</h1>
+    <p>请联系名片本人重新申请使用后再查看。</p>
+  </section></div>
 }
 
 function EmptyCard({ onCreate }) {
@@ -386,12 +539,6 @@ function GeneratedCard({ card, notify, readonly = false }) {
   const addresses = (card.addresses || []).filter(Boolean)
   const hasIntro = card.intro || addresses.length > 0
 
-  const copyKeyInfo = async () => {
-    const text = [`姓名：${card.name}`, `公司：${card.company}`, `职位：${card.title}`, card.phone ? `电话：${card.phone}` : ''].filter(Boolean).join('\n')
-    try { await navigator.clipboard.writeText(text); notify('姓名、公司、职位和电话已复制') }
-    catch { notify('复制失败，请长按选择关键信息') }
-  }
-
   return <>
     <section className="business-card generated-business-card">
       <div className="card-glow glow-one"/><div className="card-glow glow-two"/>
@@ -404,8 +551,10 @@ function GeneratedCard({ card, notify, readonly = false }) {
         {card.wechat && <div className="contact-line"><MessageCircle size={15}/>{card.wechat}</div>}
       </div>
       {card.avatar ? <img className="portrait portrait-photo" src={card.avatar} alt={`${card.name}的头像`}/> : <div className="portrait-placeholder">{card.name.slice(0, 1)}</div>}
-      <button className="card-quick-copy" onClick={copyKeyInfo} aria-label="一键复制名片信息"><Copy size={16}/><span>复制</span></button>
+      <button className="card-contact-add" onClick={() => addToContacts(card, notify)} aria-label="添加至通讯录"><ContactRound size={16}/><span>添加至通讯录</span></button>
     </section>
+
+    {!readonly && card.cardValidUntil && <section className="card-validity-bar"><ShieldCheck size={14}/><span>名片有效期至 {card.cardValidUntil}</span></section>}
 
     {hasIntro && <section className="section-card intro-card generated-section">
       <div className="section-head"><h2>个人简介</h2></div>
@@ -442,7 +591,7 @@ function normalMediaUrl(value) {
   return /^(https?:|blob:|data:|\/|\.\/)/i.test(value) ? value : `https://${value}`
 }
 
-function CardEditor({ initial, onClose, onSave }) {
+function CardEditor({ initial, titleApprovalRequired = false, approvedTitle = '', pendingTitle = '', onClose, onSave }) {
   const [form, setForm] = useState(() => ({...emptyCard, ...initial, addresses: initial.addresses || (initial.address ? [initial.address] : [])}))
   const [errors, setErrors] = useState({})
   const [activeAddress, setActiveAddress] = useState(null)
@@ -519,10 +668,11 @@ function CardEditor({ initial, onClose, onSave }) {
           <Field label="姓名" required error={errors.name}><input value={form.name} onChange={e => set('name', e.target.value)} placeholder="请输入姓名"/></Field>
           <Field label="职位" required error={errors.title}><input value={form.title} onChange={e => set('title', e.target.value)} placeholder="例如：董事长 / CEO"/></Field>
         </div>
+        {titleApprovalRequired && <section className={`title-approval-tip ${pendingTitle ? 'pending' : ''}`}><ShieldCheck size={15}/><div><b>{pendingTitle ? '职位变更正在审核' : '职位变更需要管理员确认'}</b><p>{pendingTitle ? `当前名片仍展示“${approvedTitle || '未设置'}”，申请职位为“${pendingTitle}”。` : `当前已通过职位：${approvedTitle || '未设置'}。修改后会生成审批申请，通过后才更新名片。`}</p></div></section>}
 
         <EditorTitle title="联系方式" />
         <div className="form-grid editor-form">
-          <Field label="手机号"><input inputMode="tel" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="请输入手机号"/></Field>
+          <Field label="手机号"><input inputMode="tel" value={form.phone} readOnly={titleApprovalRequired} onChange={e => set('phone', e.target.value)} placeholder="请输入手机号"/></Field>
           <Field label="邮箱"><input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="请输入邮箱"/></Field>
           <Field label="微信号" wide><input value={form.wechat} onChange={e => set('wechat', e.target.value)} placeholder="请输入微信号"/></Field>
         </div>
@@ -637,6 +787,10 @@ function MemberEditor({ initial, members, onClose, onSave }) {
     const nextErrors = {}
     if (!/^1\d{10}$/.test(phone)) nextErrors.phone = '请输入正确的11位手机号'
     if (members.some(item => item.phone === phone && item.id !== form.id)) nextErrors.phone = '该手机号已经添加'
+    if (!form.name.trim()) nextErrors.name = '请填写员工姓名'
+    if (!form.title.trim()) nextErrors.title = '请填写默认职位'
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) nextErrors.email = '请填写正确的邮箱'
+    if (!form.cardValidUntil) nextErrors.cardValidUntil = '请设置名片有效期'
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length) return
     onSave({
@@ -644,16 +798,20 @@ function MemberEditor({ initial, members, onClose, onSave }) {
       phone,
       name: form.name.trim(),
       title: form.title.trim(),
+      email: form.email.trim(),
+      cardValidUntil: form.cardValidUntil,
       role: primaryAdmin ? 'admin' : form.role,
     })
   }
 
-  return <Modal title={initial.id ? '编辑员工' : '添加员工'} onClose={onClose} footer={<><button className="button secondary" onClick={onClose}>取消</button><button className="button primary" onClick={submit}><Check size={17}/>保存员工</button></>}>
-    <section className="member-editor-note"><UserCog size={20}/><div><b>员工权限</b><p>管理员维护企业介绍和角色；员工只维护自己的个人信息。</p></div></section>
+  return <Modal title={initial.id ? '编辑员工预置信息' : '导入员工'} onClose={onClose} footer={<><button className="button secondary" onClick={onClose}>取消</button><button className="button primary" onClick={submit}><Check size={17}/>保存员工</button></>}>
+    <section className="member-editor-note"><UserCog size={20}/><div><b>员工预置信息</b><p>姓名、默认职位、手机号和邮箱会在员工登录时自动带入；员工修改职位后需要管理员审批。</p></div></section>
     <div className="form-grid editor-form member-form">
       <Field label="手机号" required wide error={errors.phone}><input inputMode="numeric" value={form.phone} onChange={event => set('phone', event.target.value.replace(/\D/g, '').slice(0,11))} placeholder="员工登录手机号"/></Field>
-      <Field label="员工姓名"><input value={form.name} onChange={event => set('name', event.target.value)} placeholder="可由员工完善"/></Field>
-      <Field label="职位"><input value={form.title} onChange={event => set('title', event.target.value)} placeholder="可由员工完善"/></Field>
+      <Field label="员工姓名" required error={errors.name}><input value={form.name} onChange={event => set('name', event.target.value)} placeholder="请输入员工姓名"/></Field>
+      <Field label="默认职位" required error={errors.title}><input value={form.title} onChange={event => set('title', event.target.value)} placeholder="员工名片默认职位"/></Field>
+      <Field label="邮箱" required wide error={errors.email}><input type="email" value={form.email} onChange={event => set('email', event.target.value)} placeholder="员工企业邮箱"/></Field>
+      <Field label="名片有效期" required wide error={errors.cardValidUntil}><input type="date" value={form.cardValidUntil} onChange={event => set('cardValidUntil', event.target.value)}/></Field>
       <Field label="角色"><select value={primaryAdmin ? 'admin' : form.role} disabled={primaryAdmin} onChange={event => set('role', event.target.value)}><option value="employee">员工</option><option value="admin">管理员</option></select></Field>
       <Field label="账号状态"><select value={form.status} onChange={event => set('status', event.target.value)}><option value="active">正常</option><option value="disabled">已停用</option></select></Field>
     </div>
@@ -661,13 +819,14 @@ function MemberEditor({ initial, members, onClose, onSave }) {
   </Modal>
 }
 
-function AdminPage({ fixedContent, members, onEditFixed, onAddMember, onEditMember }) {
+function AdminPage({ fixedContent, members, requests, onReview, onEditFixed, onAddMember, onEditMember }) {
   const adminCount = members.filter(item => item.role === 'admin').length
-  const activeCount = members.filter(item => item.status === 'active').length
+  const pendingRequests = requests.filter(item => item.status === 'pending')
+  const shownRequests = [...requests].sort((a, b) => (a.status === 'pending' ? -1 : 1) - (b.status === 'pending' ? -1 : 1) || b.submittedAt - a.submittedAt).slice(0, 6)
   return <div className="admin-page page-pad">
     <section className="admin-hero">
-      <div><span><ShieldCheck size={16}/>管理员控制台</span><h1>企业统一配置，员工各自维护</h1><p>企业介绍由管理员配置，个人资料由员工自行完善。</p></div>
-      <div className="admin-summary"><div><b>{members.length}</b><span>全部账号</span></div><div><b>{adminCount}</b><span>管理员</span></div><div><b>{activeCount}</b><span>正常账号</span></div></div>
+      <div><span><ShieldCheck size={16}/>管理员控制台</span><h1>企业信息统一，职位变更审批</h1><p>员工预置信息、职位申请和名片有效期均由管理员维护。</p></div>
+      <div className="admin-summary"><div><b>{members.length}</b><span>全部账号</span></div><div><b>{adminCount}</b><span>管理员</span></div><div><b>{pendingRequests.length}</b><span>待审批</span></div></div>
     </section>
 
     <section className="section-card fixed-control-card">
@@ -675,16 +834,34 @@ function AdminPage({ fixedContent, members, onEditFixed, onAddMember, onEditMemb
       <div className="fixed-content-preview"><div><span>公司名称</span><b>{fixedContent.company}</b></div><div><span>公司介绍</span><b>{fixedContent.companyPdfName ? 'PDF已设置' : '未设置'}</b></div><div><span>公司风采</span><b>{fixedContent.videoUrl ? '已配置' : '待上传'}</b></div></div>
     </section>
 
-    <div className="member-list-title"><div><h2>员工与角色</h2><span>手机号对应唯一账号</span></div><button onClick={onAddMember}><Plus size={15}/>添加员工</button></div>
+    <div className="member-list-title approval-list-title"><div><h2>申请审批</h2><span>{pendingRequests.length} 条待处理</span></div></div>
+    <section className="approval-list">
+      {shownRequests.length === 0 ? <div className="approval-empty"><ShieldCheck size={24}/><b>暂无申请信息</b><span>员工修改职位或名片到期后，申请会出现在这里。</span></div> : shownRequests.map(request => <ApprovalRow key={request.id} request={request} onReview={onReview}/>) }
+    </section>
+
+    <div className="member-list-title"><div><h2>员工与角色</h2><span>手机号对应唯一账号</span></div><button onClick={onAddMember}><Upload size={15}/>导入员工</button></div>
     <section className="member-list section-card">
       {members.map(member => <button className="member-row" key={member.id} onClick={() => onEditMember(member)}>
         <span className={`member-avatar ${member.role}`}>{member.name ? member.name.slice(0,1) : <UserRound size={18}/>}</span>
-        <div><b>{member.name || '待完善姓名'}<em className={`role-chip ${member.role}`}>{member.role === 'admin' ? '管理员' : '员工'}</em></b><p>{member.phone.replace(/(\d{3})\d{4}(\d{4})/,'$1****$2')}{member.title ? ` · ${member.title}` : ''}</p></div>
-        <span className={`status-dot ${member.status}`}>{member.status === 'active' ? '正常' : '停用'}</span><ChevronRight size={16}/>
+        <div><b>{member.name || '待完善姓名'}<em className={`role-chip ${member.role}`}>{member.role === 'admin' ? '管理员' : '员工'}</em></b><p>{member.phone.replace(/(\d{3})\d{4}(\d{4})/,'$1****$2')}{member.title ? ` · ${member.title}` : ''}</p><small>有效期至 {member.cardValidUntil}</small></div>
+        <span className={`status-dot ${member.status === 'disabled' || isCardExpired(member.cardValidUntil) ? 'disabled' : 'active'}`}>{member.status === 'disabled' ? '停用' : isCardExpired(member.cardValidUntil) ? '已过期' : '正常'}</span><ChevronRight size={16}/>
       </button>)}
     </section>
-    <section className="role-rule-note"><LockKeyhole size={17}/><div><b>权限边界</b><p>管理员：企业介绍、员工和角色；员工：仅个人信息、分享和访客查看。</p></div></section>
+    <section className="role-rule-note"><LockKeyhole size={17}/><div><b>权限边界</b><p>管理员导入员工资料、审批职位和续期；员工维护个人内容，职位通过审批后才会对外更新。</p></div></section>
   </div>
+}
+
+function ApprovalRow({ request, onReview }) {
+  const [validUntil, setValidUntil] = useState(request.validUntil || defaultValidUntil())
+  const pending = request.status === 'pending'
+  const statusText = request.status === 'approved' ? '已通过' : request.status === 'rejected' ? '已拒绝' : '待审批'
+  return <article className={`approval-row ${request.status}`}>
+    <header><span className="approval-avatar">{request.name?.slice(0, 1) || '员'}</span><div><b>{request.name || '员工'}<em>{request.type === 'title_change' ? '职位变更' : '名片续期'}</em></b><p>{request.phone.replace(/(\d{3})\d{4}(\d{4})/,'$1****$2')} · {formatDateTime(request.submittedAt)}</p></div><strong>{statusText}</strong></header>
+    {request.type === 'title_change' ? <div className="title-change-line"><span>{request.currentTitle || '未设置'}</span><ChevronRight size={14}/><b>{request.requestedTitle}</b></div> : <p className="renewal-copy">原有效期已结束，员工申请重新启用电子名片。</p>}
+    <label className="approval-validity"><span>名片有效期</span><input type="date" value={validUntil} disabled={!pending} onChange={event => setValidUntil(event.target.value)}/></label>
+    {pending && <div className="validity-presets"><span>快捷设置</span>{[[3,'3个月'],[12,'1年'],[24,'2年']].map(([months,label]) => <button key={months} onClick={() => setValidUntil(validUntilAfterMonths(months))}>{label}</button>)}</div>}
+    {pending && <div className="approval-actions"><button onClick={() => onReview(request.id, 'rejected', validUntil)}><X size={14}/>拒绝</button><button onClick={() => onReview(request.id, 'approved', validUntil)} disabled={!validUntil}><Check size={14}/>通过并生效</button></div>}
+  </article>
 }
 
 function ShareSheet({ card, onClose, notify }) {
@@ -750,7 +927,7 @@ function VisitorRow({ visitor, onClick }) {
 
 function MePage({ session, card, member, onLogout }) {
   return <div className="me-page page-pad">
-    <section className="account-panel"><div className="account-avatar">{card?.avatar ? <img src={card.avatar}/> : <UserRound size={25}/>}</div><div><h2>{card?.name || member.name || '未创建名片'}<em className={`account-role ${member.role}`}>{member.role === 'admin' ? '管理员' : '员工'}</em></h2><p>登录手机号：{session.phone.replace(/(\d{3})\d{4}(\d{4})/,'$1****$2')}</p><span>{card ? '个人信息已完善' : '等待完善个人信息'}</span></div></section>
+    <section className="account-panel"><div className="account-avatar">{card?.avatar ? <img src={card.avatar}/> : <UserRound size={25}/>}</div><div><h2>{card?.name || member.name || '未创建名片'}<em className={`account-role ${member.role}`}>{member.role === 'admin' ? '管理员' : '员工'}</em></h2><p>登录手机号：{session.phone.replace(/(\d{3})\d{4}(\d{4})/,'$1****$2')}</p><span>{isCardExpired(member.cardValidUntil) ? '名片已过期，请申请续期' : card ? `个人信息已完善 · 有效期至 ${member.cardValidUntil}` : `等待完善个人信息 · 有效期至 ${member.cardValidUntil}`}</span></div></section>
     <button className="logout-button" onClick={onLogout}><LogOut size={17}/>退出登录</button>
   </div>
 }
