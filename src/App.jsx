@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 import {
-  Activity, ArrowLeft, BarChart3, CalendarDays, Check, ChevronRight,
+  Activity, ArrowLeft, BarChart3, Bell, CalendarDays, Check, ChevronRight,
   Clock3, ContactRound, Copy, Edit3, Eye, Flame, Home, ImageIcon,
-  Lightbulb, LockKeyhole, LogOut, Mail, MapPin, MessageCircle,
+  GripVertical, Lightbulb, LockKeyhole, LogOut, Mail, MapPin, MessageCircle,
   MoreHorizontal, Newspaper, Phone, Plus, Share2, ShieldCheck,
   Settings2, Smartphone, Sparkles, Trash2, TrendingUp, Upload,
   UserCog, UserRound, UsersRound, Video, X
@@ -14,6 +14,7 @@ const SESSION_KEY = 'baige-card-session-v2'
 const FIXED_CONTENT_KEY = 'baige-card-fixed-content-v3'
 const MEMBERS_KEY = 'baige-card-members-v3'
 const REQUESTS_KEY = 'baige-card-requests-v2'
+const NOTIFICATION_READ_PREFIX = 'baige-card-notification-read-v1:'
 const PRIMARY_ADMIN_PHONE = '18059880224'
 
 const emptyCard = {
@@ -76,6 +77,7 @@ const defaultFixedContent = {
   companyPdfUrl: './company-introduction-2026.pdf',
   videoUrl: './company-promo-2026.mp4',
   videoName: '白鸽在线企业宣传视频',
+  videoPoster: '',
   news: defaultNews,
 }
 
@@ -135,6 +137,7 @@ function normalizeMember(member) {
     ...normalized,
     cardValidUntil: role === 'broker' ? (normalized.cardValidUntil || '') : (normalized.cardValidUntil || defaultValidUntil()),
     cardApprovalStatus: role === 'broker' ? (normalized.cardApprovalStatus || 'draft') : 'approved',
+    renewalStatus: normalized.renewalStatus || 'idle',
   }
 }
 
@@ -147,6 +150,65 @@ function roleLabel(role) {
 function isCardExpired(value) {
   if (!value) return false
   return Date.now() > new Date(`${value}T23:59:59`).getTime()
+}
+
+function daysUntilExpiry(value) {
+  if (!value) return null
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const expiry = new Date(`${value}T00:00:00`)
+  return Math.round((expiry.getTime() - today.getTime()) / 86400000)
+}
+
+function requestTypeLabel(type) {
+  if (type === 'title_change') return '职位变更'
+  if (type === 'broker_initial') return '创建名片'
+  return '名片续期'
+}
+
+function cardStatusOf(member, { pendingTitle = false, pendingRenewal = false } = {}) {
+  if (!member) return { key: 'normal', label: '正常' }
+  if (member.status === 'disabled' || member.renewalStatus === 'rejected' || member.role === 'broker' && member.cardApprovalStatus === 'rejected') return { key: 'disabled', label: '已禁用' }
+  if (isCardExpired(member.cardValidUntil)) return { key: 'expired', label: '已过期' }
+  if (pendingTitle || pendingRenewal || member.role === 'broker' && member.cardApprovalStatus === 'pending') return { key: 'pending', label: '待审核' }
+  return { key: 'normal', label: '正常' }
+}
+
+function expiryNotification(member) {
+  const days = daysUntilExpiry(member?.cardValidUntil)
+  if (days === null || days > 7 || member.renewalStatus === 'rejected') return null
+  if (days < 0) return {
+    id: `expiry:${member.cardValidUntil}:expired`,
+    tone: 'danger',
+    title: '名片已过期',
+    detail: `名片有效期已于 ${member.cardValidUntil} 结束，请提交续期申请。`,
+    time: new Date(`${member.cardValidUntil}T23:59:59`).getTime(),
+  }
+  const threshold = days <= 1 ? 1 : days <= 3 ? 3 : 7
+  return {
+    id: `expiry:${member.cardValidUntil}:${threshold}`,
+    tone: threshold === 1 ? 'danger' : 'warning',
+    title: threshold === 1 ? '名片即将到期' : `名片有效期不足 ${threshold} 天`,
+    detail: days === 0 ? '名片将在今天到期，可立即提交续期申请。' : `名片还剩 ${days} 天到期，可提前提交续期申请。`,
+    time: Date.now(),
+  }
+}
+
+function buildNotifications(requests, member) {
+  if (!member) return []
+  const reviewed = requests
+    .filter(item => item.phone === member.phone && item.status !== 'pending' && item.reviewedAt)
+    .map(item => ({
+      id: `request:${item.id}:${item.status}`,
+      tone: item.status === 'approved' ? 'success' : 'danger',
+      title: `${requestTypeLabel(item.type)}审核${item.status === 'approved' ? '通过' : '拒绝'}`,
+      detail: item.status === 'approved'
+        ? `${requestTypeLabel(item.type)}已生效${item.validUntil ? `，新有效期至 ${item.validUntil}` : ''}。`
+        : `申请未通过。${item.rejectionReason ? `拒绝原因：${item.rejectionReason}` : ''}`,
+      time: item.reviewedAt,
+    }))
+  const expiry = expiryNotification(member)
+  return [...(expiry ? [expiry] : []), ...reviewed].sort((a, b) => b.time - a.time)
 }
 
 function formatDateTime(value) {
@@ -165,6 +227,7 @@ function mergeCard(personal, fixedContent, member) {
     companyPdfUrl: fixedContent.companyPdfUrl,
     videoUrl: fixedContent.videoUrl,
     videoName: fixedContent.videoName,
+    videoPoster: fixedContent.videoPoster,
     news: fixedContent.news,
     cardValidUntil: member?.cardValidUntil || personal.cardValidUntil || '',
   }
@@ -175,6 +238,7 @@ function encodeShareCard(card) {
     ...card,
     avatar: card.avatar?.startsWith('data:') || card.avatar?.startsWith('blob:') ? '' : card.avatar,
     videoUrl: card.videoUrl?.startsWith('blob:') ? '' : card.videoUrl,
+    videoPoster: card.videoPoster?.startsWith('blob:') ? '' : card.videoPoster,
   }
   const bytes = new TextEncoder().encode(JSON.stringify(payload))
   let binary = ''
@@ -221,6 +285,8 @@ function OwnerApp() {
   const [fixedEditorOpen, setFixedEditorOpen] = useState(false)
   const [memberEditor, setMemberEditor] = useState(null)
   const [shareOpen, setShareOpen] = useState(false)
+  const [notificationOpen, setNotificationOpen] = useState(false)
+  const [notificationRead, setNotificationRead] = useState(() => initialSession ? loadLocal(`${NOTIFICATION_READ_PREFIX}${initialSession.phone}`, []) : [])
   const [visitor, setVisitor] = useState(null)
   const [toast, setToast] = useState('')
 
@@ -229,11 +295,15 @@ function OwnerApp() {
   const isEmployee = currentMember?.role === 'employee'
   const isBroker = currentMember?.role === 'broker'
   const displayCard = mergeCard(card, fixedContent, currentMember)
-  const cardExpired = Boolean(currentMember && isCardExpired(currentMember.cardValidUntil))
   const pendingTitleRequest = requests.find(item => item.phone === session?.phone && item.type === 'title_change' && item.status === 'pending')
   const pendingRenewalRequest = requests.find(item => item.phone === session?.phone && item.type === 'renewal' && item.status === 'pending')
   const brokerApprovalState = isBroker ? (currentMember.cardApprovalStatus || 'draft') : 'approved'
-  const shareBlocked = Boolean(pendingTitleRequest || isBroker && brokerApprovalState !== 'approved')
+  const cardStatus = cardStatusOf(currentMember, { pendingTitle: Boolean(pendingTitleRequest), pendingRenewal: Boolean(pendingRenewalRequest) })
+  const renewalDays = daysUntilExpiry(currentMember?.cardValidUntil)
+  const renewalEligible = renewalDays !== null && renewalDays <= 7
+  const notifications = buildNotifications(requests, currentMember)
+  const unreadNotifications = notifications.filter(item => !notificationRead.includes(item.id))
+  const shareBlocked = Boolean(pendingTitleRequest || isBroker && brokerApprovalState !== 'approved' || cardStatus.key === 'expired' || cardStatus.key === 'disabled')
   const editorInitial = currentMember ? {
     ...emptyCard,
     ...(card || {}),
@@ -250,7 +320,21 @@ function OwnerApp() {
   }, [toast])
 
   const notify = text => setToast(text)
+  const openNotifications = () => {
+    const readIds = [...new Set([...notificationRead, ...notifications.map(item => item.id)])]
+    localStorage.setItem(`${NOTIFICATION_READ_PREFIX}${session.phone}`, JSON.stringify(readIds))
+    setNotificationRead(readIds)
+    setNotificationOpen(true)
+  }
   const openShare = () => {
+    if (cardStatus.key === 'disabled') {
+      notify('名片已禁用，续期审核通过后才能重新使用')
+      return
+    }
+    if (cardStatus.key === 'expired') {
+      notify('名片已过期，请先提交续期申请')
+      return
+    }
     if (pendingTitleRequest) {
       notify('职位变更审核中，管理员通过后才可对外分享')
       return
@@ -287,6 +371,7 @@ function OwnerApp() {
     const next = { phone, loginAt: Date.now() }
     localStorage.setItem(SESSION_KEY, JSON.stringify(next))
     setSession(next)
+    setNotificationRead(loadLocal(`${NOTIFICATION_READ_PREFIX}${phone}`, []))
     const savedCard = loadLocal(cardKey(phone), null)
     const hydratedCard = savedCard && existing ? {
       ...savedCard,
@@ -305,6 +390,8 @@ function OwnerApp() {
     localStorage.removeItem(SESSION_KEY)
     setSession(null)
     setCard(null)
+    setNotificationOpen(false)
+    setNotificationRead([])
     setTab('card')
   }
 
@@ -418,7 +505,7 @@ function OwnerApp() {
   }
 
   const requestRenewal = () => {
-    if (pendingRenewalRequest) return
+    if (pendingRenewalRequest || !renewalEligible) return
     const request = {
       id: `renewal-${Date.now()}`,
       type: 'renewal',
@@ -427,20 +514,34 @@ function OwnerApp() {
       role: currentMember.role,
       name: card?.name || currentMember.name || roleLabel(currentMember.role),
       currentTitle: currentMember.title || '',
+      currentValidUntil: currentMember.cardValidUntil || '',
       submittedAt: Date.now(),
       status: 'pending',
     }
     const nextRequests = [request, ...requests]
     localStorage.setItem(REQUESTS_KEY, JSON.stringify(nextRequests))
     setRequests(nextRequests)
+    const nextMembers = members.map(item => item.phone === session.phone ? {...item, renewalStatus: 'pending'} : item)
+    localStorage.setItem(MEMBERS_KEY, JSON.stringify(nextMembers))
+    setMembers(nextMembers)
     notify('名片续期申请已提交，请等待管理员审核')
   }
 
-  const reviewRequest = (requestId, decision, validUntil) => {
+  const reviewRequest = (requestId, decision, validUntil, rejectionReason = '') => {
     const request = requests.find(item => item.id === requestId)
     if (!request) return
+    if (decision === 'rejected' && !rejectionReason.trim()) {
+      notify('拒绝申请前必须填写拒绝原因')
+      return
+    }
     const reviewedAt = Date.now()
-    const nextRequests = requests.map(item => item.id === requestId ? {...item, status: decision, validUntil: decision === 'approved' ? validUntil : item.validUntil, reviewedAt} : item)
+    const nextRequests = requests.map(item => item.id === requestId ? {
+      ...item,
+      status: decision,
+      validUntil: decision === 'approved' ? validUntil : item.validUntil,
+      rejectionReason: decision === 'rejected' ? rejectionReason.trim() : '',
+      reviewedAt,
+    } : item)
     localStorage.setItem(REQUESTS_KEY, JSON.stringify(nextRequests))
     setRequests(nextRequests)
     if (decision === 'approved') {
@@ -449,6 +550,7 @@ function OwnerApp() {
         title: request.type === 'title_change' || request.type === 'broker_initial' ? request.requestedTitle : item.title,
         cardValidUntil: validUntil,
         cardApprovalStatus: request.type === 'broker_initial' ? 'approved' : item.cardApprovalStatus,
+        renewalStatus: request.type === 'renewal' ? 'idle' : item.renewalStatus,
       } : item)
       localStorage.setItem(MEMBERS_KEY, JSON.stringify(nextMembers))
       setMembers(nextMembers)
@@ -468,6 +570,13 @@ function OwnerApp() {
       } : item)
       localStorage.setItem(MEMBERS_KEY, JSON.stringify(nextMembers))
       setMembers(nextMembers)
+    } else if (request.type === 'renewal') {
+      const nextMembers = members.map(item => item.phone === request.phone ? {
+        ...item,
+        renewalStatus: 'rejected',
+      } : item)
+      localStorage.setItem(MEMBERS_KEY, JSON.stringify(nextMembers))
+      setMembers(nextMembers)
     }
     notify(decision === 'approved' ? '申请已通过，名片已按设置的有效期生效' : '申请已拒绝')
   }
@@ -480,18 +589,19 @@ function OwnerApp() {
 
   return <div className="app-shell">
     <main className="phone-stage">
-      <TopBar tab={tab} card={cardExpired ? null : displayCard} shareBlocked={shareBlocked} onEdit={() => setEditorOpen(true)} onShare={openShare} />
+      <TopBar tab={tab} card={displayCard} shareBlocked={shareBlocked} unreadCount={unreadNotifications.length} onNotifications={openNotifications} onEdit={() => setEditorOpen(true)} onShare={openShare} />
       <div className="screen">
-        {tab === 'card' && <CardPage card={displayCard} expired={cardExpired} pendingRenewal={pendingRenewalRequest} pendingTitle={pendingTitleRequest} brokerApprovalState={brokerApprovalState} member={currentMember} notify={notify} onCreate={() => setEditorOpen(true)} onEdit={() => setEditorOpen(true)} onRenew={requestRenewal} />}
-        {tab === 'visitors' && <VisitorPage card={cardExpired || isBroker && brokerApprovalState !== 'approved' ? null : displayCard} onSelect={setVisitor} />}
+        {tab === 'card' && <CardPage card={displayCard} status={cardStatus} renewalDays={renewalDays} renewalEligible={renewalEligible} pendingRenewal={pendingRenewalRequest} pendingTitle={pendingTitleRequest} brokerApprovalState={brokerApprovalState} member={currentMember} requests={requests} notify={notify} onCreate={() => setEditorOpen(true)} onEdit={() => setEditorOpen(true)} onRenew={requestRenewal} />}
+        {tab === 'visitors' && <VisitorPage card={cardStatus.key === 'expired' || cardStatus.key === 'disabled' || isBroker && brokerApprovalState !== 'approved' ? null : displayCard} onSelect={setVisitor} />}
         {tab === 'admin' && isAdmin && <AdminPage fixedContent={fixedContent} members={members} requests={requests} onReview={reviewRequest} onEditFixed={() => setFixedEditorOpen(true)} onAddMember={() => setMemberEditor({ id: '', phone: '', name: '', title: '', email: '', cardValidUntil: defaultValidUntil(), cardApprovalStatus: 'approved', role: 'employee', status: 'active' })} onEditMember={setMemberEditor} />}
-        {tab === 'me' && <MePage session={session} card={card} member={currentMember} onLogout={logout} />}
+        {tab === 'me' && <MePage session={session} card={card} member={currentMember} requests={requests} onLogout={logout} />}
       </div>
       <BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} />
       {editorOpen && <CardEditor initial={editorInitial} titleApprovalRequired={isEmployee} initialApprovalRequired={isBroker && brokerApprovalState !== 'approved'} approvalStatus={brokerApprovalState} loginPhone={session.phone} approvedTitle={currentMember.title || ''} pendingTitle={pendingTitleRequest?.requestedTitle || ''} onClose={() => setEditorOpen(false)} onSave={saveCard} />}
       {fixedEditorOpen && isAdmin && <FixedContentEditor initial={fixedContent} onClose={() => setFixedEditorOpen(false)} onSave={saveFixedContent} />}
       {memberEditor && isAdmin && <MemberEditor initial={memberEditor} members={members} onClose={() => setMemberEditor(null)} onSave={saveMember} />}
       {shareOpen && displayCard && !shareBlocked && <ShareSheet card={displayCard} onClose={() => setShareOpen(false)} notify={notify} />}
+      {notificationOpen && <NotificationCenter notifications={notifications} onClose={() => setNotificationOpen(false)} />}
       {visitor && <VisitorDetail visitor={visitor} onClose={() => setVisitor(null)} notify={notify} />}
       {toast && <div className="toast"><Check size={17}/>{toast}</div>}
     </main>
@@ -582,20 +692,29 @@ function LoginPage({ onLogin }) {
   </div>
 }
 
-function TopBar({ tab, card, shareBlocked = false, onEdit, onShare }) {
+function TopBar({ tab, card, shareBlocked = false, unreadCount = 0, onNotifications, onEdit, onShare }) {
   const titles = { visitors: '访客雷达', admin: '企业与审批', me: '我的' }
   return <header className="topbar">
     {tab === 'card' ? <Brand /> : <div className="page-heading"><b>{titles[tab]}</b>{tab === 'visitors' && <span className="live"><i/>实时</span>}</div>}
-    {tab === 'card' && card ? <div className="topbar-actions"><button className="icon-button" onClick={onEdit} aria-label="编辑名片"><Edit3 size={18}/></button><button className={`icon-button share-top-button ${shareBlocked ? 'blocked' : ''}`} onClick={onShare} aria-label={shareBlocked ? '名片审核中，暂不可分享' : '分享名片'}><Share2 size={18}/></button></div> : <button className="icon-button passive" aria-label="更多"><MoreHorizontal size={22}/></button>}
+    {tab === 'card' ? <div className="topbar-actions">
+      <button className="icon-button notification-button" onClick={onNotifications} aria-label={`消息通知${unreadCount ? `，${unreadCount}条未读` : ''}`}><Bell size={18}/>{unreadCount > 0 && <i>{unreadCount > 9 ? '9+' : unreadCount}</i>}</button>
+      {card && <button className="icon-button" onClick={onEdit} aria-label="编辑名片"><Edit3 size={18}/></button>}
+      {card && <button className={`icon-button share-top-button ${shareBlocked ? 'blocked' : ''}`} onClick={onShare} aria-label={shareBlocked ? '名片当前不可分享' : '分享名片'}><Share2 size={18}/></button>}
+    </div> : <button className="icon-button passive" aria-label="更多"><MoreHorizontal size={22}/></button>}
   </header>
 }
 
-function CardPage({ card, expired, pendingRenewal, pendingTitle, brokerApprovalState, member, notify, onCreate, onEdit, onRenew }) {
-  if (expired) return <ExpiredCard member={member} pending={pendingRenewal} onRenew={onRenew}/>
+function CardPage({ card, status, renewalDays, renewalEligible, pendingRenewal, pendingTitle, brokerApprovalState, member, requests, notify, onCreate, onEdit, onRenew }) {
   if (!card) return <EmptyCard role={member.role} onCreate={onCreate}/>
   if (member.role === 'broker' && brokerApprovalState !== 'approved') return <BrokerApprovalCard state={brokerApprovalState} onEdit={onEdit}/>
+  if (status.key === 'disabled') {
+    const rejectedRenewal = [...requests].filter(item => item.phone === member.phone && item.type === 'renewal' && item.status === 'rejected').sort((a, b) => b.reviewedAt - a.reviewedAt)[0]
+    return <DisabledCard reason={rejectedRenewal?.rejectionReason} pending={pendingRenewal} onRenew={onRenew}/>
+  }
+  if (status.key === 'expired') return <ExpiredCard member={member} pending={pendingRenewal} onRenew={onRenew}/>
   return <div className="card-page page-pad">
-    <GeneratedCard card={card} notify={notify} />
+    <GeneratedCard card={card} status={status} notify={notify} />
+    {renewalEligible && <section className={`renewal-callout ${renewalDays <= 1 ? 'urgent' : ''}`}><Clock3 size={17}/><div><b>{renewalDays === 0 ? '名片今天到期' : `名片还剩 ${renewalDays} 天到期`}</b><p>可提前提交续期申请，由管理员审核并设置新的有效期。</p></div><button disabled={Boolean(pendingRenewal)} onClick={onRenew}>{pendingRenewal ? '审核中' : '申请续期'}</button></section>}
     {pendingTitle && <section className="share-review-lock"><LockKeyhole size={16}/><div><b>职位变更审核中，暂不可对外分享</b><p>当前名片继续展示“{pendingTitle.currentTitle}”；管理员通过“{pendingTitle.requestedTitle}”后，分享功能会自动恢复。</p></div></section>}
   </div>
 }
@@ -603,6 +722,7 @@ function CardPage({ card, expired, pendingRenewal, pendingTitle, brokerApprovalS
 function BrokerApprovalCard({ state, onEdit }) {
   const rejected = state === 'rejected'
   return <div className="expired-card-page page-pad"><section className={`expired-card-state broker-review-state ${rejected ? 'rejected' : ''}`}>
+    <CardStatusBadge status={{ key: rejected ? 'disabled' : 'pending', label: rejected ? '已禁用' : '待审核' }}/>
     <span>{rejected ? <X size={31}/> : <Clock3 size={31}/>}</span>
     <small>{rejected ? '名片申请未通过' : '经纪人名片审核中'}</small>
     <h1>{rejected ? '修改后可以重新提交' : '等待管理员审核'}</h1>
@@ -613,11 +733,23 @@ function BrokerApprovalCard({ state, onEdit }) {
 
 function ExpiredCard({ member, pending, onRenew }) {
   return <div className="expired-card-page page-pad"><section className="expired-card-state">
+    <CardStatusBadge status={{ key: 'expired', label: '已过期' }}/>
     <span><Clock3 size={31}/></span>
     <small>名片有效期已结束</small>
     <h1>需要重新申请使用</h1>
     <p>本名片有效期至 {member.cardValidUntil}。续期申请通过前，访客无法继续查看和保存这张名片。</p>
     <button className="button primary" disabled={Boolean(pending)} onClick={onRenew}>{pending ? '续期申请审核中' : '申请续期'}</button>
+  </section></div>
+}
+
+function DisabledCard({ reason, pending, onRenew }) {
+  return <div className="expired-card-page page-pad"><section className="expired-card-state disabled-card-state">
+    <CardStatusBadge status={{ key: pending ? 'pending' : 'disabled', label: pending ? '待审核' : '已禁用' }}/>
+    <span><LockKeyhole size={31}/></span>
+    <small>{pending ? '续期申请审核中' : '续期申请未通过'}</small>
+    <h1>{pending ? '等待管理员处理' : '该名片暂不可用'}</h1>
+    <p>{pending ? '管理员审核通过并设置新的有效期后，名片将自动恢复使用。' : reason ? `拒绝原因：${reason}` : '续期申请被拒绝后，名片不能继续查看或对外分享。'}</p>
+    <button className="button primary" disabled={Boolean(pending)} onClick={onRenew}>{pending ? '续期申请审核中' : '重新申请续期'}</button>
   </section></div>
 }
 
@@ -643,7 +775,11 @@ function EmptyCard({ role, onCreate }) {
   </div>
 }
 
-function GeneratedCard({ card, notify, readonly = false }) {
+function CardStatusBadge({ status }) {
+  return <span className={`card-status-badge ${status.key}`}><i/>{status.label}</span>
+}
+
+function GeneratedCard({ card, status = { key: 'normal', label: '正常' }, notify, readonly = false }) {
   const news = (card.news || []).filter(x => x.title.trim())
   const addresses = (card.addresses || []).filter(Boolean)
   const hasIntro = card.intro || addresses.length > 0
@@ -663,7 +799,7 @@ function GeneratedCard({ card, notify, readonly = false }) {
       <button className="card-contact-add" onClick={() => addToContacts(card, notify)} aria-label="添加至通讯录"><ContactRound size={16}/><span>添加至通讯录</span></button>
     </section>
 
-    {!readonly && card.cardValidUntil && <section className="card-validity-bar"><ShieldCheck size={14}/><span>名片有效期至 {card.cardValidUntil}</span></section>}
+    {!readonly && <section className="card-state-row"><CardStatusBadge status={status}/>{card.cardValidUntil && <span><ShieldCheck size={14}/>有效期至 {card.cardValidUntil}</span>}</section>}
 
     {hasIntro && <section className="section-card intro-card generated-section">
       <div className="section-head"><h2>个人简介</h2></div>
@@ -674,7 +810,7 @@ function GeneratedCard({ card, notify, readonly = false }) {
 
     {card.videoUrl && <section className="section-card media-section generated-section">
       <div className="section-head"><h2>公司风采</h2>{card.videoName && <span>{card.videoName}</span>}</div>
-      <video className="company-video" src={normalMediaUrl(card.videoUrl)} controls playsInline preload="metadata">你的浏览器暂不支持视频播放</video>
+      <video className="company-video" src={normalMediaUrl(card.videoUrl)} poster={normalMediaUrl(card.videoPoster)} controls playsInline preload="metadata">你的浏览器暂不支持视频播放</video>
     </section>}
 
     {news.length > 0 && <section className="section-card news-section generated-section">
@@ -821,36 +957,66 @@ function FixedContentEditor({ initial, onClose, onSave }) {
     news: (initial.news || []).map(item => ({...item})),
   }))
   const [errors, setErrors] = useState({})
+  const [videoError, setVideoError] = useState('')
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [draggingIndex, setDraggingIndex] = useState(null)
   const videoRef = useRef(null)
+  const posterRef = useRef(null)
   const pdfRef = useRef(null)
   const set = (key, value) => setForm(prev => ({...prev, [key]: value}))
   const addNews = () => set('news', [...form.news, {id: Date.now(), title:'', url:''}])
   const updateNews = (id, key, value) => set('news', form.news.map(item => item.id === id ? {...item, [key]: value} : item))
   const uploadVideo = file => {
-    if (!file || !file.type.startsWith('video/')) return
+    if (!file) return
+    const supported = ['video/mp4', 'video/quicktime', 'video/x-m4v', 'video/webm'].includes(file.type) || /\.(mp4|mov|m4v|webm)$/i.test(file.name)
+    if (!supported) {
+      setVideoError('请选择 MP4、MOV、M4V 或 WebM 视频')
+      return
+    }
+    setVideoError('')
     setForm(prev => ({...prev, videoUrl: URL.createObjectURL(file), videoName: file.name}))
+  }
+  const uploadPoster = file => {
+    if (!file || !file.type.startsWith('image/')) return
+    const reader = new FileReader()
+    reader.onload = event => set('videoPoster', event.target.result)
+    reader.readAsDataURL(file)
   }
   const selectPdf = file => {
     if (!file || file.type !== 'application/pdf') return
     setForm(prev => ({...prev, companyPdfName: file.name, companyPdfUrl: URL.createObjectURL(file)}))
   }
 
+  const moveNews = targetIndex => {
+    if (draggingIndex === null || draggingIndex === targetIndex) return
+    const next = [...form.news]
+    const [moved] = next.splice(draggingIndex, 1)
+    next.splice(targetIndex, 0, moved)
+    set('news', next)
+    setDraggingIndex(targetIndex)
+  }
+
+  const contentPayload = () => ({
+    company: form.company.trim(),
+    address: form.address.trim(),
+    companyIntroductionImage: form.companyIntroductionImage,
+    companyPdfName: form.companyPdfName,
+    companyPdfUrl: form.companyPdfUrl,
+    videoUrl: form.videoUrl.trim(),
+    videoName: form.videoName?.trim() || '',
+    videoPoster: form.videoPoster || '',
+    news: form.news.filter(item => item.title.trim()).map(item => ({...item, title:item.title.trim(), url:item.url.trim()})),
+  })
+
   const submit = () => {
     const nextErrors = {}
     if (!form.company.trim()) nextErrors.company = '请填写公司名称'
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length) return
-    onSave({
-      company: form.company.trim(),
-      address: form.address.trim(),
-      companyIntroductionImage: form.companyIntroductionImage,
-      companyPdfName: form.companyPdfName,
-      companyPdfUrl: form.companyPdfUrl,
-      videoUrl: form.videoUrl.trim(),
-      videoName: form.videoName?.trim() || '',
-      news: form.news.filter(item => item.title.trim()).map(item => ({...item, title:item.title.trim(), url:item.url.trim()})),
-    })
+    setPreviewOpen(true)
   }
+
+  const previewCard = mergeCard(publicCard, contentPayload(), { cardValidUntil: defaultValidUntil() })
 
   return <div className="modal-layer editor-layer">
     <section className="modal-sheet card-editor-sheet">
@@ -873,17 +1039,29 @@ function FixedContentEditor({ initial, onClose, onSave }) {
         <div className="video-source-editor">
           <label className="single-editor-input"><Video size={17}/><input value={form.videoUrl.startsWith('blob:') ? '' : form.videoUrl} onChange={event => set('videoUrl', event.target.value)} placeholder="粘贴视频链接，或上传视频文件"/></label>
           <button onClick={() => videoRef.current?.click()}><Upload size={15}/>{form.videoName ? '更换视频' : '上传视频'}</button>
-          <input ref={videoRef} hidden type="file" accept="video/*" onChange={event => uploadVideo(event.target.files?.[0])}/>
+          <input ref={videoRef} hidden type="file" accept="video/mp4,video/quicktime,video/x-m4v,video/webm,.mp4,.mov,.m4v,.webm" onChange={event => uploadVideo(event.target.files?.[0])}/>
         </div>
+        <p className="video-format-tip">支持 MP4、MOV、M4V、WebM 等常见视频格式</p>
+        {videoError && <p className="upload-error">{videoError}</p>}
         {form.videoName && <div className="selected-video-name"><Video size={14}/><span>{form.videoName}</span><button onClick={() => setForm(prev => ({...prev,videoUrl:'',videoName:''}))}><X size={13}/></button></div>}
+        <section className="video-poster-editor">
+          <div className="video-poster-preview">{form.videoPoster ? <img src={normalMediaUrl(form.videoPoster)} alt="视频封面预览"/> : <><ImageIcon size={24}/><span>暂未设置封面</span></>}</div>
+          <div><b>视频封面图</b><p>用于视频加载前展示，建议使用 16:9 图片</p><button onClick={() => posterRef.current?.click()}><Upload size={14}/>{form.videoPoster ? '更换封面' : '上传封面'}</button></div>
+          <input ref={posterRef} hidden type="file" accept="image/*" onChange={event => uploadPoster(event.target.files?.[0])}/>
+        </section>
 
         <EditorTitle title="企业资讯" action={<button onClick={addNews}><Plus size={14}/>添加资讯</button>} />
-        {form.news.length === 0 ? <AddEmpty text="还没有企业资讯" onClick={addNews}/> : <div className="repeat-editor-list">{form.news.map(item => <div className="repeat-editor news-editor-item" key={item.id}>
-          <span><Newspaper size={15}/></span><div><input value={item.title} onChange={event => updateNews(item.id,'title',event.target.value)} placeholder="资讯标题"/><input value={item.url} onChange={event => updateNews(item.id,'url',event.target.value)} placeholder="资讯链接"/></div><button onClick={() => set('news', form.news.filter(current => current.id !== item.id))}><Trash2 size={15}/></button>
+        {form.news.length > 1 && <p className="news-sort-tip"><GripVertical size={14}/>按住左侧排序图标拖拽，分享名片将按此顺序展示</p>}
+        {form.news.length === 0 ? <AddEmpty text="还没有企业资讯" onClick={addNews}/> : <div className="repeat-editor-list sortable-news-list">{form.news.map((item, index) => <div className={`repeat-editor news-editor-item ${draggingIndex === index ? 'dragging' : ''}`} key={item.id} draggable onDragStart={() => setDraggingIndex(index)} onDragOver={event => { event.preventDefault(); moveNews(index) }} onDragEnd={() => setDraggingIndex(null)}>
+          <button className="drag-handle" aria-label={`拖拽排序：${item.title || `资讯${index + 1}`}`}><GripVertical size={16}/></button><div><input value={item.title} onChange={event => updateNews(item.id,'title',event.target.value)} placeholder="资讯标题"/><input value={item.url} onChange={event => updateNews(item.id,'url',event.target.value)} placeholder="资讯链接"/></div><button onClick={() => set('news', form.news.filter(current => current.id !== item.id))}><Trash2 size={15}/></button>
         </div>)}</div>}
       </div>
-      <footer><button className="button secondary" onClick={onClose}>取消</button><button className="button primary" onClick={submit}><Check size={17}/>应用到所有名片</button></footer>
+      <footer><button className="button secondary" onClick={onClose}>取消</button><button className="button primary" onClick={submit}><Eye size={17}/>预览效果</button></footer>
     </section>
+    {previewOpen && <Modal title="发布前预览" onClose={() => setPreviewOpen(false)} footer={<><button className="button secondary" onClick={() => setPreviewOpen(false)}>返回修改</button><button className="button primary" onClick={() => onSave(contentPayload())}><Check size={17}/>确认发布</button></>}>
+      <section className="enterprise-preview-note"><Eye size={18}/><div><b>完整名片效果预览</b><p>以下使用示例个人信息拼接当前企业配置草稿，确认无误后再发布到所有名片。</p></div></section>
+      <div className="enterprise-card-preview"><GeneratedCard card={previewCard} notify={() => {}} readonly /></div>
+    </Modal>}
   </div>
 }
 
@@ -934,12 +1112,11 @@ function MemberEditor({ initial, members, onClose, onSave }) {
 }
 
 function AdminPage({ fixedContent, members, requests, onReview, onEditFixed, onAddMember, onEditMember }) {
-  const [showAllRequests, setShowAllRequests] = useState(false)
+  const [requestPage, setRequestPage] = useState('latest')
   const brokerCount = members.filter(item => item.role === 'broker').length
   const pendingRequests = requests.filter(item => item.status === 'pending')
   const latestPendingRequests = [...pendingRequests].sort((a, b) => b.submittedAt - a.submittedAt).slice(0, 5)
-  const allRequests = [...requests].sort((a, b) => b.submittedAt - a.submittedAt)
-  const shownRequests = showAllRequests ? allRequests : latestPendingRequests
+  if (requestPage === 'all') return <AllRequestsPage requests={requests} onReview={onReview} onBack={() => setRequestPage('latest')}/>
   return <div className="admin-page page-pad">
     <section className="admin-hero">
       <div><span><ShieldCheck size={16}/>管理员控制台</span><h1>企业配置与名片审批</h1><p>统一维护企业内容、成员身份、申请状态与名片有效期。</p></div>
@@ -951,35 +1128,82 @@ function AdminPage({ fixedContent, members, requests, onReview, onEditFixed, onA
       <div className="fixed-content-preview"><div><span>公司名称</span><b>{fixedContent.company}</b></div><div><span>公司介绍</span><b>{fixedContent.companyPdfName ? 'PDF已设置' : '未设置'}</b></div><div><span>公司风采</span><b>{fixedContent.videoUrl ? '已配置' : '待上传'}</b></div></div>
     </section>
 
-    <div className="member-list-title approval-list-title"><div><h2>审批中心</h2><span>{showAllRequests ? `全部 ${requests.length} 条申请` : `最新 ${Math.min(pendingRequests.length, 5)} / ${pendingRequests.length} 条待处理`}</span></div>{requests.length > 0 && <button onClick={() => setShowAllRequests(value => !value)}>{showAllRequests ? '仅看待审批' : '查看更多'}</button>}</div>
+    <div className="member-list-title approval-list-title"><div><h2>审批中心</h2><span>最新 {Math.min(pendingRequests.length, 5)} / {pendingRequests.length} 条待审核申请</span></div></div>
     <section className="approval-list">
-      {shownRequests.length === 0 ? <div className="approval-empty"><ShieldCheck size={24}/><b>{requests.length > 0 ? '暂无待审批申请' : '暂无申请信息'}</b><span>{requests.length > 0 ? '已审批记录请点击“查看更多”查看。' : '职位变更、经纪人首次名片或续期申请会出现在这里。'}</span></div> : shownRequests.map(request => <ApprovalRow key={request.id} request={request} onReview={onReview}/>) }
+      {latestPendingRequests.length === 0 ? <div className="approval-empty"><ShieldCheck size={24}/><b>{requests.length > 0 ? '暂无待审核申请' : '暂无申请信息'}</b><span>{requests.length > 0 ? '已处理记录可从下方“更多”进入全部申请查看。' : '职位变更、经纪人首次名片或续期申请会出现在这里。'}</span></div> : latestPendingRequests.map(request => <ApprovalRow key={request.id} request={request} onReview={onReview}/>) }
     </section>
+    {requests.length > 0 && <button className="approval-more-button" onClick={() => setRequestPage('all')}><span>更多</span><small>查看全部状态的申请记录</small><ChevronRight size={17}/></button>}
 
     <div className="member-list-title"><div><h2>成员与角色</h2><span>登录手机号对应唯一账号</span></div><button onClick={onAddMember}><Plus size={15}/>添加成员</button></div>
     <section className="member-list section-card">
       {members.map(member => <button className="member-row" key={member.id} onClick={() => onEditMember(member)}>
         <span className={`member-avatar ${member.role}`}>{member.name ? member.name.slice(0,1) : <UserRound size={18}/>}</span>
         <div><b>{member.name || '待完善姓名'}<em className={`role-chip ${member.role}`}>{roleLabel(member.role)}</em></b><p>{member.phone.replace(/(\d{3})\d{4}(\d{4})/,'$1****$2')}{member.title ? ` · ${member.title}` : ''}</p><small>{member.cardValidUntil ? `有效期至 ${member.cardValidUntil}` : member.role === 'broker' ? '名片待首次审核' : '待设置有效期'}</small></div>
-        <span className={`status-dot ${member.status === 'disabled' || isCardExpired(member.cardValidUntil) || member.role === 'broker' && member.cardApprovalStatus !== 'approved' ? 'disabled' : 'active'}`}>{member.status === 'disabled' ? '停用' : member.role === 'broker' && member.cardApprovalStatus === 'pending' ? '审核中' : member.role === 'broker' && member.cardApprovalStatus === 'rejected' ? '未通过' : member.role === 'broker' && member.cardApprovalStatus !== 'approved' ? '待申请' : isCardExpired(member.cardValidUntil) ? '已过期' : '正常'}</span><ChevronRight size={16}/>
+        <span className={`status-dot ${member.status === 'disabled' || member.renewalStatus === 'rejected' || isCardExpired(member.cardValidUntil) || member.role === 'broker' && member.cardApprovalStatus !== 'approved' ? 'disabled' : 'active'}`}>{member.status === 'disabled' ? '停用' : member.renewalStatus === 'rejected' ? '已禁用' : member.renewalStatus === 'pending' ? '续期审核中' : member.role === 'broker' && member.cardApprovalStatus === 'pending' ? '审核中' : member.role === 'broker' && member.cardApprovalStatus === 'rejected' ? '未通过' : member.role === 'broker' && member.cardApprovalStatus !== 'approved' ? '待申请' : isCardExpired(member.cardValidUntil) ? '已过期' : '正常'}</span><ChevronRight size={16}/>
       </button>)}
     </section>
     <section className="role-rule-note"><LockKeyhole size={17}/><div><b>权限边界</b><p>员工使用清单预设信息，只有修改默认职位才需审批；经纪人无预设信息，首次生成名片必须审核，所有名片到期后均不可使用。</p></div></section>
   </div>
 }
 
+function AllRequestsPage({ requests, onReview, onBack }) {
+  const [typeFilter, setTypeFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const sorted = [...requests].sort((a, b) => b.submittedAt - a.submittedAt)
+  const shown = sorted.filter(item => (typeFilter === 'all' || item.type === typeFilter) && (statusFilter === 'all' || item.status === statusFilter))
+  return <div className="all-requests-page page-pad">
+    <button className="subpage-back" onClick={onBack}><ArrowLeft size={17}/><span>返回审批中心</span></button>
+    <section className="all-requests-hero"><div><span>审批记录</span><h1>全部申请</h1><p>按申请时间倒序展示待审核、已通过和已拒绝记录。</p></div><strong>{shown.length}<small>条结果</small></strong></section>
+    <div className="request-filters">
+      <label><span>申请类型</span><select value={typeFilter} onChange={event => setTypeFilter(event.target.value)}><option value="all">全部类型</option><option value="title_change">职位变更</option><option value="broker_initial">创建名片</option><option value="renewal">名片续期</option></select></label>
+      <label><span>申请状态</span><select value={statusFilter} onChange={event => setStatusFilter(event.target.value)}><option value="all">全部状态</option><option value="pending">待审核</option><option value="approved">已通过</option><option value="rejected">已拒绝</option></select></label>
+    </div>
+    <section className="approval-list all-approval-list">
+      {shown.length === 0 ? <div className="approval-empty"><ShieldCheck size={24}/><b>没有符合条件的申请</b><span>调整申请类型或状态筛选后再查看。</span></div> : shown.map(request => <ApprovalRow key={request.id} request={request} onReview={onReview}/>) }
+    </section>
+  </div>
+}
+
 function ApprovalRow({ request, onReview }) {
   const [validUntil, setValidUntil] = useState(request.validUntil || defaultValidUntil())
+  const [rejectOpen, setRejectOpen] = useState(false)
+  const [rejectionReason, setRejectionReason] = useState('')
+  const [reasonError, setReasonError] = useState('')
   const pending = request.status === 'pending'
-  const statusText = request.status === 'approved' ? '已通过' : request.status === 'rejected' ? '已拒绝' : '待审批'
-  const typeText = request.type === 'title_change' ? '职位变更' : request.type === 'broker_initial' ? '经纪人名片' : '名片续期'
+  const statusText = request.status === 'approved' ? '已通过' : request.status === 'rejected' ? '已拒绝' : '待审核'
+  const typeText = requestTypeLabel(request.type)
+  const submitReject = () => {
+    if (!rejectionReason.trim()) {
+      setReasonError('请填写拒绝原因')
+      return
+    }
+    onReview(request.id, 'rejected', validUntil, rejectionReason)
+    setRejectOpen(false)
+  }
   return <article className={`approval-row ${request.status}`}>
-    <header><span className="approval-avatar">{request.name?.slice(0, 1) || (request.role === 'broker' ? '经' : '员')}</span><div><b>{request.name || roleLabel(request.role)}<em>{typeText}</em></b><p>{request.phone.replace(/(\d{3})\d{4}(\d{4})/,'$1****$2')} · {formatDateTime(request.submittedAt)}</p></div><strong>{statusText}</strong></header>
-    {request.type === 'title_change' ? <div className="title-change-line"><span>{request.currentTitle || '未设置'}</span><ChevronRight size={14}/><b>{request.requestedTitle}</b></div> : request.type === 'broker_initial' ? <p className="renewal-copy">首次申请名片 · {request.requestedTitle || '未填写职位'}{request.contactPhone ? ` · 展示手机号 ${request.contactPhone}` : ''}</p> : <p className="renewal-copy">原有效期已结束，{roleLabel(request.role)}申请重新启用电子名片。</p>}
+    <header><span className="approval-avatar">{request.name?.slice(0, 1) || (request.role === 'broker' ? '经' : '员')}</span><div><b>{request.name || roleLabel(request.role)}<em>{typeText}</em></b><p>{request.phone} · 申请时间 {formatDateTime(request.submittedAt)}</p></div><strong>{statusText}</strong></header>
+    {request.type === 'title_change' ? <div className="title-change-line labeled"><span><small>原职位</small>{request.currentTitle || '未设置'}</span><ChevronRight size={14}/><b><small>申请职位</small>{request.requestedTitle}</b></div> : request.type === 'broker_initial' ? <p className="renewal-copy">申请职位：{request.requestedTitle || '未填写职位'}{request.contactPhone ? ` · 名片手机号：${request.contactPhone}` : ''}</p> : <p className="renewal-copy">当前有效期：{request.currentValidUntil || '已结束'} · 申请续期并重新启用电子名片。</p>}
     <label className="approval-validity"><span>名片有效期</span><input type="date" value={validUntil} disabled={!pending} onChange={event => setValidUntil(event.target.value)}/></label>
     {pending && <div className="validity-presets"><span>快捷设置</span>{[[3,'3个月'],[12,'1年'],[24,'2年']].map(([months,label]) => <button key={months} onClick={() => setValidUntil(validUntilAfterMonths(months))}>{label}</button>)}</div>}
-    {pending && <div className="approval-actions"><button onClick={() => onReview(request.id, 'rejected', validUntil)}><X size={14}/>拒绝</button><button onClick={() => onReview(request.id, 'approved', validUntil)} disabled={!validUntil}><Check size={14}/>通过并生效</button></div>}
+    {request.status === 'rejected' && request.rejectionReason && <p className="rejection-reason"><b>拒绝原因</b>{request.rejectionReason}</p>}
+    {pending && <div className="approval-actions"><button onClick={() => { setRejectOpen(true); setReasonError('') }}><X size={14}/>拒绝</button><button onClick={() => onReview(request.id, 'approved', validUntil)} disabled={!validUntil}><Check size={14}/>通过并生效</button></div>}
+    {rejectOpen && <Modal title="拒绝申请" onClose={() => setRejectOpen(false)} footer={<><button className="button secondary" onClick={() => setRejectOpen(false)}>取消</button><button className="button danger" onClick={submitReject}><X size={16}/>确认拒绝</button></>}>
+      <section className="reject-request-summary"><span>{request.name || roleLabel(request.role)}</span><b>{typeText}</b><p>{request.phone} · {formatDateTime(request.submittedAt)}</p></section>
+      <label className={`reject-reason-field ${reasonError ? 'has-error' : ''}`}><span>拒绝原因<em>*</em></span><textarea rows="5" value={rejectionReason} onChange={event => { setRejectionReason(event.target.value); setReasonError('') }} placeholder="请填写明确的拒绝原因，申请人将在消息通知中看到"/>{reasonError && <small>{reasonError}</small>}</label>
+    </Modal>}
   </article>
+}
+
+function NotificationCenter({ notifications, onClose }) {
+  return <Modal title="消息通知" onClose={onClose}>
+    <div className="notification-center-head"><Bell size={18}/><div><b>个人名片通知</b><p>这里仅展示你的审核结果和到期提醒，与管理员审批列表分开。</p></div></div>
+    <section className="notification-list">
+      {notifications.length === 0 ? <div className="notification-empty"><Bell size={25}/><b>暂无新消息</b><span>审核结果和名片到期提醒会出现在这里。</span></div> : notifications.map(item => <article className={`notification-item ${item.tone}`} key={item.id}>
+        <span><Bell size={15}/></span>
+        <div><b>{item.title}</b><p>{item.detail}</p><time>{formatDateTime(item.time)}</time></div>
+      </article>)}
+    </section>
+  </Modal>
 }
 
 function ShareSheet({ card, onClose, notify }) {
@@ -1043,9 +1267,14 @@ function VisitorRow({ visitor, onClick }) {
   return <button className="visitor-row" onClick={onClick}><span className="visitor-avatar" style={{background:visitor.color}}>{visitor.avatar}</span><div className="visitor-main"><div><b>{displayName}</b><span className={`visitor-auth ${visitor.wechatAuthorized ? 'authorized' : 'anonymous'}`}>{visitor.wechatAuthorized ? '微信已授权' : '未授权'}</span></div><p><Clock3 size={12}/>打开时间：{visitor.openTime}</p><small><Eye size={13}/>查看了「{visitor.content}」</small></div><div className="visitor-side"><span>浏览时长</span><b>{visitor.duration}</b><ChevronRight size={16}/></div></button>
 }
 
-function MePage({ session, card, member, onLogout }) {
+function MePage({ session, card, member, requests, onLogout }) {
   const brokerState = member.role === 'broker' ? member.cardApprovalStatus || 'draft' : 'approved'
-  const cardStateText = member.role === 'broker' && brokerState !== 'approved'
+  const pendingRenewal = requests.some(item => item.phone === member.phone && item.type === 'renewal' && item.status === 'pending')
+  const cardStateText = member.renewalStatus === 'rejected'
+    ? '名片已禁用，续期审核通过后可恢复使用'
+    : pendingRenewal
+      ? '续期申请审核中'
+      : member.role === 'broker' && brokerState !== 'approved'
     ? brokerState === 'pending' ? '名片审核中，审核通过后可使用' : brokerState === 'rejected' ? '名片申请未通过，请修改后重新提交' : '等待填写个人信息并申请名片'
     : isCardExpired(member.cardValidUntil) ? '名片已过期，请申请续期' : card ? `个人信息已完善 · 有效期至 ${member.cardValidUntil}` : `等待完善个人信息 · 有效期至 ${member.cardValidUntil}`
   return <div className="me-page page-pad">
