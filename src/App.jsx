@@ -208,7 +208,24 @@ function buildNotifications(requests, member) {
       time: item.reviewedAt,
     }))
   const expiry = expiryNotification(member)
-  return [...(expiry ? [expiry] : []), ...reviewed].sort((a, b) => b.time - a.time)
+  const actual = [...(expiry ? [expiry] : []), ...reviewed].sort((a, b) => b.time - a.time)
+  if (actual.length > 0) return actual
+  return [
+    {
+      id: `demo:${member.phone}:approval`,
+      tone: 'success',
+      title: '职位变更审核已通过',
+      detail: '您提交的职位变更申请已通过，名片信息已同步更新。',
+      time: Date.now() - 12 * 60000,
+    },
+    {
+      id: `demo:${member.phone}:expiry`,
+      tone: 'warning',
+      title: '名片即将到期',
+      detail: '您的名片将在 7 天后到期，请及时提交续期申请。',
+      time: Date.now() - 26 * 3600000,
+    },
+  ]
 }
 
 function formatDateTime(value) {
@@ -693,7 +710,7 @@ function LoginPage({ onLogin }) {
 }
 
 function TopBar({ tab, card, shareBlocked = false, unreadCount = 0, onNotifications, onEdit, onShare }) {
-  const titles = { visitors: '访客雷达', admin: '企业与审批', me: '我的' }
+  const titles = { visitors: '访客雷达', admin: '企业管理', me: '我的' }
   return <header className="topbar">
     {tab === 'card' ? <Brand /> : <div className="page-heading"><b>{titles[tab]}</b>{tab === 'visitors' && <span className="live"><i/>实时</span>}</div>}
     {tab === 'card' ? <div className="topbar-actions">
@@ -1113,19 +1130,17 @@ function MemberEditor({ initial, members, onClose, onSave }) {
 
 function AdminPage({ fixedContent, members, requests, onReview, onEditFixed, onAddMember, onEditMember }) {
   const [requestPage, setRequestPage] = useState('latest')
-  const brokerCount = members.filter(item => item.role === 'broker').length
   const pendingRequests = requests.filter(item => item.status === 'pending')
   const latestPendingRequests = [...pendingRequests].sort((a, b) => b.submittedAt - a.submittedAt).slice(0, 5)
   if (requestPage === 'all') return <AllRequestsPage requests={requests} onReview={onReview} onBack={() => setRequestPage('latest')}/>
   return <div className="admin-page page-pad">
     <section className="admin-hero">
-      <div><span><ShieldCheck size={16}/>管理员控制台</span><h1>企业配置与名片审批</h1><p>统一维护企业内容、成员身份、申请状态与名片有效期。</p></div>
-      <div className="admin-summary"><div><b>{members.length}</b><span>全部账号</span></div><div><b>{brokerCount}</b><span>经纪人</span></div><div><b>{pendingRequests.length}</b><span>待审批</span></div></div>
+      <div><h1>企业管理</h1><p>统一维护企业内容、成员身份、申请状态与名片有效期。</p></div>
     </section>
 
     <section className="section-card fixed-control-card">
       <div className="fixed-control-head"><span><Settings2 size={20}/></span><div><b>企业配置</b><p>自动拼接到管理员、员工和经纪人名片</p></div><button onClick={onEditFixed}>配置</button></div>
-      <div className="fixed-content-preview"><div><span>公司名称</span><b>{fixedContent.company}</b></div><div><span>公司介绍</span><b>{fixedContent.companyPdfName ? 'PDF已设置' : '未设置'}</b></div><div><span>公司风采</span><b>{fixedContent.videoUrl ? '已配置' : '待上传'}</b></div></div>
+      <div className="fixed-content-preview"><div><span>公司名称</span><b>{fixedContent.company}</b></div><div><span>公司介绍</span><b>{fixedContent.companyPdfName ? 'PDF已设置' : '未设置'}</b></div><div><span>宣传视频</span><b>{fixedContent.videoUrl ? '已上传' : '待上传'}</b></div></div>
     </section>
 
     <div className="member-list-title approval-list-title"><div><h2>审批中心</h2><span>最新 {Math.min(pendingRequests.length, 5)} / {pendingRequests.length} 条待审核申请</span></div></div>
@@ -1196,7 +1211,6 @@ function ApprovalRow({ request, onReview }) {
 
 function NotificationCenter({ notifications, onClose }) {
   return <Modal title="消息通知" onClose={onClose}>
-    <div className="notification-center-head"><Bell size={18}/><div><b>个人名片通知</b><p>这里仅展示你的审核结果和到期提醒，与管理员审批列表分开。</p></div></div>
     <section className="notification-list">
       {notifications.length === 0 ? <div className="notification-empty"><Bell size={25}/><b>暂无新消息</b><span>审核结果和名片到期提醒会出现在这里。</span></div> : notifications.map(item => <article className={`notification-item ${item.tone}`} key={item.id}>
         <span><Bell size={15}/></span>

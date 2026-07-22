@@ -14,7 +14,7 @@
 
 从经纪人视角，手机号登录后没有员工预设资料，需要自行填写与员工相同的全部个人字段，系统再拼接管理员维护的企业配置。经纪人首次生成名片必须提交管理员审核，审核通过并由管理员设置有效期后才能查看、分享和对外使用；审核拒绝、尚未审核或超过有效期时均不可使用。
 
-从管理员视角，需要能够导入和维护员工目录、维护经纪人账号、进行企业配置、管理角色、更新员工登录手机号、审批员工职位变更、经纪人首次名片和名片续期，并设置名片有效期。审批中心默认只展示按提交时间倒序排列的最新五条待审核申请；点击底部“更多”后进入独立全部申请页，查看并筛选全部状态申请。员工清单或 OA 数据应成为员工身份、登录手机号和默认职位的事实来源。
+从管理员视角，需要能够导入和维护员工目录、维护经纪人账号、进行企业配置、管理角色、更新员工登录手机号、审批员工职位变更、经纪人首次名片和名片续期，并设置名片有效期。审批中心默认只展示按提交时间倒序排列的最新五条未审批申请；点击“查看更多”后才展示全部状态申请。员工清单或 OA 数据应成为员工身份、登录手机号和默认职位的事实来源。
 
 从访客视角，打开分享名片后应直接看到完整、清晰、可信的个人和企业介绍，无需登录；可将联系人信息添加到系统通讯录；如果授权微信身份，名片所有者可以看到微信名，否则以匿名访客记录，但两种情况都必须统计打开时间和浏览时长。
 
@@ -164,31 +164,8 @@
 128. As an administrator, I want to set a broker card's validity when approving its initial application, so that broker authorization follows the approved period.
 129. As a broker, I want an expired card to become unusable, so that I cannot continue sharing after the approved period.
 130. As an administrator, I want the approval center to show only the latest five pending requests by default, so that the most urgent work stays concise.
-131. As an administrator, I want “更多” to open an all-requests view containing every status, so that approved and rejected history remains available without cluttering the default view.
+131. As an administrator, I want “查看更多” to reveal all requests in every status, so that approved and rejected history remains available without cluttering the default view.
 132. As a user, I want administrator-maintained corporate content labeled “企业配置”, so that the interface uses the approved product terminology.
-133. As a card owner, I want a notification icon in the top-right corner of the card page, so that personal alerts are visible without entering administrator management.
-134. As a card owner, I want position-change approval and rejection results in my notification center, so that I immediately know whether the requested position is effective.
-135. As a broker, I want first-card approval and rejection results in my notification center, so that I know whether the card can be used or must be revised.
-136. As a card owner, I want renewal approval and rejection results in my notification center, so that I know the new validity or the reason the card remains unavailable.
-137. As a card owner, I want expiration reminders in the final seven, three, and one days and after expiration, so that I can renew before access is interrupted.
-138. As a user, I want personal notifications kept separate from the administrator approval center, so that incoming decisions are not confused with work waiting for administrator action.
-139. As a card owner, I want to submit a renewal request from the final seven days through the expired period, so that I can extend authorization at the appropriate time.
-140. As a card owner, I want duplicate renewal submission disabled while one renewal is pending, so that the approval center does not receive duplicate requests.
-141. As an administrator, I want to set a new card-validity date when approving renewal, so that the renewed authorization period is explicit.
-142. As a card owner, I want a rejected renewal to disable the card immediately, so that an unapproved card cannot remain externally usable.
-143. As a card owner, I want the card home page to show Normal, Pending Review, Expired, or Disabled, so that the current operating state is unambiguous.
-144. As an administrator, I want enterprise news items to support drag-and-drop ordering, so that the shared card follows the intended editorial sequence.
-145. As an administrator, I want promotional video uploads to accept MP4, MOV, M4V, and WebM, so that common source files can be configured directly.
-146. As an administrator, I want to upload a promotional-video poster image, so that the card has an approved visual before playback begins.
-147. As an administrator, I want to preview a complete card assembled from the enterprise-configuration draft, so that I can catch content or ordering errors before publication.
-148. As an administrator, I want enterprise configuration to remain unpublished until I confirm from the preview, so that accidental edits do not affect every card.
-149. As an administrator, I want the approval-center home view to show exactly the newest five pending requests ordered by application time descending, so that urgent work remains concise.
-150. As an administrator, I want each pending row to show applicant name, full phone, application type, application time, and pending status, so that I can review identity and context without opening another screen.
-151. As an administrator, I want position-change rows to show both the original and requested positions, so that the requested change is explicit.
-152. As an administrator, I want the More action at the bottom of the default list to open a separate all-requests page, so that history is available without expanding the dashboard in place.
-153. As an administrator, I want the all-requests page to include pending, approved, and rejected records, so that approval history is complete.
-154. As an administrator, I want to filter all requests by application type and status, so that I can locate the relevant workflow quickly.
-155. As an administrator, I want rejection to require a written reason, so that the applicant receives actionable feedback in personal notifications.
 
 ## Implementation Decisions
 
@@ -246,21 +223,9 @@
 52. Broker first save creates or updates one pending initial-card request. The card remains unavailable and non-shareable until approval.
 53. Broker-initial approval marks the card approved and assigns the administrator-selected validity date. Rejection allows edited resubmission.
 54. Both employee and broker cards become unavailable after their validity date; renewal continues through the shared approval center.
-55. The approval-center default query returns the newest five pending requests. The bottom “更多” action opens an independent all-requests page ordered by submission time descending.
+55. The approval-center default query returns the newest five pending requests. “查看更多” returns all statuses ordered by submission time descending.
 56. Enterprise Content is presented as “企业配置” and merged into every approved, active, non-expired card.
 57. Changing an employee login phone migrates account binding and card ownership but does not overwrite the editable display phone.
-58. Personal notification records are scoped to the card owner and are not mixed with administrator work queues. Approval-result notifications carry request type, decision time, new validity when approved, and rejection reason when rejected.
-59. Expiration notifications use the configured business timezone and emit threshold reminders for the final seven, three, and one days plus an expired state. Delivery must be idempotent per card, validity version, and threshold.
-60. Renewal eligibility begins seven calendar days before the end date and remains available after expiration or a rejected renewal. Only one pending renewal request per card is allowed.
-61. A renewal rejection records the mandatory reason and immediately changes card availability to disabled. A later renewal approval clears the disabled renewal state and applies the new validity atomically.
-62. Owner-card state has four display values with deterministic priority: account disablement or rejected renewal is Disabled; elapsed validity is Expired; pending initial, position, or renewal review is Pending Review; otherwise the card is Normal.
-63. Enterprise-news order is stored as part of the enterprise-content version. Drag-and-drop changes only the draft until publication.
-64. Promotional video accepts a production allowlist of MP4, MOV/QuickTime, M4V, and WebM. File extension, MIME type, signature, size, duration, malware status, and transcoding result must be validated server-side.
-65. Promotional-video poster is stored as a separate media asset and referenced by the enterprise-content version. Production publication requires accessible CDN URLs rather than browser object URLs.
-66. Enterprise configuration uses a draft-preview-publish lifecycle. Preview assembles the draft with representative personal information; Confirm Publish creates and activates a new version, while Return to Edit preserves the draft.
-67. The approval dashboard query is `status=pending`, ordered by submission time descending, limited to five. The bottom More action navigates to a separate paginated all-requests view.
-68. The all-requests view supports independent request-type and status filters, retains submission-time descending order, and includes applicant identity, phone snapshot, type, relevant position snapshots, submission time, status, validity decision, reviewer, review time, and rejection reason.
-69. Rejecting any approval request requires a non-empty reason. The server validates the reason even if a client attempts to bypass the user-interface requirement.
 
 ## Testing Decisions
 
@@ -295,18 +260,8 @@
 29. The broker approval test covers no presets → complete fields → pending/share blocked → administrator approves with validity → usable card with enterprise configuration.
 30. The broker rejection test covers rejected state → edit and resubmit → one new pending application.
 31. The role-validity test asserts employee one-year default and broker administrator-selected validity.
-32. The approval-list test creates more than five pending requests plus approved history → default shows five newest pending → bottom “更多” opens an independent page containing every request and status.
+32. The approval-list test creates more than five pending requests plus approved history → default shows five newest pending → “查看更多” shows every request and status.
 33. Terminology tests assert “企业配置” and no obsolete “企业统一内容管理” wording.
-34. Notification tests cover unread badges, owner isolation, separation from administrator queues, approval-result content, rejection reason, approved validity, read state, and duplicate suppression.
-35. Expiration-notification tests cover seven-day, three-day, one-day, end-date, and expired thresholds in the configured timezone, including a renewed card that receives a new reminder series.
-36. Renewal eligibility tests cover eight days remaining, exactly seven days, exactly three days, exactly one day, the end date, expired, pending duplicate prevention, rejected re-application, approval restoration, and rejected disablement.
-37. Card-state tests assert priority and visible labels for Normal, Pending Review, Expired, and Disabled across employee, broker, renewal, and account-disable scenarios.
-38. Enterprise-news ordering tests drag items in the draft, preview the new sequence, cancel preview without publishing, then confirm publication and verify the same order on owner and public cards.
-39. Video-upload tests cover accepted MP4, MOV, M4V, and WebM files; rejected unsupported formats; poster upload, poster replacement, poster rendering, and missing-poster fallback.
-40. Enterprise-publication tests verify draft isolation, full-card preview, Return to Edit, Confirm Publish, version activation, and rollback after media or link errors.
-41. Approval-dashboard tests create more than five pending requests with mixed timestamps and assert that only the newest five appear in descending order with the required row fields.
-42. All-request-page tests verify independent navigation, all three statuses, type/status filter combinations, empty-filter results, descending order, and returning to the dashboard.
-43. Rejection tests assert that the dialog opens inside the software viewport, blank reasons cannot be submitted, the reason persists in history, and the applicant receives the same reason in personal notifications.
 
 ## Out of Scope
 
