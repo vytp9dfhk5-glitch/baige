@@ -3,7 +3,7 @@ import {
   Activity, ArrowLeft, BarChart3, Bell, CalendarDays, Check, ChevronRight,
   Clock3, ContactRound, Copy, Edit3, Eye, Flame, Home, ImageIcon,
   GripVertical, Lightbulb, LockKeyhole, LogOut, Mail, MapPin, MessageCircle,
-  MoreHorizontal, Newspaper, Phone, Plus, Share2, ShieldCheck,
+  MoreHorizontal, Newspaper, Phone, Plus, Search, Share2, ShieldCheck,
   Settings2, Smartphone, Sparkles, Trash2, TrendingUp, Upload,
   UserCog, UserRound, UsersRound, Video, X
 } from './icons'
@@ -16,6 +16,11 @@ const MEMBERS_KEY = 'baige-card-members-v3'
 const REQUESTS_KEY = 'baige-card-requests-v2'
 const NOTIFICATION_READ_PREFIX = 'baige-card-notification-read-v1:'
 const PRIMARY_ADMIN_PHONE = '18059880224'
+const MEMBER_ROLE_ORDER = { admin: 0, employee: 1, broker: 2 }
+const MEMBER_NAME_COLLATOR = new Intl.Collator('zh-CN-u-co-pinyin', {
+  sensitivity: 'base',
+  numeric: true,
+})
 
 const emptyCard = {
   avatar: '', name: '', title: '', company: '', addresses: [], phone: '',
@@ -145,6 +150,20 @@ function roleLabel(role) {
   if (role === 'admin') return '管理员'
   if (role === 'broker') return '经纪人'
   return '员工'
+}
+
+function compareMembers(a, b) {
+  const roleDifference = (MEMBER_ROLE_ORDER[a.role] ?? 99) - (MEMBER_ROLE_ORDER[b.role] ?? 99)
+  if (roleDifference !== 0) return roleDifference
+  if (a.role === 'admin' && b.role === 'admin') {
+    if (a.phone === PRIMARY_ADMIN_PHONE) return -1
+    if (b.phone === PRIMARY_ADMIN_PHONE) return 1
+  }
+  return MEMBER_NAME_COLLATOR.compare(a.name || '', b.name || '') || (a.phone || '').localeCompare(b.phone || '')
+}
+
+function normalizeMemberSearchText(value) {
+  return String(value || '').toLocaleLowerCase('zh-CN').replace(/\s+/g, '')
 }
 
 function isCardExpired(value) {
@@ -1130,8 +1149,21 @@ function MemberEditor({ initial, members, onClose, onSave }) {
 
 function AdminPage({ fixedContent, members, requests, onReview, onEditFixed, onAddMember, onEditMember }) {
   const [requestPage, setRequestPage] = useState('latest')
+  const [memberQuery, setMemberQuery] = useState('')
   const pendingRequests = requests.filter(item => item.status === 'pending')
   const latestPendingRequests = [...pendingRequests].sort((a, b) => b.submittedAt - a.submittedAt).slice(0, 5)
+  const normalizedMemberQuery = normalizeMemberSearchText(memberQuery)
+  const visibleMembers = [...members]
+    .sort(compareMembers)
+    .filter(member => {
+      if (!normalizedMemberQuery) return true
+      return normalizeMemberSearchText([
+        member.name,
+        member.phone,
+        member.title,
+        roleLabel(member.role),
+      ].join('')).includes(normalizedMemberQuery)
+    })
   if (requestPage === 'all') return <AllRequestsPage requests={requests} onReview={onReview} onBack={() => setRequestPage('latest')}/>
   return <div className="admin-page page-pad">
     <section className="admin-hero">
@@ -1149,9 +1181,13 @@ function AdminPage({ fixedContent, members, requests, onReview, onEditFixed, onA
     </section>
     {requests.length > 0 && <button className="approval-more-button" onClick={() => setRequestPage('all')}><span>更多</span><small>查看全部状态的申请记录</small><ChevronRight size={17}/></button>}
 
-    <div className="member-list-title"><div><h2>成员与角色</h2><span>登录手机号对应唯一账号</span></div><button onClick={onAddMember}><Plus size={15}/>添加成员</button></div>
+    <div className="member-list-title"><div><h2>成员与角色</h2><span>共 {members.length} 位成员</span></div><button onClick={onAddMember}><Plus size={15}/>添加成员</button></div>
+    <div className="member-search-panel">
+      <label><Search size={15}/><input value={memberQuery} onChange={event => setMemberQuery(event.target.value)} placeholder="搜索姓名、手机号、职位或角色" aria-label="搜索成员"/>{memberQuery && <button type="button" onClick={() => setMemberQuery('')} aria-label="清除搜索"><X size={14}/></button>}</label>
+      <span>{normalizedMemberQuery ? `找到 ${visibleMembers.length} 位成员` : '管理员优先，员工按姓名 A–Z 排列'}</span>
+    </div>
     <section className="member-list section-card">
-      {members.map(member => <button className="member-row" key={member.id} onClick={() => onEditMember(member)}>
+      {visibleMembers.length === 0 ? <div className="member-empty"><UsersRound size={24}/><b>没有找到相关成员</b><span>请尝试搜索其他姓名、手机号、职位或角色。</span><button type="button" onClick={() => setMemberQuery('')}>清除搜索</button></div> : visibleMembers.map(member => <button className="member-row" key={member.id} onClick={() => onEditMember(member)}>
         <span className={`member-avatar ${member.role}`}>{member.name ? member.name.slice(0,1) : <UserRound size={18}/>}</span>
         <div><b>{member.name || '待完善姓名'}<em className={`role-chip ${member.role}`}>{roleLabel(member.role)}</em></b><p>{member.phone.replace(/(\d{3})\d{4}(\d{4})/,'$1****$2')}{member.title ? ` · ${member.title}` : ''}</p><small>{member.cardValidUntil ? `有效期至 ${member.cardValidUntil}` : member.role === 'broker' ? '名片待首次审核' : '待设置有效期'}</small></div>
         <span className={`status-dot ${member.status === 'disabled' || member.renewalStatus === 'rejected' || isCardExpired(member.cardValidUntil) || member.role === 'broker' && member.cardApprovalStatus !== 'approved' ? 'disabled' : 'active'}`}>{member.status === 'disabled' ? '停用' : member.renewalStatus === 'rejected' ? '已禁用' : member.renewalStatus === 'pending' ? '续期审核中' : member.role === 'broker' && member.cardApprovalStatus === 'pending' ? '审核中' : member.role === 'broker' && member.cardApprovalStatus === 'rejected' ? '未通过' : member.role === 'broker' && member.cardApprovalStatus !== 'approved' ? '待申请' : isCardExpired(member.cardValidUntil) ? '已过期' : '正常'}</span><ChevronRight size={16}/>

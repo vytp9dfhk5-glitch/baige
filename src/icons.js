@@ -26,6 +26,7 @@ export { default as MoreHorizontal } from 'lucide-react/dist/esm/icons/more-hori
 export { default as Newspaper } from 'lucide-react/dist/esm/icons/newspaper.js'
 export { default as Phone } from 'lucide-react/dist/esm/icons/phone.js'
 export { default as Plus } from 'lucide-react/dist/esm/icons/plus.js'
+export { default as Search } from 'lucide-react/dist/esm/icons/search.js'
 export { default as Share2 } from 'lucide-react/dist/esm/icons/share-2.js'
 export { default as ShieldCheck } from 'lucide-react/dist/esm/icons/shield-check.js'
 export { default as Smartphone } from 'lucide-react/dist/esm/icons/smartphone.js'
