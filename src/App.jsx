@@ -1166,7 +1166,12 @@ function AdminPage({ members, requests, onReview, onEditFixed, onAddMember, onEd
       <div><h1>企业管理</h1><p>统一维护企业内容、成员身份、申请状态与名片有效期。</p></div>
     </section>
 
-    <div className="member-list-title admin-section-title"><div><h2>企业配置</h2><span>统一维护名片中的企业内容</span></div><button onClick={onEditFixed}><Settings2 size={15}/>配置</button></div>
+    <div className="member-list-title admin-section-title"><div><h2>企业配置</h2><span>统一维护名片中的企业内容</span></div></div>
+    <button className="enterprise-config-entry" onClick={onEditFixed}>
+      <span className="enterprise-config-icon"><Settings2 size={22}/></span>
+      <span className="enterprise-config-copy"><b>配置企业名片内容</b><small>公司名称、公司地址、公司风采、企业咨询与企业介绍</small></span>
+      <span className="enterprise-config-action">进入配置<ChevronRight size={16}/></span>
+    </button>
 
     <div className="member-list-title approval-list-title"><div><h2>审批中心</h2><span>最新 {Math.min(pendingRequests.length, 5)} / {pendingRequests.length} 条待审核申请</span></div></div>
     <section className="approval-list">
