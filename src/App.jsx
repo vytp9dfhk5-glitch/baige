@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react'
 import {
-  Activity, ArrowLeft, BarChart3, Bell, Check, ChevronRight,
-  Clock3, ContactRound, Copy, Edit3, Eye, Home, ImageIcon,
+  Activity, ArrowLeft, BarChart3, Bell, CalendarDays, Check, ChevronRight,
+  Clock3, ContactRound, Copy, Edit3, Eye, Flame, Home, ImageIcon,
   GripVertical, LockKeyhole, LogOut, Mail, MapPin, MessageCircle,
   MoreHorizontal, Newspaper, Phone, Plus, Search, Share2, ShieldCheck,
-  Settings2, Smartphone, Sparkles, Trash2, Upload,
+  Settings2, Smartphone, Sparkles, Trash2, TrendingUp, Upload,
   UserCog, UserRound, UsersRound, Video, X
 } from './icons'
 import { employeeDirectory } from './employeeData'
@@ -107,6 +107,8 @@ const visitors = [
 function visitorDisplayName(visitor) {
   return visitor.wechatAuthorized && visitor.wechatName ? visitor.wechatName : '匿名访客'
 }
+
+const trend = [23, 35, 29, 48, 45, 67, 72]
 
 function loadLocal(key, fallback) {
   try {
@@ -1284,9 +1286,21 @@ function ShareSheet({ card, onClose, notify }) {
 function VisitorPage({ card }) {
   if (!card) return <div className="page-pad no-visitor-state"><div><BarChart3 size={38}/><h2>创建名片后查看访客</h2><p>名片产生访问后，这里会展示访问次数、浏览时长和内容偏好。</p></div></div>
   return <div className="visitor-page page-pad">
-    <section className="visitor-record-head"><div><h1>最近访问</h1><p>展示访客打开时间、浏览时长和查看内容</p></div><span>{visitors.length} 条记录</span></section>
+    <section className="radar-hero"><div><span>今日名片访客</span><strong>24</strong><em><TrendingUp size={14}/>较昨日 +26%</em></div><div className="radar-visual"><i/><i/><i/><span><Activity size={22}/></span></div></section>
+    <div className="metric-grid"><Metric label="浏览总时长" value="2.8h" icon={<Clock3/>}/><Metric label="重点联系人" value="6" icon={<Flame/>}/><Metric label="资料转发" value="12" icon={<Share2/>}/></div>
+    <section className="section-card chart-card"><SectionHead title="近 7 天访问趋势" link="136 次"/><TrendChart/><div className="chart-labels"><span>周六</span><span>周日</span><span>周一</span><span>周二</span><span>周三</span><span>周四</span><span>今天</span></div></section>
+    <div className="filter-row"><button className="active">全部 24</button><button><CalendarDays size={15}/>筛选</button></div>
     <section className="visitor-list">{visitors.map(v => <VisitorRow key={v.id} visitor={v}/>)}</section>
   </div>
+}
+
+function SectionHead({ title, link }) { return <div className="section-head"><h2>{title}</h2><span>{link}<ChevronRight size={15}/></span></div> }
+function Metric({ label, value, icon }) { return <div className="metric"><span>{icon}</span><strong>{value}</strong><small>{label}</small></div> }
+
+function TrendChart() {
+  const points = trend.map((value, index) => `${12 + index * 55},${100 - value}`).join(' ')
+  const area = `12,102 ${points} 342,102`
+  return <svg className="trend-chart" viewBox="0 0 354 112" role="img" aria-label="近七天访问趋势折线图"><defs><linearGradient id="area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#3478f6" stopOpacity=".28"/><stop offset="1" stopColor="#3478f6" stopOpacity="0"/></linearGradient></defs><line x1="8" y1="28" x2="346" y2="28"/><line x1="8" y1="65" x2="346" y2="65"/><line x1="8" y1="102" x2="346" y2="102"/><polygon points={area} fill="url(#area)" stroke="none"/><polyline points={points} fill="none" stroke="#3478f6" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>{trend.map((value, index) => <circle key={index} cx={12 + index * 55} cy={100 - value} r={index === 6 ? 5 : 3} fill={index === 6 ? '#fff' : '#3478f6'} stroke="#3478f6" strokeWidth={index === 6 ? 3 : 0}/>)}</svg>
 }
 
 function VisitorRow({ visitor }) {
