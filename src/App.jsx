@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react'
 import {
-  Activity, ArrowLeft, BarChart3, Bell, CalendarDays, Check, ChevronRight,
-  Clock3, ContactRound, Copy, Edit3, Eye, Flame, Home, ImageIcon,
-  GripVertical, Lightbulb, LockKeyhole, LogOut, Mail, MapPin, MessageCircle,
+  Activity, ArrowLeft, BarChart3, Bell, Check, ChevronRight,
+  Clock3, ContactRound, Copy, Edit3, Eye, Home, ImageIcon,
+  GripVertical, LockKeyhole, LogOut, Mail, MapPin, MessageCircle,
   MoreHorizontal, Newspaper, Phone, Plus, Search, Share2, ShieldCheck,
-  Settings2, Smartphone, Sparkles, Trash2, TrendingUp, Upload,
+  Settings2, Smartphone, Sparkles, Trash2, Upload,
   UserCog, UserRound, UsersRound, Video, X
 } from './icons'
 import { employeeDirectory } from './employeeData'
@@ -97,18 +97,16 @@ const defaultMembers = employeeDirectory.map(employee => ({
 }))
 
 const visitors = [
-  { id: 1, wechatAuthorized: true, wechatName: '陈志远', avatar: '陈', color: '#3478f6', openTime: '今天 10:42', duration: '8分24秒', score: 92, visits: 4, content: '公司介绍', status: '重点关注', path: ['打开电子名片', '查看个人简介', '浏览公司介绍 4分12秒', '查看企业资讯'] },
-  { id: 2, wechatAuthorized: true, wechatName: '刘雯', avatar: '刘', color: '#8b5cf6', openTime: '今天 09:18', duration: '5分06秒', score: 81, visits: 2, content: '公司风采', status: '持续关注', path: ['微信分享进入', '查看公司介绍', '播放企业宣传视频 2分03秒', '再次打开名片'] },
-  { id: 3, wechatAuthorized: false, wechatName: '', avatar: '访', color: '#12b981', openTime: '昨天 16:20', duration: '2分18秒', score: 56, visits: 1, content: '个人简介', status: '待了解', path: ['微信分享进入', '查看个人信息', '浏览个人简介'] },
-  { id: 4, wechatAuthorized: true, wechatName: '孙晓琳', avatar: '孙', color: '#f59e0b', openTime: '昨天 11:36', duration: '6分45秒', score: 87, visits: 3, content: '企业资讯', status: '重点关注', path: ['好友分享进入', '浏览公司介绍 3分08秒', '查看企业资讯', '返回名片首页'] },
-  { id: 5, wechatAuthorized: false, wechatName: '', avatar: '访', color: '#94a3b8', openTime: '周三 14:08', duration: '0分46秒', score: 28, visits: 1, content: '名片首页', status: '快速浏览', path: ['微信分享进入', '查看名片首页', '离开'] },
+  { id: 1, wechatAuthorized: true, wechatName: '陈志远', avatar: '陈', color: '#3478f6', openTime: '今天 10:42', duration: '8分24秒', content: '公司介绍' },
+  { id: 2, wechatAuthorized: true, wechatName: '刘雯', avatar: '刘', color: '#8b5cf6', openTime: '今天 09:18', duration: '5分06秒', content: '公司风采' },
+  { id: 3, wechatAuthorized: false, wechatName: '', avatar: '访', color: '#12b981', openTime: '昨天 16:20', duration: '2分18秒', content: '个人简介' },
+  { id: 4, wechatAuthorized: true, wechatName: '孙晓琳', avatar: '孙', color: '#f59e0b', openTime: '昨天 11:36', duration: '6分45秒', content: '企业咨询' },
+  { id: 5, wechatAuthorized: false, wechatName: '', avatar: '访', color: '#94a3b8', openTime: '周三 14:08', duration: '0分46秒', content: '名片首页' },
 ]
 
 function visitorDisplayName(visitor) {
   return visitor.wechatAuthorized && visitor.wechatName ? visitor.wechatName : '匿名访客'
 }
-
-const trend = [23, 35, 29, 48, 45, 67, 72]
 
 function loadLocal(key, fallback) {
   try {
@@ -323,7 +321,6 @@ function OwnerApp() {
   const [shareOpen, setShareOpen] = useState(false)
   const [notificationOpen, setNotificationOpen] = useState(false)
   const [notificationRead, setNotificationRead] = useState(() => initialSession ? loadLocal(`${NOTIFICATION_READ_PREFIX}${initialSession.phone}`, []) : [])
-  const [visitor, setVisitor] = useState(null)
   const [toast, setToast] = useState('')
 
   const currentMember = session ? members.find(item => item.phone === session.phone) : null
@@ -628,8 +625,8 @@ function OwnerApp() {
       <TopBar tab={tab} card={displayCard} shareBlocked={shareBlocked} unreadCount={unreadNotifications.length} onNotifications={openNotifications} onEdit={() => setEditorOpen(true)} onShare={openShare} />
       <div className="screen">
         {tab === 'card' && <CardPage card={displayCard} status={cardStatus} renewalDays={renewalDays} renewalEligible={renewalEligible} pendingRenewal={pendingRenewalRequest} pendingTitle={pendingTitleRequest} brokerApprovalState={brokerApprovalState} member={currentMember} requests={requests} notify={notify} onCreate={() => setEditorOpen(true)} onEdit={() => setEditorOpen(true)} onRenew={requestRenewal} />}
-        {tab === 'visitors' && <VisitorPage card={cardStatus.key === 'expired' || cardStatus.key === 'disabled' || isBroker && brokerApprovalState !== 'approved' ? null : displayCard} onSelect={setVisitor} />}
-        {tab === 'admin' && isAdmin && <AdminPage fixedContent={fixedContent} members={members} requests={requests} onReview={reviewRequest} onEditFixed={() => setFixedEditorOpen(true)} onAddMember={() => setMemberEditor({ id: '', phone: '', name: '', title: '', email: '', cardValidUntil: defaultValidUntil(), cardApprovalStatus: 'approved', role: 'employee', status: 'active' })} onEditMember={setMemberEditor} />}
+        {tab === 'visitors' && <VisitorPage card={cardStatus.key === 'expired' || cardStatus.key === 'disabled' || isBroker && brokerApprovalState !== 'approved' ? null : displayCard} />}
+        {tab === 'admin' && isAdmin && <AdminPage members={members} requests={requests} onReview={reviewRequest} onEditFixed={() => setFixedEditorOpen(true)} onAddMember={() => setMemberEditor({ id: '', phone: '', name: '', title: '', email: '', cardValidUntil: defaultValidUntil(), cardApprovalStatus: 'approved', role: 'employee', status: 'active' })} onEditMember={setMemberEditor} />}
         {tab === 'me' && <MePage session={session} card={card} member={currentMember} requests={requests} onLogout={logout} />}
       </div>
       <BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} />
@@ -638,7 +635,6 @@ function OwnerApp() {
       {memberEditor && isAdmin && <MemberEditor initial={memberEditor} members={members} onClose={() => setMemberEditor(null)} onSave={saveMember} />}
       {shareOpen && displayCard && !shareBlocked && <ShareSheet card={displayCard} onClose={() => setShareOpen(false)} notify={notify} />}
       {notificationOpen && <NotificationCenter notifications={notifications} onClose={() => setNotificationOpen(false)} />}
-      {visitor && <VisitorDetail visitor={visitor} onClose={() => setVisitor(null)} notify={notify} />}
       {toast && <div className="toast"><Check size={17}/>{toast}</div>}
     </main>
   </div>
@@ -657,7 +653,7 @@ function PublicCardView({ card, shared = false }) {
     <main className="phone-stage public-stage">
       <header className="topbar public-topbar"><Brand /><span>电子名片</span></header>
       <div className="screen public-screen">
-        {isCardExpired(card.cardValidUntil) ? <ExpiredPublicCard /> : <div className="card-page page-pad"><GeneratedCard card={card} notify={setToast} readonly /></div>}
+        {isCardExpired(card.cardValidUntil) ? <ExpiredPublicCard /> : <div className="card-page page-pad"><GeneratedCard card={card} notify={setToast} /></div>}
       </div>
       {toast && <div className="toast"><Check size={17}/>{toast}</div>}
     </main>
@@ -729,9 +725,9 @@ function LoginPage({ onLogin }) {
 }
 
 function TopBar({ tab, card, shareBlocked = false, unreadCount = 0, onNotifications, onEdit, onShare }) {
-  const titles = { visitors: '访客雷达', admin: '企业管理', me: '我的' }
+  const titles = { visitors: '访客记录', admin: '企业管理', me: '我的' }
   return <header className="topbar">
-    {tab === 'card' ? <Brand /> : <div className="page-heading"><b>{titles[tab]}</b>{tab === 'visitors' && <span className="live"><i/>实时</span>}</div>}
+    {tab === 'card' ? <Brand /> : <div className="page-heading"><b>{titles[tab]}</b></div>}
     {tab === 'card' ? <div className="topbar-actions">
       <button className="icon-button notification-button" onClick={onNotifications} aria-label={`消息通知${unreadCount ? `，${unreadCount}条未读` : ''}`}><Bell size={18}/>{unreadCount > 0 && <i>{unreadCount > 9 ? '9+' : unreadCount}</i>}</button>
       {card && <button className="icon-button" onClick={onEdit} aria-label="编辑名片"><Edit3 size={18}/></button>}
@@ -749,7 +745,7 @@ function CardPage({ card, status, renewalDays, renewalEligible, pendingRenewal, 
   }
   if (status.key === 'expired') return <ExpiredCard member={member} pending={pendingRenewal} onRenew={onRenew}/>
   return <div className="card-page page-pad">
-    <GeneratedCard card={card} status={status} notify={notify} />
+    <GeneratedCard card={card} notify={notify} />
     {renewalEligible && <section className={`renewal-callout ${renewalDays <= 1 ? 'urgent' : ''}`}><Clock3 size={17}/><div><b>{renewalDays === 0 ? '名片今天到期' : `名片还剩 ${renewalDays} 天到期`}</b><p>可提前提交续期申请，由管理员审核并设置新的有效期。</p></div><button disabled={Boolean(pendingRenewal)} onClick={onRenew}>{pendingRenewal ? '审核中' : '申请续期'}</button></section>}
     {pendingTitle && <section className="share-review-lock"><LockKeyhole size={16}/><div><b>职位变更审核中，暂不可对外分享</b><p>当前名片继续展示“{pendingTitle.currentTitle}”；管理员通过“{pendingTitle.requestedTitle}”后，分享功能会自动恢复。</p></div></section>}
   </div>
@@ -815,7 +811,7 @@ function CardStatusBadge({ status }) {
   return <span className={`card-status-badge ${status.key}`}><i/>{status.label}</span>
 }
 
-function GeneratedCard({ card, status = { key: 'normal', label: '正常' }, notify, readonly = false }) {
+function GeneratedCard({ card, notify }) {
   const news = (card.news || []).filter(x => x.title.trim())
   const addresses = (card.addresses || []).filter(Boolean)
   const hasIntro = card.intro || addresses.length > 0
@@ -835,8 +831,6 @@ function GeneratedCard({ card, status = { key: 'normal', label: '正常' }, noti
       <button className="card-contact-add" onClick={() => addToContacts(card, notify)} aria-label="添加至通讯录"><ContactRound size={16}/><span>添加至通讯录</span></button>
     </section>
 
-    {!readonly && <section className="card-state-row"><CardStatusBadge status={status}/>{card.cardValidUntil && <span><ShieldCheck size={14}/>有效期至 {card.cardValidUntil}</span>}</section>}
-
     {hasIntro && <section className="section-card intro-card generated-section">
       <div className="section-head"><h2>个人简介</h2></div>
       {card.intro && <p>{card.intro}</p>}
@@ -850,12 +844,12 @@ function GeneratedCard({ card, status = { key: 'normal', label: '正常' }, noti
     </section>}
 
     {news.length > 0 && <section className="section-card news-section generated-section">
-      <div className="section-head"><h2>企业资讯</h2><span>{news.length} 条</span></div>
+      <div className="section-head"><h2>企业咨询</h2><span>{news.length} 条</span></div>
       {news.map(item => <a key={item.id} className="news-row" href={normalUrl(item.url)} target="_blank" rel="noreferrer"><span><Newspaper size={16}/></span><b>{item.title}</b><ChevronRight size={15}/></a>)}
     </section>}
 
     {card.companyIntroductionImage && <section className="section-card company-profile-section generated-section">
-      <div className="section-head"><h2>公司介绍</h2>{card.companyPdfName && <span>PDF · 15页</span>}</div>
+      <div className="section-head"><h2>公司介绍</h2></div>
       <img className="company-profile-long-image" src={card.companyIntroductionImage} alt="白鸽在线2026版企业介绍长图"/>
     </section>}
 
@@ -1064,14 +1058,7 @@ function FixedContentEditor({ initial, onClose, onSave }) {
           <Field label="公司地址" wide><input value={form.address} onChange={event => set('address', event.target.value)} placeholder="未填写则不展示地址"/></Field>
         </div>
 
-        <EditorTitle title="公司介绍" />
-        <section className="pdf-introduction-editor">
-          <div className="pdf-file-row"><span><Newspaper size={19}/></span><div><b>{form.companyPdfName}</b><p>已生成15页企业介绍长图</p></div><div className="pdf-actions"><a href={form.companyPdfUrl} target="_blank" rel="noreferrer">查看PDF</a><button onClick={() => pdfRef.current?.click()}><Upload size={14}/>上传PDF</button></div></div>
-          <input ref={pdfRef} hidden type="file" accept="application/pdf" onChange={event => selectPdf(event.target.files?.[0])}/>
-          <img src={form.companyIntroductionImage} alt="公司介绍长图预览"/>
-        </section>
-
-        <EditorTitle title="企业宣传视频" />
+        <EditorTitle title="公司风采" />
         <div className="video-source-editor">
           <label className="single-editor-input"><Video size={17}/><input value={form.videoUrl.startsWith('blob:') ? '' : form.videoUrl} onChange={event => set('videoUrl', event.target.value)} placeholder="粘贴视频链接，或上传视频文件"/></label>
           <button onClick={() => videoRef.current?.click()}><Upload size={15}/>{form.videoName ? '更换视频' : '上传视频'}</button>
@@ -1086,17 +1073,24 @@ function FixedContentEditor({ initial, onClose, onSave }) {
           <input ref={posterRef} hidden type="file" accept="image/*" onChange={event => uploadPoster(event.target.files?.[0])}/>
         </section>
 
-        <EditorTitle title="企业资讯" action={<button onClick={addNews}><Plus size={14}/>添加资讯</button>} />
+        <EditorTitle title="企业咨询" action={<button onClick={addNews}><Plus size={14}/>添加咨询</button>} />
         {form.news.length > 1 && <p className="news-sort-tip"><GripVertical size={14}/>按住左侧排序图标拖拽，分享名片将按此顺序展示</p>}
-        {form.news.length === 0 ? <AddEmpty text="还没有企业资讯" onClick={addNews}/> : <div className="repeat-editor-list sortable-news-list">{form.news.map((item, index) => <div className={`repeat-editor news-editor-item ${draggingIndex === index ? 'dragging' : ''}`} key={item.id} draggable onDragStart={() => setDraggingIndex(index)} onDragOver={event => { event.preventDefault(); moveNews(index) }} onDragEnd={() => setDraggingIndex(null)}>
-          <button className="drag-handle" aria-label={`拖拽排序：${item.title || `资讯${index + 1}`}`}><GripVertical size={16}/></button><div><input value={item.title} onChange={event => updateNews(item.id,'title',event.target.value)} placeholder="资讯标题"/><input value={item.url} onChange={event => updateNews(item.id,'url',event.target.value)} placeholder="资讯链接"/></div><button onClick={() => set('news', form.news.filter(current => current.id !== item.id))}><Trash2 size={15}/></button>
+        {form.news.length === 0 ? <AddEmpty text="还没有企业咨询" onClick={addNews}/> : <div className="repeat-editor-list sortable-news-list">{form.news.map((item, index) => <div className={`repeat-editor news-editor-item ${draggingIndex === index ? 'dragging' : ''}`} key={item.id} draggable onDragStart={() => setDraggingIndex(index)} onDragOver={event => { event.preventDefault(); moveNews(index) }} onDragEnd={() => setDraggingIndex(null)}>
+          <button className="drag-handle" aria-label={`拖拽排序：${item.title || `咨询${index + 1}`}`}><GripVertical size={16}/></button><div><input value={item.title} onChange={event => updateNews(item.id,'title',event.target.value)} placeholder="咨询标题"/><input value={item.url} onChange={event => updateNews(item.id,'url',event.target.value)} placeholder="咨询链接"/></div><button onClick={() => set('news', form.news.filter(current => current.id !== item.id))}><Trash2 size={15}/></button>
         </div>)}</div>}
+
+        <EditorTitle title="企业介绍（PDF）" />
+        <section className="pdf-introduction-editor">
+          <div className="pdf-file-row"><span><Newspaper size={19}/></span><div><b>{form.companyPdfName}</b><p>PDF已转换为名片长图</p></div><div className="pdf-actions"><a href={form.companyPdfUrl} target="_blank" rel="noreferrer">查看PDF</a><button onClick={() => pdfRef.current?.click()}><Upload size={14}/>上传PDF</button></div></div>
+          <input ref={pdfRef} hidden type="file" accept="application/pdf" onChange={event => selectPdf(event.target.files?.[0])}/>
+          <img src={form.companyIntroductionImage} alt="公司介绍长图预览"/>
+        </section>
       </div>
       <footer><button className="button secondary" onClick={onClose}>取消</button><button className="button primary" onClick={submit}><Eye size={17}/>预览效果</button></footer>
     </section>
     {previewOpen && <Modal title="发布前预览" onClose={() => setPreviewOpen(false)} footer={<><button className="button secondary" onClick={() => setPreviewOpen(false)}>返回修改</button><button className="button primary" onClick={() => onSave(contentPayload())}><Check size={17}/>确认发布</button></>}>
       <section className="enterprise-preview-note"><Eye size={18}/><div><b>完整名片效果预览</b><p>以下使用示例个人信息拼接当前企业配置草稿，确认无误后再发布到所有名片。</p></div></section>
-      <div className="enterprise-card-preview"><GeneratedCard card={previewCard} notify={() => {}} readonly /></div>
+      <div className="enterprise-card-preview"><GeneratedCard card={previewCard} notify={() => {}} /></div>
     </Modal>}
   </div>
 }
@@ -1147,7 +1141,7 @@ function MemberEditor({ initial, members, onClose, onSave }) {
   </Modal>
 }
 
-function AdminPage({ fixedContent, members, requests, onReview, onEditFixed, onAddMember, onEditMember }) {
+function AdminPage({ members, requests, onReview, onEditFixed, onAddMember, onEditMember }) {
   const [requestPage, setRequestPage] = useState('latest')
   const [memberQuery, setMemberQuery] = useState('')
   const pendingRequests = requests.filter(item => item.status === 'pending')
@@ -1170,10 +1164,7 @@ function AdminPage({ fixedContent, members, requests, onReview, onEditFixed, onA
       <div><h1>企业管理</h1><p>统一维护企业内容、成员身份、申请状态与名片有效期。</p></div>
     </section>
 
-    <section className="section-card fixed-control-card">
-      <div className="fixed-control-head"><span><Settings2 size={20}/></span><div><b>企业配置</b><p>自动拼接到管理员、员工和经纪人名片</p></div><button onClick={onEditFixed}>配置</button></div>
-      <div className="fixed-content-preview"><div><span>公司名称</span><b>{fixedContent.company}</b></div><div><span>公司介绍</span><b>{fixedContent.companyPdfName ? 'PDF已设置' : '未设置'}</b></div><div><span>宣传视频</span><b>{fixedContent.videoUrl ? '已上传' : '待上传'}</b></div></div>
-    </section>
+    <div className="member-list-title admin-section-title"><div><h2>企业配置</h2><span>统一维护名片中的企业内容</span></div><button onClick={onEditFixed}><Settings2 size={15}/>配置</button></div>
 
     <div className="member-list-title approval-list-title"><div><h2>审批中心</h2><span>最新 {Math.min(pendingRequests.length, 5)} / {pendingRequests.length} 条待审核申请</span></div></div>
     <section className="approval-list">
@@ -1290,31 +1281,17 @@ function ShareSheet({ card, onClose, notify }) {
   </div>
 }
 
-function VisitorPage({ card, onSelect }) {
-  const [filter, setFilter] = useState('全部')
+function VisitorPage({ card }) {
   if (!card) return <div className="page-pad no-visitor-state"><div><BarChart3 size={38}/><h2>创建名片后查看访客</h2><p>名片产生访问后，这里会展示访问次数、浏览时长和内容偏好。</p></div></div>
-  const shown = filter === '重点关注' ? visitors.filter(v => v.score >= 80) : visitors
   return <div className="visitor-page page-pad">
-    <section className="radar-hero"><div><span>今日名片访客</span><strong>24</strong><em><TrendingUp size={14}/>较昨日 +26%</em></div><div className="radar-visual"><i/><i/><i/><span><Activity size={22}/></span></div></section>
-    <div className="metric-grid"><Metric label="浏览总时长" value="2.8h" icon={<Clock3/>}/><Metric label="重点联系人" value="6" icon={<Flame/>}/><Metric label="资料转发" value="12" icon={<Share2/>}/></div>
-    <section className="section-card chart-card"><SectionHead title="近 7 天访问趋势" link="136 次"/><TrendChart/><div className="chart-labels"><span>周六</span><span>周日</span><span>周一</span><span>周二</span><span>周三</span><span>周四</span><span>今天</span></div></section>
-    <div className="filter-row">{['全部','重点关注'].map(x => <button key={x} onClick={() => setFilter(x)} className={filter===x?'active':''}>{x}{x==='全部'?' 24':' 6'}</button>)}<button><CalendarDays size={15}/>筛选</button></div>
-    <section className="visitor-list">{shown.map(v => <VisitorRow key={v.id} visitor={v} onClick={() => onSelect(v)}/>)}</section>
+    <section className="visitor-record-head"><div><h1>最近访问</h1><p>展示访客打开时间、浏览时长和查看内容</p></div><span>{visitors.length} 条记录</span></section>
+    <section className="visitor-list">{visitors.map(v => <VisitorRow key={v.id} visitor={v}/>)}</section>
   </div>
 }
 
-function SectionHead({ title, link }) { return <div className="section-head"><h2>{title}</h2><span>{link}<ChevronRight size={15}/></span></div> }
-function Metric({ label, value, icon }) { return <div className="metric"><span>{icon}</span><strong>{value}</strong><small>{label}</small></div> }
-
-function TrendChart() {
-  const points = trend.map((v,i)=>`${12+i*55},${100-v}`).join(' ')
-  const area = `12,102 ${points} 342,102`
-  return <svg className="trend-chart" viewBox="0 0 354 112" role="img" aria-label="近七天访问趋势折线图"><defs><linearGradient id="area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#3478f6" stopOpacity=".28"/><stop offset="1" stopColor="#3478f6" stopOpacity="0"/></linearGradient></defs><line x1="8" y1="28" x2="346" y2="28"/><line x1="8" y1="65" x2="346" y2="65"/><line x1="8" y1="102" x2="346" y2="102"/><polygon points={area} fill="url(#area)" stroke="none"/><polyline points={points} fill="none" stroke="#3478f6" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>{trend.map((v,i)=><circle key={i} cx={12+i*55} cy={100-v} r={i===6?5:3} fill={i===6?'#fff':'#3478f6'} stroke="#3478f6" strokeWidth={i===6?3:0}/>)}</svg>
-}
-
-function VisitorRow({ visitor, onClick }) {
+function VisitorRow({ visitor }) {
   const displayName = visitorDisplayName(visitor)
-  return <button className="visitor-row" onClick={onClick}><span className="visitor-avatar" style={{background:visitor.color}}>{visitor.avatar}</span><div className="visitor-main"><div><b>{displayName}</b><span className={`visitor-auth ${visitor.wechatAuthorized ? 'authorized' : 'anonymous'}`}>{visitor.wechatAuthorized ? '微信已授权' : '未授权'}</span></div><p><Clock3 size={12}/>打开时间：{visitor.openTime}</p><small><Eye size={13}/>查看了「{visitor.content}」</small></div><div className="visitor-side"><span>浏览时长</span><b>{visitor.duration}</b><ChevronRight size={16}/></div></button>
+  return <article className="visitor-row"><span className="visitor-avatar" style={{background:visitor.color}}>{visitor.avatar}</span><div className="visitor-main"><div><b>{displayName}</b><span className={`visitor-auth ${visitor.wechatAuthorized ? 'authorized' : 'anonymous'}`}>{visitor.wechatAuthorized ? '微信已授权' : '未授权'}</span></div><p><Clock3 size={12}/>打开时间：{visitor.openTime}</p><small><Eye size={13}/>查看了「{visitor.content}」</small></div><div className="visitor-side"><span>浏览时长</span><b>{visitor.duration}</b></div></article>
 }
 
 function MePage({ session, card, member, requests, onLogout }) {
@@ -1328,7 +1305,7 @@ function MePage({ session, card, member, requests, onLogout }) {
     ? brokerState === 'pending' ? '名片审核中，审核通过后可使用' : brokerState === 'rejected' ? '名片申请未通过，请修改后重新提交' : '等待填写个人信息并申请名片'
     : isCardExpired(member.cardValidUntil) ? '名片已过期，请申请续期' : card ? `个人信息已完善 · 有效期至 ${member.cardValidUntil}` : `等待完善个人信息 · 有效期至 ${member.cardValidUntil}`
   return <div className="me-page page-pad">
-    <section className="account-panel"><div className="account-avatar">{card?.avatar ? <img src={card.avatar}/> : <UserRound size={25}/>}</div><div><h2>{card?.name || member.name || '未创建名片'}<em className={`account-role ${member.role}`}>{roleLabel(member.role)}</em></h2><p>登录手机号：{session.phone.replace(/(\d{3})\d{4}(\d{4})/,'$1****$2')}</p><span>{cardStateText}</span></div></section>
+    <section className="account-panel"><div className="account-avatar">{card?.avatar ? <img src={card.avatar}/> : <UserRound size={25}/>}</div><div><h2>{card?.name || member.name || '未创建名片'}</h2><p>登录手机号：{session.phone.replace(/(\d{3})\d{4}(\d{4})/,'$1****$2')}</p><span>{cardStateText}</span></div></section>
     <button className="logout-button" onClick={onLogout}><LogOut size={17}/>退出登录</button>
   </div>
 }
@@ -1336,17 +1313,6 @@ function MePage({ session, card, member, requests, onLogout }) {
 function BottomNav({ tab, setTab, isAdmin }) {
   const items = [['card',<Home/>,'名片'],['visitors',<BarChart3/>,'访客'],...(isAdmin ? [['admin',<UsersRound/>,'管理']] : []),['me',<UserRound/>,'我的']]
   return <nav className={`bottom-nav ${isAdmin ? 'four-tabs' : 'three-tabs'}`}>{items.map(([id,icon,label])=><button key={id} className={tab===id?'active':''} onClick={()=>setTab(id)}><span>{icon}{id==='visitors'&&<i/>}</span><b>{label}</b></button>)}</nav>
-}
-
-function VisitorDetail({ visitor, onClose, notify }) {
-  const displayName = visitorDisplayName(visitor)
-  return <Modal title="访客详情" onClose={onClose} footer={<button className="button primary" onClick={()=>notify('已复制沟通建议')}><Copy size={17}/>复制沟通建议</button>}>
-    <section className="visitor-profile"><span className="visitor-avatar large" style={{background:visitor.color}}>{visitor.avatar}</span><div><h2>{displayName}<span className={`visitor-auth ${visitor.wechatAuthorized ? 'authorized' : 'anonymous'}`}>{visitor.wechatAuthorized ? '微信已授权' : '匿名'}</span></h2><p>{visitor.wechatAuthorized ? `授权微信名：${visitor.wechatName}` : '访客未授权微信信息'}</p></div><div className="score-ring" style={{'--score':`${visitor.score*3.6}deg`}}><span><b>{visitor.score}</b><small>关注度</small></span></div></section>
-    <div className="detail-metrics visitor-time-metrics"><div><b>{visitor.openTime}</b><span>打开时间</span></div><div><b>{visitor.duration}</b><span>浏览时长</span></div><div><b>{visitor.visits}</b><span>访问次数</span></div></div>
-    <section className="ai-judgement"><Sparkles size={20}/><div><b>访客关注判断</b><p>{visitor.score>=80?'近期多次深入浏览名片内容，建议及时建立联系。':visitor.score>=50?'已产生初步兴趣，可发送相关资料继续沟通。':'当前互动较浅，建议先通过内容建立认知。'}</p></div></section>
-    <h3 className="timeline-title">本次浏览轨迹</h3><div className="timeline">{visitor.path.map((x,i)=><div key={x}><i className={i===visitor.path.length-1?'last':''}/><span>{x}</span><time>{i===0?'10:42':`10:${43+i}`}</time></div>)}</div>
-    <section className="follow-tip"><Lightbulb size={18}/><div><b>推荐沟通方向</b><p>从「{visitor.content}」切入，了解对方当前关注点。</p></div></section>
-  </Modal>
 }
 
 function Modal({ title, onClose, children, footer }) {
