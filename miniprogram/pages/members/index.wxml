@@ -1,0 +1,17 @@
+<view class="page-shell members-page">
+  <view class="member-search section-card"><text>⌕</text><input value="{{query}}" bindinput="onSearch" placeholder="搜索姓名、手机号、职位或角色"/><button wx:if="{{query}}" bindtap="clearSearch">×</button></view>
+  <view class="member-meta"><text>{{query ? '找到 ' + shown.length + ' 位成员' : '共 ' + shown.length + ' 位成员'}}</text><text>管理员优先，员工按姓名 A–Z 排列</text></view>
+  <view wx:if="{{!shown.length}}" class="section-card empty-state"><view class="empty-icon">员</view><text class="empty-title">没有找到相关成员</text><button class="secondary-button" bindtap="clearSearch">清除搜索</button></view>
+  <view wx:else class="member-list section-card"><button wx:for="{{shown}}" wx:key="id" class="member-row" data-phone="{{item.phone}}" bindtap="editMember"><text class="member-avatar {{item.role}}">{{item.initial}}</text><view><text>{{item.name || '待完善姓名'}}<text class="role-chip {{item.role}}">{{item.roleText}}</text></text><text>{{item.maskedPhone}}{{item.title ? ' · ' + item.title : ''}}</text><text>{{item.cardValidUntil ? '有效期至 ' + item.cardValidUntil : item.role === 'broker' ? '名片待首次审核' : '待设置有效期'}}</text></view><text class="member-state {{item.stateText === '正常' ? 'normal' : ''}}">{{item.stateText}}</text><text class="row-arrow">›</text></button></view>
+</view>
+
+<view wx:if="{{editing}}" class="editor-layer" bindtap="closeEditor"><view class="editor-sheet" catchtap="noop"><view class="editor-head"><text>编辑成员资料</text><button bindtap="closeEditor">×</button></view><scroll-view scroll-y class="editor-body">
+  <label class="field"><text class="field-label">登录手机号<text class="required">*</text></text><input class="field-input" type="number" maxlength="11" value="{{editing.phone}}" data-field="phone" bindinput="setEditingField"/></label>
+  <label class="field"><text class="field-label">姓名</text><input class="field-input" value="{{editing.name}}" data-field="name" bindinput="setEditingField" placeholder="经纪人可由本人首次填写"/></label>
+  <label class="field"><text class="field-label">默认职位</text><input class="field-input" value="{{editing.title}}" data-field="title" bindinput="setEditingField" placeholder="经纪人可由本人首次填写"/></label>
+  <label class="field"><text class="field-label">邮箱</text><input class="field-input" value="{{editing.email}}" data-field="email" bindinput="setEditingField"/></label>
+  <label class="field"><text class="field-label">角色</text><picker disabled="{{originalPhone === '18059880224'}}" range="{{roleOptions}}" range-key="label" value="{{roleIndex}}" bindchange="changeRole"><view class="field-picker">{{roleOptions[roleIndex].label}} ›</view></picker></label>
+  <label class="field"><text class="field-label">名片有效期</text><picker mode="date" value="{{editing.cardValidUntil}}" bindchange="changeValidity"><view class="field-picker">{{editing.cardValidUntil || '请选择有效期'}} ›</view></picker></label>
+  <label class="field"><text class="field-label">账号状态</text><picker range="{{statusOptions}}" value="{{statusIndex}}" bindchange="changeStatus"><view class="field-picker">{{statusOptions[statusIndex]}} ›</view></picker></label>
+  <text wx:if="{{originalPhone === '18059880224'}}" class="primary-tip">主管理员角色不可降级</text>
+</scroll-view><view class="editor-actions"><button bindtap="closeEditor">取消</button><button bindtap="saveMember">保存成员</button></view></view></view>

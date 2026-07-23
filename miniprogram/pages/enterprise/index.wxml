@@ -1,0 +1,42 @@
+<view wx:if="{{form}}" class="page-shell enterprise-page">
+  <view class="form-section">
+    <text class="form-section-title">公司信息</text>
+    <label class="field"><text class="field-label">公司名称<text class="required">*</text></text><input class="field-input" value="{{form.company}}" data-field="company" bindinput="setField" placeholder="请输入公司全称"/></label>
+    <label class="field"><text class="field-label">公司地址</text><input class="field-input" value="{{form.address}}" data-field="address" bindinput="setField" placeholder="请输入公司地址"/></label>
+  </view>
+
+  <view class="form-section">
+    <text class="form-section-title">公司风采</text>
+    <label class="field"><text class="field-label">视频链接</text><input class="field-input" value="{{form.videoUrl}}" data-field="videoUrl" bindinput="setField" placeholder="粘贴视频链接或上传视频"/></label>
+    <view class="media-actions"><button bindtap="chooseVideo">上传 MP4 / MOV 视频</button><button bindtap="choosePoster">设置封面图</button></view>
+    <text class="media-tip">{{form.videoName || '支持 MP4、MOV 等常见格式；正式版上传至对象存储。'}}</text>
+    <image wx:if="{{form.videoPoster}}" class="poster-preview" src="{{form.videoPoster}}" mode="aspectFill"/>
+  </view>
+
+  <view class="form-section">
+    <view class="editor-title"><text class="form-section-title">企业咨询</text><button bindtap="addNews">＋ 添加咨询</button></view>
+    <text wx:if="{{form.news.length > 1}}" class="sort-tip">按住左侧拖拽图标可调整分享名片中的展示顺序</text>
+    <view class="news-list">
+      <view wx:for="{{form.news}}" wx:key="id" class="news-editor {{draggingIndex === index ? 'dragging' : ''}}">
+        <text class="drag-handle" data-index="{{index}}" catchtouchstart="dragStart" catchtouchmove="dragMove" catchtouchend="dragEnd">☷</text>
+        <view><input value="{{item.title}}" data-index="{{index}}" data-field="title" bindinput="setNewsField" placeholder="咨询标题"/><input value="{{item.url}}" data-index="{{index}}" data-field="url" bindinput="setNewsField" placeholder="咨询链接"/></view>
+        <button data-index="{{index}}" bindtap="removeNews">×</button>
+      </view>
+    </view>
+  </view>
+
+  <view class="form-section">
+    <text class="form-section-title">企业介绍（PDF）</text>
+    <view class="pdf-row"><text class="pdf-icon">PDF</text><view><text>{{form.pdfName}}</text><text>PDF将转换为名片长图展示</text></view><button bindtap="choosePdf">上传PDF</button></view>
+    <image class="intro-preview" src="{{form.introImage}}" mode="widthFix"/>
+  </view>
+
+  <button class="primary-button" bindtap="preview">预览效果</button>
+</view>
+
+<view wx:if="{{previewing}}" class="preview-layer">
+  <view class="preview-sheet">
+    <view class="preview-head"><button bindtap="closePreview">‹ 返回修改</button><text>发布前预览</text><button bindtap="publish">确认发布</button></view>
+    <scroll-view scroll-y class="preview-body"><view class="preview-note">以下使用示例个人信息拼接当前企业配置草稿</view><card-view card="{{previewCard}}" show-contact-action="{{false}}" bind:addcontact="addContact" bind:opennews="openNews" bind:openpdf="openPdf"/></scroll-view>
+  </view>
+</view>

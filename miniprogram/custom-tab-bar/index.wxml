@@ -1,0 +1,10 @@
+<view class="tab-bar">
+  <block wx:for="{{list}}" wx:key="pagePath">
+    <view wx:if="{{item.role === 'all' || role === 'admin'}}" class="tab-item {{selected === index ? 'active' : ''}}" data-path="{{item.pagePath}}" bindtap="switchTab">
+      <text class="tab-icon">{{item.icon}}</text>
+      <text class="tab-text">{{item.text}}</text>
+      <text wx:if="{{item.text === '访客'}}" class="tab-dot"></text>
+    </view>
+  </block>
+  <view class="safe"></view>
+</view>

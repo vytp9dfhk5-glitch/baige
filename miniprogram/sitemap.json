@@ -1,0 +1,7 @@
+{
+  "desc": "白鸽在线AI电子名片小程序页面索引规则",
+  "rules": [
+    { "action": "allow", "page": "pages/public-card/index" },
+    { "action": "disallow", "page": "*" }
+  ]
+}

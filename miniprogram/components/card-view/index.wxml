@@ -1,0 +1,45 @@
+<view wx:if="{{card}}" class="card-view">
+  <view class="identity-card">
+    <view class="identity-grid"></view>
+    <view class="identity-top">
+      <view class="avatar-wrap">
+        <image wx:if="{{card.avatar}}" class="avatar" src="{{card.avatar}}" mode="aspectFill"/>
+        <view wx:else class="avatar avatar-fallback" style="background:{{card.avatarColor || '#3478f6'}}">{{initial}}</view>
+      </view>
+      <button wx:if="{{showContactAction}}" class="contact-action" bindtap="addContact"><text>＋</text>添加至通讯录</button>
+    </view>
+    <text class="person-name">{{card.name}}</text>
+    <text class="person-title">{{card.title}}</text>
+    <text class="person-company">{{card.company}}</text>
+    <view class="contact-lines">
+      <text wx:if="{{card.phone}}">手机号　{{card.phone}}</text>
+      <text wx:if="{{card.email}}">邮箱　　{{card.email}}</text>
+      <text wx:if="{{card.wechat}}">微信号　{{card.wechat}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{displayAddresses.length}}" class="content-card address-card">
+    <text class="content-title">公司地址</text>
+    <text wx:for="{{displayAddresses}}" wx:key="*this" class="address-line">⌖　{{item}}</text>
+  </view>
+
+  <view wx:if="{{card.intro}}" class="content-card">
+    <text class="content-title">个人简介</text>
+    <text class="intro-copy">{{card.intro}}</text>
+  </view>
+
+  <view wx:if="{{card.videoUrl}}" class="content-card media-card">
+    <view class="content-head"><text class="content-title">公司风采</text><text>{{card.videoName}}</text></view>
+    <video class="company-video" src="{{card.videoUrl}}" poster="{{card.videoPoster}}" controls object-fit="cover" enable-play-gesture/>
+  </view>
+
+  <view wx:if="{{hasNews}}" class="content-card">
+    <view class="content-head"><text class="content-title">企业咨询</text><text>{{card.news.length}} 条</text></view>
+    <button wx:for="{{card.news}}" wx:key="id" class="news-row" data-item="{{item}}" bindtap="openNews"><text class="news-index">{{index + 1}}</text><text class="news-title">{{item.title}}</text><text class="news-arrow">›</text></button>
+  </view>
+
+  <view wx:if="{{card.companyIntroductionImage}}" class="content-card company-intro-card">
+    <view class="content-head"><text class="content-title">公司介绍</text><button wx:if="{{card.companyPdfUrl}}" bindtap="openPdf">查看原文件</button></view>
+    <image class="company-intro-image" src="{{card.companyIntroductionImage}}" mode="widthFix" show-menu-by-longpress/>
+  </view>
+</view>

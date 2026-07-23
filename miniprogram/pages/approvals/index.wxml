@@ -1,0 +1,22 @@
+<view class="page-shell approvals-page">
+  <view class="approval-hero"><view><text>全部申请</text><text>按申请时间倒序展示所有状态</text></view><view class="result-count"><text>{{shown.length}}</text><text>条结果</text></view></view>
+  <view class="filter-card section-card">
+    <text>申请类型</text><scroll-view scroll-x class="filter-scroll"><view><button class="{{typeFilter === 'all' ? 'active' : ''}}" data-value="all" bindtap="setTypeFilter">全部</button><button class="{{typeFilter === 'title_change' ? 'active' : ''}}" data-value="title_change" bindtap="setTypeFilter">职位变更</button><button class="{{typeFilter === 'broker_initial' ? 'active' : ''}}" data-value="broker_initial" bindtap="setTypeFilter">创建名片</button><button class="{{typeFilter === 'renewal' ? 'active' : ''}}" data-value="renewal" bindtap="setTypeFilter">名片续期</button></view></scroll-view>
+    <text>申请状态</text><view class="status-filters"><button class="{{statusFilter === 'all' ? 'active' : ''}}" data-value="all" bindtap="setStatusFilter">全部</button><button class="{{statusFilter === 'pending' ? 'active' : ''}}" data-value="pending" bindtap="setStatusFilter">待审核</button><button class="{{statusFilter === 'approved' ? 'active' : ''}}" data-value="approved" bindtap="setStatusFilter">已通过</button><button class="{{statusFilter === 'rejected' ? 'active' : ''}}" data-value="rejected" bindtap="setStatusFilter">已拒绝</button></view>
+  </view>
+
+  <view wx:if="{{!shown.length}}" class="section-card empty-state"><view class="empty-icon">审</view><text class="empty-title">没有符合条件的申请</text><text class="empty-copy">调整申请类型或状态后再查看。</text></view>
+  <view wx:else class="request-list">
+    <view wx:for="{{shown}}" wx:key="id" class="request-card section-card">
+      <view class="request-head"><text class="request-avatar">{{item.initial}}</text><view><text>{{item.name || '待完善姓名'}}<text class="request-type">{{item.typeText}}</text></text><text>{{item.phone}}</text><text>申请时间 {{item.timeText}}</text></view><text class="request-status {{item.status}}">{{item.statusText}}</text></view>
+      <view wx:if="{{item.type === 'title_change'}}" class="title-change"><view><text class="change-label">原职位</text><text>{{item.currentTitle || '未设置'}}</text></view><text>→</text><view><text class="change-label">申请职位</text><text>{{item.requestedTitle}}</text></view></view>
+      <text wx:if="{{item.type === 'broker_initial'}}" class="request-summary">申请职位：{{item.requestedTitle || '未填写职位'}}</text>
+      <text wx:if="{{item.type === 'renewal'}}" class="request-summary">当前有效期：{{item.currentValidUntil || '已结束'}}</text>
+      <view wx:if="{{item.status === 'pending'}}" class="validity-row"><text>设置名片有效期</text><picker mode="date" value="{{item.validUntil}}" data-id="{{item.id}}" bindchange="changeValidity"><view>{{item.validUntil}} ›</view></picker></view>
+      <text wx:if="{{item.showRejection}}" class="rejected-reason">拒绝原因：{{item.rejectionReason}}</text>
+      <view wx:if="{{item.status === 'pending'}}" class="approval-actions"><button data-id="{{item.id}}" bindtap="openReject">拒绝</button><button data-id="{{item.id}}" bindtap="approve">通过并生效</button></view>
+    </view>
+  </view>
+</view>
+
+<view wx:if="{{rejectOpen}}" class="reject-layer" bindtap="closeReject"><view class="reject-sheet" catchtap="noop"><text>拒绝申请</text><text>请填写明确的拒绝原因，申请人会在消息通知中看到。</text><textarea value="{{rejectionReason}}" bindinput="onReason" maxlength="300" placeholder="拒绝原因（必填）"/><view><button bindtap="closeReject">取消</button><button bindtap="confirmReject">确认拒绝</button></view></view></view>

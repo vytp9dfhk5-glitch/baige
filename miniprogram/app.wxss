@@ -1,0 +1,46 @@
+page {
+  --blue: #3478f6;
+  --blue-dark: #1f57be;
+  --ink: #172033;
+  --muted: #7f8a9d;
+  --line: #e8edf4;
+  --surface: #ffffff;
+  min-height: 100%;
+  color: var(--ink);
+  background: #f4f6fa;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 28rpx;
+}
+
+view, text, image, video, button, input, textarea, picker, scroll-view {
+  box-sizing: border-box;
+}
+
+button::after { border: 0; }
+button { font-size: 28rpx; }
+
+.page-shell { min-height: 100vh; padding: 24rpx 24rpx 160rpx; }
+.page-title { margin: 8rpx 4rpx 22rpx; font-size: 40rpx; font-weight: 800; letter-spacing: -1rpx; }
+.section-card { background: #fff; border: 1rpx solid var(--line); border-radius: 30rpx; box-shadow: 0 8rpx 28rpx rgba(34, 58, 96, .04); }
+.section-title { display: flex; align-items: center; justify-content: space-between; margin: 30rpx 4rpx 16rpx; }
+.section-title text:first-child { font-size: 30rpx; font-weight: 800; }
+.section-title text:last-child { color: #98a2b2; font-size: 22rpx; }
+.primary-button { display: flex; align-items: center; justify-content: center; min-height: 88rpx; color: #fff; background: linear-gradient(135deg, #245fcf, #3478f6); border: 0; border-radius: 24rpx; font-weight: 700; }
+.secondary-button { display: flex; align-items: center; justify-content: center; min-height: 84rpx; color: #3478f6; background: #edf4ff; border: 1rpx solid #d8e6ff; border-radius: 22rpx; font-weight: 700; }
+.empty-state { padding: 90rpx 40rpx; text-align: center; }
+.empty-state .empty-icon { width: 94rpx; height: 94rpx; display: flex; align-items: center; justify-content: center; margin: 0 auto 24rpx; color: #3478f6; background: #edf4ff; border-radius: 32rpx; font-size: 42rpx; }
+.empty-state .empty-title { display: block; font-size: 34rpx; font-weight: 800; }
+.empty-state .empty-copy { display: block; margin: 14rpx auto 30rpx; color: #8792a5; font-size: 24rpx; line-height: 1.7; }
+.field { display: block; margin-bottom: 24rpx; }
+.field-label { display: block; margin: 0 4rpx 10rpx; font-size: 25rpx; font-weight: 700; }
+.required { margin-left: 4rpx; color: #ef5b57; }
+.field-input, .field-textarea, .field-picker { width: 100%; min-height: 88rpx; padding: 24rpx 26rpx; color: #25324a; background: #fff; border: 1rpx solid #dfe6ef; border-radius: 22rpx; font-size: 27rpx; }
+.field-textarea { min-height: 190rpx; line-height: 1.65; }
+.field-placeholder { color: #a6afbd; }
+.form-section { margin-bottom: 22rpx; padding: 26rpx; background: #fff; border: 1rpx solid var(--line); border-radius: 30rpx; }
+.form-section-title { display: block; margin-bottom: 22rpx; font-size: 31rpx; font-weight: 800; }
+.pill { display: inline-flex; align-items: center; padding: 8rpx 16rpx; color: #3478f6; background: #edf4ff; border-radius: 999rpx; font-size: 21rpx; font-weight: 700; }
+.status-normal { color: #159b72; background: #e8f8f2; }
+.status-pending { color: #d88916; background: #fff4df; }
+.status-expired, .status-disabled { color: #df554f; background: #fff0ef; }
+.safe-bottom { height: env(safe-area-inset-bottom); }

@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "check:miniprogram": "node scripts/check-miniprogram.mjs",
+    "test:miniprogram": "node scripts/test-miniprogram-logic.cjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "4.3.4",

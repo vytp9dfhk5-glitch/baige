@@ -1,0 +1,37 @@
+{
+  "pages": [
+    "pages/login/index",
+    "pages/card/index",
+    "pages/visitors/index",
+    "pages/admin/index",
+    "pages/me/index",
+    "pages/edit-card/index",
+    "pages/enterprise/index",
+    "pages/approvals/index",
+    "pages/members/index",
+    "pages/notifications/index",
+    "pages/public-card/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "白鸽在线电子名片",
+    "navigationBarTextStyle": "black",
+    "navigationBarBackgroundColor": "#ffffff",
+    "backgroundColor": "#f4f6fa",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#9099a8",
+    "selectedColor": "#3478f6",
+    "backgroundColor": "#ffffff",
+    "list": [
+      { "pagePath": "pages/card/index", "text": "名片" },
+      { "pagePath": "pages/visitors/index", "text": "访客" },
+      { "pagePath": "pages/admin/index", "text": "管理" },
+      { "pagePath": "pages/me/index", "text": "我的" }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

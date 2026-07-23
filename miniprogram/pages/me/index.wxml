@@ -1,0 +1,7 @@
+<view class="page-shell me-page">
+  <view class="account-card section-card">
+    <view class="account-avatar"><image wx:if="{{card.avatar}}" src="{{card.avatar}}" mode="aspectFill"/><text wx:else>{{initial}}</text></view>
+    <view class="account-copy"><text>{{card.name || member.name || '未创建名片'}}</text><text>登录手机号：{{maskedPhone}}</text><text>{{stateText}}</text></view>
+  </view>
+  <button class="logout-button" bindtap="logout">退出登录</button>
+</view>

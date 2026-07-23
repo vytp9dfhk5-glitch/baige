@@ -1,0 +1,27 @@
+<view class="page-shell card-page">
+  <view class="card-toolbar">
+    <text class="toolbar-title">我的名片</text>
+    <view class="toolbar-actions">
+      <button class="icon-button" bindtap="openNotifications"><text>♢</text><text wx:if="{{unread}}" class="notice-count">{{unread}}</text></button>
+      <button wx:if="{{card}}" class="edit-button" bindtap="editCard">编辑</button>
+      <button wx:if="{{canShare}}" class="share-button" open-type="share">分享</button>
+      <button wx:if="{{showBlockedShare}}" class="share-button blocked" bindtap="blockedShare">分享</button>
+    </view>
+  </view>
+
+  <view wx:if="{{showStatus}}" class="status-banner {{'banner-' + status.key}}">
+    <view><text>名片状态：{{status.label}}</text><text wx:if="{{status.key === 'pending'}}">申请审核期间暂不可对外分享</text><text wx:if="{{status.key === 'expired'}}">有效期已结束，请提交续期申请</text><text wx:if="{{status.key === 'disabled'}}">申请被拒绝或账号已停用</text></view>
+    <button wx:if="{{showRenewAction}}" bindtap="renew">申请续期</button>
+    <text wx:if="{{renewalPending}}" class="pending-copy">续期审核中</text>
+  </view>
+  <view wx:elif="{{showRenewBanner}}" class="renew-banner"><text>名片将在 7 天内到期，可提前申请续期</text><button wx:if="{{!renewalPending}}" bindtap="renew">申请续期</button><text wx:else>审核中</text></view>
+
+  <view wx:if="{{!card}}" class="section-card empty-state">
+    <view class="empty-icon">名</view>
+    <text class="empty-title">完善你的个人信息</text>
+    <text class="empty-copy">员工预设信息会自动带入；保存后与企业配置拼接生成完整名片。</text>
+    <button class="primary-button" bindtap="editCard">完善个人信息</button>
+  </view>
+
+  <card-view wx:else card="{{card}}" bind:addcontact="addContact" bind:opennews="openNews" bind:openpdf="openPdf"/>
+</view>

@@ -1,0 +1,5 @@
+<view class="public-page">
+  <view class="public-head"><view><text>白鸽在线</text><text>AI 电子名片</text></view><button open-type="share">分享名片</button></view>
+  <card-view card="{{card}}" bind:addcontact="addContact" bind:opennews="openNews" bind:openpdf="openPdf"/>
+  <text class="public-foot">白鸽在线（厦门）数字科技股份有限公司</text>
+</view>

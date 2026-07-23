@@ -1,0 +1,11 @@
+<view class="page-shell visitor-page">
+  <view wx:if="{{!available}}" class="section-card empty-state"><view class="empty-icon">访</view><text class="empty-title">名片可用后查看访客</text><text class="empty-copy">创建并通过审核后，这里会展示访问次数、浏览时长和内容偏好。</text><button class="primary-button" bindtap="createCard">返回名片</button></view>
+
+  <block wx:else>
+    <view class="radar-card"><view><text>今日名片访客</text><text class="radar-value">24</text><text class="growth">↗ 较昨日 +26%</text></view><view class="radar"><text></text><text></text><text></text><view>访</view></view></view>
+    <view class="metric-grid"><view><text>◷</text><text class="metric-value">2.8h</text><text class="metric-label">浏览总时长</text></view><view><text>♨</text><text class="metric-value">6</text><text class="metric-label">重点联系人</text></view><view><text>↗</text><text class="metric-value">12</text><text class="metric-label">资料转发</text></view></view>
+    <view class="section-card trend-card"><view class="trend-head"><text>近 7 天访问趋势</text><text>136 次 ›</text></view><view class="chart"><view wx:for="{{trend}}" wx:key="index" class="chart-column"><view class="chart-bar" style="height:{{item}}rpx"></view></view></view><view class="chart-labels"><text wx:for="{{labels}}" wx:key="*this">{{item}}</text></view></view>
+    <view class="visitor-filter"><text class="active">全部 24</text><button bindtap="filter">▣ 筛选</button></view>
+    <view class="visitor-list section-card"><view wx:for="{{visitors}}" wx:key="id" class="visitor-row"><text class="visitor-avatar" style="background:{{item.color}}">{{item.avatar}}</text><view class="visitor-main"><view><text>{{item.name}}</text><text class="auth {{item.authorized ? 'authorized' : ''}}">{{item.authorized ? '微信已授权' : '未授权'}}</text></view><text>◷ 打开时间：{{item.openTime}}</text><text>查看了「{{item.content}}」</text></view><view class="visitor-duration"><text>浏览时长</text><text class="duration-value">{{item.duration}}</text></view></view></view>
+  </block>
+</view>

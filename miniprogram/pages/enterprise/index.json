@@ -1,0 +1,4 @@
+{
+  "navigationBarTitleText": "企业配置",
+  "usingComponents": { "card-view": "/components/card-view/index" }
+}

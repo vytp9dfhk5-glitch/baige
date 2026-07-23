@@ -1,0 +1,5 @@
+{
+  "navigationBarTitleText": "名片",
+  "enablePullDownRefresh": true,
+  "usingComponents": { "card-view": "/components/card-view/index" }
+}

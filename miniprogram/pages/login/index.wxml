@@ -1,0 +1,22 @@
+<view class="login-page">
+  <view class="brand-mark"><text>白鸽</text><text>在线</text></view>
+  <view class="login-hero">
+    <view class="logo-orb">AI</view>
+    <text class="login-title">欢迎使用电子名片</text>
+    <text class="login-copy">连接个人影响力与企业品牌内容</text>
+  </view>
+
+  <view class="login-panel">
+    <text class="panel-title">手机号登录</text>
+    <view class="login-input"><text>+86</text><input type="number" maxlength="11" value="{{phone}}" bindinput="onPhone" placeholder="请输入手机号"/></view>
+    <view class="login-input code-input"><input type="number" maxlength="6" value="{{code}}" bindinput="onCode" placeholder="请输入验证码"/><button bindtap="sendCode" disabled="{{sending}}">{{sending ? countdown + 's' : '获取验证码'}}</button></view>
+    <button class="login-button" bindtap="login">登录</button>
+    <view class="agreement" bindtap="toggleAgreement"><text class="check {{agreed ? 'checked' : ''}}">{{agreed ? '✓' : ''}}</text><text>已阅读并同意《用户协议》和《隐私政策》</text></view>
+  </view>
+
+  <view class="demo-accounts">
+    <text>演示账号</text>
+    <view><button data-phone="18059880224" bindtap="quickFill">管理员</button><button data-phone="18650111999" bindtap="quickFill">员工</button><button data-phone="13800138000" bindtap="quickFill">经纪人</button></view>
+    <text class="demo-tip">验证码统一填写 123456</text>
+  </view>
+</view>
