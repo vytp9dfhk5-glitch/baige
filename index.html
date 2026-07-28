@@ -909,7 +909,7 @@
 	              </div>
 	            </section>
 
-	            <section class="record-device-modal" id="record-device-modal" aria-hidden="true">
+	            <section class="record-device-modal" id="record-device-modal" aria-hidden="true" hidden>
 	              <div class="record-device-scrim"></div>
 	              <div class="record-device-dialog" role="alertdialog" aria-modal="true" aria-labelledby="record-device-title" aria-describedby="record-device-description">
 	                <h3 id="record-device-title">未连接</h3>
@@ -1634,6 +1634,7 @@
 	      }
 
 	      function openRecordDeviceModal() {
+	        recordDeviceModal.hidden = false;
 	        recordDeviceModal.classList.add("record-device-modal--open");
 	        recordDeviceModal.setAttribute("aria-hidden", "false");
 	        window.setTimeout(() => recordDevicePhone.focus(), 80);
@@ -1642,6 +1643,7 @@
 	      function closeRecordDeviceModal() {
 	        recordDeviceModal.classList.remove("record-device-modal--open");
 	        recordDeviceModal.setAttribute("aria-hidden", "true");
+	        recordDeviceModal.hidden = true;
 	        startRecording.focus();
 	      }
 
@@ -1657,6 +1659,7 @@
 	      recordDevicePhone.addEventListener("click", () => {
 	        recordDeviceModal.classList.remove("record-device-modal--open");
 	        recordDeviceModal.setAttribute("aria-hidden", "true");
+	        recordDeviceModal.hidden = true;
 	        beginRecording();
 	      });
 
