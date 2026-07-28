@@ -3097,6 +3097,7 @@ button {
 .summary-template-modal,
 .voice-delete-modal,
 .logout-modal,
+.record-device-modal,
 .detail-more-modal,
 .export-format-modal,
 .detail-edit-modal,
@@ -3118,6 +3119,7 @@ button {
 .summary-template-modal--open,
 .voice-delete-modal--open,
 .logout-modal--open,
+.record-device-modal--open,
 .detail-more-modal--open,
 .export-format-modal--open,
 .detail-edit-modal--open,
@@ -3130,6 +3132,94 @@ button {
 .folder-ai-modal--open,
 .rename-meeting-modal--open {
   display: block;
+}
+
+.record-device-modal {
+  z-index: 8;
+}
+
+.record-device-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(32, 42, 60, 0.42);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.record-device-dialog {
+  position: absolute;
+  top: 50%;
+  left: 20px;
+  right: 20px;
+  padding: 22px 20px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 28px 64px -30px rgba(25, 47, 80, 0.5);
+  transform: translateY(-50%);
+  animation: record-device-dialog-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.record-device-dialog h3 {
+  margin: 0;
+  color: #243149;
+  font-size: 1.02rem;
+  line-height: 1.3;
+}
+
+.record-device-dialog p {
+  margin: 12px 0 20px;
+  color: #8b95a7;
+  font-size: 0.82rem;
+  line-height: 1.65;
+}
+
+.record-device-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+  gap: 10px;
+}
+
+.record-device-actions button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 14px;
+  font-size: 0.86rem;
+  font-weight: 800;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease;
+}
+
+.record-device-actions button:active {
+  transform: scale(0.98);
+}
+
+.record-device-actions button:focus-visible {
+  outline: 3px solid rgba(61, 152, 245, 0.22);
+  outline-offset: 2px;
+}
+
+.record-device-cancel {
+  color: #657087;
+  background: #f2f4f7;
+}
+
+.record-device-phone {
+  color: #fff;
+  background: #3d98f5;
+  box-shadow: 0 14px 24px -18px rgba(61, 152, 245, 0.88);
+}
+
+@keyframes record-device-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(-50% + 12px)) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
 }
 
 .folder-ai-modal {

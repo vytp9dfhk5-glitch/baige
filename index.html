@@ -504,15 +504,15 @@
 		                  </button>
 		                </article>
 
-		                <article class="device-setting-card device-setting-card--unset">
+	                <article class="device-setting-card device-setting-card--unset">
 		                  <div class="device-card-top">
 		                    <strong>设备设置</strong>
 		                    <span class="device-connection-badge device-connection-badge--disconnected" id="device-connection-badge" hidden><i></i>设备未连接</span>
 		                  </div>
 		                  <button class="device-card-main" id="open-device-bluetooth" type="button">
 		                    <div>
-		                      <strong id="device-entry-title">请绑定设备蓝牙</strong>
-		                      <p id="device-name-display"></p>
+	                      <strong id="device-entry-title">设备名称</strong>
+	                      <p id="device-name-display">白鸽会议记录仪 A01</p>
 		                    </div>
 		                    <span class="device-card-arrow"></span>
 		                  </button>
@@ -909,6 +909,18 @@
 	              </div>
 	            </section>
 
+	            <section class="record-device-modal" id="record-device-modal" aria-hidden="true">
+	              <div class="record-device-scrim"></div>
+	              <div class="record-device-dialog" role="alertdialog" aria-modal="true" aria-labelledby="record-device-title" aria-describedby="record-device-description">
+	                <h3 id="record-device-title">未连接</h3>
+	                <p id="record-device-description">当前无法通过设备发起录音，请确保设备已正确连接</p>
+	                <div class="record-device-actions">
+	                  <button class="record-device-cancel" id="record-device-cancel" type="button">取消</button>
+	                  <button class="record-device-phone" id="record-device-phone" type="button">手机发起记录</button>
+	                </div>
+	              </div>
+	            </section>
+
 	            <section class="hotword-modal" id="hotword-modal" aria-hidden="true">
               <div class="modal-scrim" id="hotword-modal-close"></div>
               <div class="modal-sheet panel">
@@ -1279,7 +1291,7 @@
 	      const wifiConfiguring = document.querySelector("#wifi-configuring");
 	      const wifiSuccess = document.querySelector("#wifi-success");
 	      let settingEditTarget = null;
-	      let deviceConnectionState = "unset";
+	      let deviceConnectionState = "disconnected";
 	      let bluetoothConnected = false;
 	      let bluetoothReturnView = "settings";
 	      let selectedBluetoothDevice = "";
@@ -1460,10 +1472,11 @@
 	          progressBluetooth.classList.add("hardware-progress__item--complete");
 	          progressWifi.classList.add("hardware-progress__item--active");
 	          hardwareSetupStep.textContent = "Wi-Fi 2/2";
-	          document.querySelector("#bluetooth-connected-summary").textContent = `${selectedBluetoothDevice} 已连接，请继续配置 Wi-Fi。`;
+	          document.querySelector("#bluetooth-connected-summary").textContent = `${selectedBluetoothDevice} 已连接，正在搜索附近 Wi-Fi。`;
 	          window.setTimeout(() => {
 	            bluetoothSetupSection.hidden = true;
 	            wifiSetupSection.hidden = false;
+	            searchNearbyWifi();
 	          }, 520);
 	        }, 1100);
 	      }
@@ -1608,14 +1621,44 @@
       const voiceStage = document.querySelector("#voice-stage");
       const templateModal = document.querySelector("#template-modal");
       const recordingTemplateButtons = templateModal.querySelectorAll("[data-template-choice]");
+	      const recordDeviceModal = document.querySelector("#record-device-modal");
+	      const recordDeviceCancel = document.querySelector("#record-device-cancel");
+	      const recordDevicePhone = document.querySelector("#record-device-phone");
 
-      startRecording.addEventListener("click", () => {
+	      function beginRecording() {
         recorderCard.classList.add("is-recording");
         voiceStage.classList.remove("voice-stage--idle");
         recordingActions.classList.remove("recorder-actions--hidden");
         startRecording.classList.add("record-orb--compact");
         timerValue.textContent = "00:00:18";
-      });
+	      }
+
+	      function openRecordDeviceModal() {
+	        recordDeviceModal.classList.add("record-device-modal--open");
+	        recordDeviceModal.setAttribute("aria-hidden", "false");
+	        window.setTimeout(() => recordDevicePhone.focus(), 80);
+	      }
+
+	      function closeRecordDeviceModal() {
+	        recordDeviceModal.classList.remove("record-device-modal--open");
+	        recordDeviceModal.setAttribute("aria-hidden", "true");
+	        startRecording.focus();
+	      }
+
+	      startRecording.addEventListener("click", () => {
+	        if (deviceConnectionState !== "connected") {
+	          openRecordDeviceModal();
+	          return;
+	        }
+	        beginRecording();
+	      });
+
+	      recordDeviceCancel.addEventListener("click", closeRecordDeviceModal);
+	      recordDevicePhone.addEventListener("click", () => {
+	        recordDeviceModal.classList.remove("record-device-modal--open");
+	        recordDeviceModal.setAttribute("aria-hidden", "true");
+	        beginRecording();
+	      });
 
       pauseRecording.addEventListener("click", () => {
         const isPaused = recorderCard.classList.toggle("is-paused");
