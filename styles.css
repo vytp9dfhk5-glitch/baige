@@ -3138,6 +3138,10 @@ button {
   z-index: 8;
 }
 
+.record-device-modal[hidden] {
+  display: none !important;
+}
+
 .record-device-scrim {
   position: absolute;
   inset: 0;
