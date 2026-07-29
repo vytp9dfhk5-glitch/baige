@@ -88,6 +88,7 @@
                   </button>
                   <p id="history-scope-meta" hidden></p>
                 </div>
+	              <button class="history-folder-delete" id="history-folder-delete" type="button" hidden>删除</button>
               </header>
 
               <section class="search-row panel">
@@ -980,6 +981,19 @@
 	                <div class="hotword-modal-actions">
 	                  <button class="secondary-button" id="folder-edit-cancel" type="button">取消</button>
 	                  <button class="confirm-button" id="folder-edit-confirm" type="button">确认</button>
+	                </div>
+	              </div>
+	            </section>
+
+	            <section class="folder-delete-modal" id="folder-delete-modal" aria-hidden="true">
+	              <div class="modal-scrim" id="folder-delete-close"></div>
+	              <div class="modal-sheet panel" role="alertdialog" aria-modal="true" aria-labelledby="folder-delete-title" aria-describedby="folder-delete-description">
+	                <div class="modal-handle"></div>
+	                <h3 id="folder-delete-title">删除文件夹</h3>
+	                <p id="folder-delete-description">确定删除该文件夹吗？文件夹内的所有会议记录将一并删除，删除后不可恢复。</p>
+	                <div class="hotword-modal-actions">
+	                  <button class="secondary-button" id="folder-delete-cancel" type="button">取消</button>
+	                  <button class="danger-button" id="folder-delete-confirm" type="button">确认删除</button>
 	                </div>
 	              </div>
 	            </section>
@@ -2508,11 +2522,14 @@
       const historyScopeMeta = document.querySelector("#history-scope-meta");
       const historyFolderBack = document.querySelector("#history-folder-back");
       const historyFolderTitleButton = document.querySelector("#history-folder-title-button");
+	      const historyFolderDelete = document.querySelector("#history-folder-delete");
       const folderDropTray = document.querySelector("#folder-drop-tray");
       const folderDropTargets = document.querySelector("#folder-drop-targets");
       const folderEditModal = document.querySelector("#folder-edit-modal");
       const folderEditTitle = document.querySelector("#folder-edit-title");
       const folderNameInput = document.querySelector("#folder-name-input");
+	      const folderDeleteModal = document.querySelector("#folder-delete-modal");
+	      const folderDeleteDescription = document.querySelector("#folder-delete-description");
       const moveMeetingModal = document.querySelector("#move-meeting-modal");
       const moveMeetingTitle = document.querySelector("#move-meeting-title");
       const moveFolderList = document.querySelector("#move-folder-list");
@@ -2570,6 +2587,7 @@
       ];
       let activeFolderId = "all";
       let editingFolderId = null;
+	      let deletingFolderId = null;
       let pendingMoveItem = null;
       let shownHistoryCount = 10;
       const posterModal = document.querySelector("#poster-modal");
@@ -2604,6 +2622,7 @@
         historyScopeMeta.textContent = isRoot ? "" : `${getFolderMeetingCount(folder.id)} 条会议 · 长按会议可移动到其他文件夹`;
         historyScopeMeta.hidden = isRoot;
         historyFolderBack.hidden = isRoot;
+	        historyFolderDelete.hidden = isRoot;
         folderPanel.hidden = !isRoot;
         historyFolderTitleButton.disabled = isRoot;
         historyFolderTitleButton.classList.toggle("history-folder-title-button--editable", !isRoot);
@@ -2628,6 +2647,45 @@
         folderEditModal.setAttribute("aria-hidden", "true");
         editingFolderId = null;
       }
+
+	      function openFolderDelete() {
+	        if (activeFolderId === "all") return;
+	        const folder = getFolder(activeFolderId);
+	        const meetingCount = getFolderMeetingCount(folder.id);
+	        deletingFolderId = folder.id;
+	        folderDeleteDescription.textContent = meetingCount > 0
+	          ? `确定删除“${folder.name}”文件夹吗？其中 ${meetingCount} 条会议记录将一并删除，删除后不可恢复。`
+	          : `确定删除“${folder.name}”文件夹吗？删除后不可恢复。`;
+	        folderDeleteModal.classList.add("folder-delete-modal--open");
+	        folderDeleteModal.setAttribute("aria-hidden", "false");
+	        window.setTimeout(() => document.querySelector("#folder-delete-cancel").focus(), 80);
+	      }
+
+	      function closeFolderDelete() {
+	        folderDeleteModal.classList.remove("folder-delete-modal--open");
+	        folderDeleteModal.setAttribute("aria-hidden", "true");
+	        deletingFolderId = null;
+	      }
+
+	      function confirmFolderDelete() {
+	        if (!deletingFolderId || deletingFolderId === "all") {
+	          closeFolderDelete();
+	          return;
+	        }
+
+	        const folderId = deletingFolderId;
+	        historyItems
+	          .filter((item) => item.dataset.folderId === folderId)
+	          .forEach((item) => item.remove());
+	        historyItems = historyItems.filter((item) => item.dataset.folderId !== folderId);
+	        folders = folders.filter((folder) => folder.id !== folderId);
+	        activeHistoryItem = null;
+	        activeHistoryMenuItem = null;
+	        deletingFolderId = null;
+	        folderDeleteModal.classList.remove("folder-delete-modal--open");
+	        folderDeleteModal.setAttribute("aria-hidden", "true");
+	        selectFolder("all");
+	      }
 
       function renderFolders() {
         folderTabs.replaceChildren();
@@ -2983,6 +3041,10 @@
       historyFolderTitleButton.addEventListener("click", () => {
         if (activeFolderId !== "all") openFolderEdit(activeFolderId);
       });
+	      historyFolderDelete.addEventListener("click", openFolderDelete);
+	      document.querySelector("#folder-delete-close").addEventListener("click", closeFolderDelete);
+	      document.querySelector("#folder-delete-cancel").addEventListener("click", closeFolderDelete);
+	      document.querySelector("#folder-delete-confirm").addEventListener("click", confirmFolderDelete);
       document.querySelector("#folder-empty-back").addEventListener("click", () => selectFolder("all"));
       document.querySelector("#folder-edit-close").addEventListener("click", closeFolderEdit);
       document.querySelector("#folder-edit-cancel").addEventListener("click", closeFolderEdit);
