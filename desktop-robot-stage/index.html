@@ -672,10 +672,191 @@
     to { opacity: 1; transform: translateY(0) scale(1); }
   }
 
+  /* ========== 响应式适配 ========== */
+  /* 4K+ 大屏 */
   @media (min-width: 2200px) { html { font-size: 18px; } }
+
+  /* 标准大屏 → 紧凑大屏（1600-2200） */
   @media (max-width: 1600px) {
-    .main { grid-template-columns: 320px 1fr 300px; }
-    .header { grid-template-columns: 280px 1fr 280px; }
+    .main { grid-template-columns: 320px 1fr 300px; gap: 18px; }
+    .header { grid-template-columns: 280px 1fr 280px; padding: 0 22px; }
+    .robot-frame { width: 160px; height: 160px; }
+    .capability-list { gap: 8px; }
+    .cap-item { padding: 10px 12px; }
+  }
+
+  /* 笔记本 1400-1600：进一步紧凑 */
+  @media (max-width: 1400px) {
+    .main { grid-template-columns: 300px 1fr 280px; gap: 14px; }
+    .header { grid-template-columns: 240px 1fr 240px; }
+    .stage { padding: 18px; }
+    .panel { padding: 18px; border-radius: 20px; }
+    .robot-frame { width: 150px; height: 150px; }
+    .robot-name { font-size: 20px; }
+    .cap-icon { width: 36px; height: 36px; font-size: 18px; }
+    .hero-stat .num { font-size: 32px; }
+    .msg-bubble { font-size: 13.5px; padding: 10px 14px; }
+    .stats-strip .num { font-size: 17px; }
+    .hero-chart { height: 46px; }
+  }
+
+  /* 平板横屏 1200-1400：3 栏压缩 */
+  @media (max-width: 1200px) {
+    .main { grid-template-columns: 270px 1fr 250px; gap: 12px; }
+    .header { grid-template-columns: 220px 1fr 220px; padding: 0 18px; }
+    .stage { padding: 14px; gap: 14px; }
+    .stage { grid-template-rows: 80px 1fr; }
+    .panel { padding: 16px; }
+    .brand-text .title { font-size: 16px; }
+    .brand-text .sub { font-size: 11px; }
+    .clock .time { font-size: 22px; }
+    .marquee { font-size: 12px; height: 32px; padding: 0 20px; }
+    .marquee-track { gap: 40px; }
+    .robot-frame { width: 130px; height: 130px; }
+    .robot-name { font-size: 18px; }
+    .robot-tagline { font-size: 10px; letter-spacing: 3px; }
+    .cap-item { padding: 10px 12px; gap: 12px; }
+    .cap-icon { width: 34px; height: 34px; font-size: 17px; }
+    .cap-info .min-name { font-size: 13px; }
+    .cap-info .min-desc { font-size: 10.5px; }
+    .topic-item { padding: 9px 0; font-size: 12px; }
+    .hero-stat .num { font-size: 30px; }
+    .hero-chart { height: 44px; }
+    .stats-strip .num { font-size: 16px; }
+    .stats-strip .lbl { font-size: 10px; }
+    .msg-bubble { font-size: 13px; padding: 10px 14px; }
+  }
+
+  /* 平板竖屏 1024-1200：2 栏 + 对话置顶 */
+  @media (max-width: 1024px) {
+    html, body {
+      height: auto;
+      min-height: 100%;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    .stage {
+      height: auto;
+      min-height: 100vh;
+      grid-template-rows: 80px auto;
+      overflow: visible;
+    }
+    .main {
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto minmax(360px, 50vh);
+      grid-template-areas:
+        "left right"
+        "chat chat";
+      gap: 14px;
+    }
+    .panel:first-child { grid-area: left; }
+    .panel:last-child { grid-area: right; }
+    .chat-panel {
+      grid-area: chat;
+      min-height: 360px;
+      max-height: 50vh;
+    }
+    .panel:first-child,
+    .panel:last-child {
+      height: auto;
+    }
+    .header { grid-template-columns: 200px 1fr 200px; }
+    .marquee { font-size: 11.5px; }
+    .panel { padding: 16px; border-radius: 18px; }
+  }
+
+  /* 手机 <768：单列堆叠，对话优先 */
+  @media (max-width: 768px) {
+    .stage {
+      grid-template-rows: 60px auto;
+      padding: 10px;
+      gap: 10px;
+      height: auto;
+      min-height: 100vh;
+      overflow: visible;
+    }
+    .main {
+      grid-template-columns: 1fr;
+      grid-template-rows: minmax(280px, 40vh) auto auto;
+      grid-template-areas:
+        "chat"
+        "left"
+        "right";
+      gap: 10px;
+    }
+    .chat-panel {
+      grid-area: chat;
+      min-height: 280px;
+      max-height: 45vh;
+    }
+    .panel:first-child { grid-area: left; }
+    .panel:last-child { grid-area: right; }
+
+    .header {
+      grid-template-columns: auto 1fr auto;
+      padding: 0 12px;
+      border-radius: 18px;
+    }
+    .brand-text { display: none; }
+    .brand-logo { width: 38px; height: 38px; font-size: 18px; }
+    .marquee { display: none; }
+    .clock .time { font-size: 18px; letter-spacing: 1px; }
+    .clock .date { font-size: 10px; }
+
+    .panel { padding: 14px; border-radius: 16px; }
+    .robot-card { padding: 0; }
+    .robot-frame { width: 110px; height: 110px; }
+    .robot-name { font-size: 17px; letter-spacing: 1px; }
+    .robot-tagline { font-size: 10px; letter-spacing: 2px; }
+    .status-card { padding: 10px 12px; }
+    .status-row { font-size: 11.5px; padding: 5px 0; }
+    .capability-card { padding: 12px 14px; }
+    .capability-list { gap: 8px; }
+    .cap-item { padding: 10px 12px; gap: 10px; }
+    .cap-icon { width: 32px; height: 32px; font-size: 16px; }
+    .cap-info .min-name { font-size: 13px; }
+    .cap-info .min-desc { font-size: 10.5px; }
+
+    .chat-title h2 { font-size: 16px; }
+    .chat-title-icon { width: 28px; height: 28px; font-size: 14px; }
+    .msg { max-width: 95%; gap: 8px; }
+    .msg-avatar { width: 32px; height: 32px; font-size: 12px; }
+    .msg-bubble { font-size: 13px; padding: 10px 14px; }
+    .msg-name { font-size: 10px; }
+
+    .hero-stat {
+      padding: 14px 16px;
+      gap: 10px;
+    }
+    .hero-stat .num { font-size: 30px; }
+    .hero-top { align-items: center; }
+    .hero-chart { height: 40px; }
+    .stats-strip {
+      grid-template-columns: repeat(3, 1fr);
+      padding: 10px 8px;
+    }
+    .stats-strip .num { font-size: 16px; }
+    .stats-strip .lbl { font-size: 9.5px; }
+
+    .section-title { font-size: 12px; }
+    .topic-list { padding: 8px 12px; }
+    .topic-item { padding: 8px 0; font-size: 12px; }
+    .topic-tag { padding: 2px 8px; font-size: 10.5px; min-width: 28px; }
+  }
+
+  /* 小手机 <480：进一步压缩 */
+  @media (max-width: 480px) {
+    .brand-logo { width: 36px; height: 36px; font-size: 16px; }
+    .clock .date { display: none; }
+    .stats-strip { grid-template-columns: 1fr 1fr; }
+    .stats-strip .item:nth-child(3) {
+      grid-column: span 2;
+      border-right: none;
+      border-top: 1px dashed rgba(43, 127, 255, 0.1);
+      padding-top: 8px;
+    }
+    .hero-stat .num { font-size: 26px; }
+    .msg { max-width: 98%; }
   }
 
   /* 低高度展厅屏：压缩固定区，把完整空间留给左右列表 */
