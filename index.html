@@ -1,0 +1,2759 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>白鸽智羽小程序 · 高保真交互原型</title>
+<style>
+/* ============ 设计系统 Token（从参考截图提炼） ============ */
+:root{
+  --blue:#1A66FF;            /* 主蓝 */
+  --blue-dark:#0F4FD6;
+  --blue-soft:#EAF3FF;       /* 浅蓝 */
+  --blue-grad-top:#DCEBFF;
+  --bg-user:#1A66FF;         /* 用户气泡 */
+  --bg-card:#FFFFFF;
+  --card-r:16px;
+  --shadow:0 6px 24px rgba(26,102,255,.10);
+  --shadow-sm:0 2px 10px rgba(20,40,80,.08);
+  --t-nav:17px;
+  --t-body:15px;
+  --t-big:22px;
+  --t-sub:12px;
+  --ink:#1C2333;
+  --ink-2:#5A6478;
+  --ink-3:#9AA3B5;
+  --line:#EDF1F7;
+  --green:#12B76A;
+  --orange:#F79009;
+  --red:#F04438;
+  --workspace:#F2F5FA;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;
+  background:var(--workspace);
+  color:var(--ink);
+  font-size:14px;
+  overflow:hidden;
+}
+button{font-family:inherit;border:none;background:none;cursor:pointer;color:inherit;}
+input{font-family:inherit;outline:none;}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-thumb{background:#C9D4E8;border-radius:3px;}
+
+/* ============ 工作台布局 ============ */
+#app{display:flex;height:100vh;gap:18px;padding:18px;}
+#sidenav{
+  width:216px;flex-shrink:0;background:#fff;border-radius:16px;box-shadow:var(--shadow-sm);
+  padding:16px 12px;display:flex;flex-direction:column;overflow-y:auto;
+}
+#sidenav h1{font-size:15px;margin:2px 6px 2px;}
+#sidenav .ver{font-size:11px;color:var(--ink-3);margin:0 6px 14px;}
+#sidenav .group{font-size:11px;color:var(--ink-3);padding:10px 8px 6px;letter-spacing:1px;}
+.navbtn{
+  display:flex;align-items:center;gap:8px;width:100%;text-align:left;
+  padding:9px 10px;border-radius:10px;font-size:13px;color:var(--ink-2);margin-bottom:2px;
+  transition:all .15s;
+}
+.navbtn .no{width:20px;height:20px;border-radius:6px;background:var(--blue-soft);color:var(--blue);
+  font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:600;}
+.navbtn:hover{background:#F4F7FE;}
+.navbtn.active{background:var(--blue);color:#fff;}
+.navbtn.active .no{background:rgba(255,255,255,.22);color:#fff;}
+#sidenav .foot{margin-top:auto;font-size:11px;color:var(--ink-3);padding:10px 8px 0;line-height:1.6;}
+
+/* ============ 中部舞台 / 手机外框 ============ */
+#stage{flex:1;display:flex;align-items:center;justify-content:center;min-width:0;overflow:auto;padding:18px;}
+#phone{
+  width:410px;height:864px;flex-shrink:0;zoom:1;
+  background:#111318;border-radius:54px;padding:10px;
+  box-shadow:0 24px 60px rgba(15,30,70,.28), inset 0 0 0 2px #2a2d34;
+  position:relative;
+}
+#screen{
+  width:390px;height:844px;border-radius:44px;overflow:hidden;position:relative;
+  background:linear-gradient(180deg,var(--blue-grad-top) 0%,#F7FAFF 34%,#FFFFFF 100%);
+  display:flex;flex-direction:column;
+}
+/* 灵动岛 + 状态栏 */
+.p-status{height:44px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;
+  padding:0 26px;font-size:14px;font-weight:600;position:relative;z-index:5;color:var(--ink);}
+.p-status .island{position:absolute;left:50%;transform:translateX(-50%);top:9px;width:110px;height:26px;
+  background:#000;border-radius:14px;}
+.p-status .right{display:flex;gap:5px;align-items:center;}
+/* 小程序导航 */
+.p-nav{height:44px;flex-shrink:0;display:flex;align-items:center;padding:0 12px;position:relative;z-index:5;}
+.p-nav .back{font-size:20px;width:32px;color:var(--ink);}
+.p-nav .title{flex:1;text-align:center;font-size:var(--t-nav);font-weight:600;}
+.p-nav .capsule{width:88px;height:32px;border-radius:16px;background:rgba(255,255,255,.85);
+  border:1px solid #E7EBF2;display:flex;align-items:center;justify-content:space-around;font-size:15px;color:#20242C;}
+.p-nav .capsule .div{width:1px;height:18px;background:#E2E6EE;}
+/* 手机主体 */
+.p-body{flex:1;position:relative;overflow:hidden;}
+
+/* ============ 屏幕通用 ============ */
+.screen{position:absolute;inset:0;display:none;flex-direction:column;}
+.screen.active{display:flex;}
+.chat-scroll{flex:1;overflow-y:auto;padding:10px 14px 8px;display:flex;flex-direction:column;gap:0;}
+.chat-scroll>*,#scr-policies .pol-scroll>*,#scr-report .pol-scroll>*{flex-shrink:0;}
+/* 推荐消息反馈：点赞/踩 */
+.fb-bar{display:flex;gap:10px;align-items:center;margin-top:10px;}
+.fb-bar .fb{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:#fff;font-size:14px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-3);transition:transform .2s,background .2s,border-color .2s,color .2s;}
+.fb-bar .fb:hover{transform:scale(1.08);}
+.fb-bar .fb.on-up{background:#E8F5EE;border-color:#12B76A;color:#12B76A;animation:fbpop .45s;}
+.fb-bar .fb.on-down{background:#FDECEA;border-color:var(--red);color:var(--red);animation:fbpop .45s;}
+@keyframes fbpop{0%{transform:scale(1)}40%{transform:scale(1.3)}100%{transform:scale(1)}}
+.fb-opt{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:13.5px;color:var(--ink);cursor:pointer;margin-top:8px;}
+.fb-opt.on{border-color:var(--blue);background:#F0F5FF;color:var(--blue);font-weight:600;}
+.fb-opt .radio{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--ink-3);flex-shrink:0;position:relative;}
+.fb-opt.on .radio{border-color:var(--blue);}
+.fb-opt.on .radio::after{content:'';position:absolute;inset:3px;border-radius:50%;background:var(--blue);}
+/* 点赞爱心飘散特效 */
+.heart-fly{position:absolute;top:-6px;font-size:15px;pointer-events:none;animation:heartUp .9s ease-out forwards;z-index:5;}
+@keyframes heartUp{0%{opacity:0;transform:translateY(2px) scale(.5);}25%{opacity:1;}100%{opacity:0;transform:translateY(-44px) scale(1.3);}}
+/* 时间戳标签 */
+.ts-label{text-align:center;font-size:11px;color:var(--ink-3);margin:12px 0 8px;}
+/* 气泡 */
+.msg-row{display:flex;margin-bottom:10px;align-items:flex-start;gap:8px;}
+.msg-row.u{flex-direction:row-reverse;}
+.avatar{width:38px;height:38px;border-radius:50%;overflow:hidden;flex-shrink:0;background:#DCE9FF;}
+.avatar img{width:100%;height:100%;object-fit:cover;}
+.avatar.uav{background:#BFD7FF;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.bubble{max-width:262px;padding:10px 13px;border-radius:4px 14px 14px 14px;font-size:var(--t-body);
+  line-height:1.55;background:#fff;box-shadow:0 1px 4px rgba(20,40,80,.06);word-break:break-word;}
+.msg-row.u .bubble{background:var(--bg-user);color:#fff;border-radius:14px 4px 14px 14px;box-shadow:0 3px 10px rgba(26,102,255,.28);}
+.bubble b{font-weight:600;}
+.bubble ul{padding-left:16px;margin:4px 0;}
+.bubble .em{color:var(--blue);font-weight:600;}
+.msg-row.u .bubble .em{color:#CFE0FF;text-decoration:underline;}
+/* 打字中 */
+.typing{display:inline-flex;gap:4px;padding:12px 14px;}
+.typing i{width:6px;height:6px;border-radius:50%;background:#B9C6DE;animation:tk 1.1s infinite;}
+.typing i:nth-child(2){animation-delay:.18s}.typing i:nth-child(3){animation-delay:.36s}
+@keyframes tk{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+/* 选项卡（ref-07 灰底圆角） */
+.opt-card{background:#fff;border-radius:4px 14px 14px 14px;box-shadow:0 1px 4px rgba(20,40,80,.06);
+  padding:10px 12px;max-width:280px;margin-bottom:10px;}
+.opt-card .ot{font-size:13px;color:var(--ink-2);margin-bottom:8px;}
+.opt{display:block;width:100%;text-align:left;background:#F4F6FA;border-radius:10px;
+  padding:11px 14px;font-size:var(--t-body);color:var(--ink);margin-bottom:8px;transition:all .15s;}
+.opt:hover{background:var(--blue-soft);color:var(--blue);}
+.opt:active{transform:scale(.98);}
+.opt.escape{color:var(--ink-2);background:#FAFBFD;border:1px dashed #D8DFEA;}
+.opt.done{background:#EFF4FF;color:var(--blue);position:relative;}
+.opt:disabled{opacity:.5;cursor:not-allowed;}
+/* 已选回溯条 */
+.tracebar{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 10px;}
+.trace-chip{font-size:11px;color:var(--blue);background:var(--blue-soft);border-radius:20px;padding:4px 10px;}
+.trace-chip span{color:var(--ink-3);margin-right:4px;}
+/* 快捷芯片 */
+.chips{flex-shrink:0;display:flex;gap:8px;padding:8px 14px;overflow-x:auto;scrollbar-width:none;}
+.chips::-webkit-scrollbar{display:none;}
+.chip{flex-shrink:0;background:#fff;border-radius:22px;padding:9px 16px;
+  font-size:13.5px;color:var(--ink);box-shadow:0 2px 8px rgba(20,40,80,.08);display:flex;align-items:center;gap:6px;}
+.chip:hover{color:var(--blue);}
+.chip:active{transform:scale(.96);}
+/* 底部输入栏（+ / 输入 / 语音） */
+.inputbar{flex-shrink:0;padding:8px 12px 4px;}
+.pillbar{display:flex;align-items:center;background:#fff;border-radius:26px;padding:5px 6px 5px 5px;
+  box-shadow:0 2px 10px rgba(20,40,80,.08);}
+.plus-btn{width:38px;height:38px;border-radius:50%;background:#F2F4F8;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;font-size:20px;color:var(--ink);transition:transform .15s;}
+.plus-btn:active{transform:scale(.92);}
+.pillbar input{flex:1;min-width:0;border:none;background:transparent;font-size:14px;padding:0 10px;color:var(--ink);}
+.pillbar input::placeholder{color:#B7C0CF;}
+.pillbtn{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.pillbtn svg{width:21px;height:21px;}
+.send-mini{background:var(--blue);color:#fff;font-size:13px;font-weight:600;border-radius:19px;
+  padding:0 16px;height:38px;display:none;flex-shrink:0;}
+.send-mini.show{display:block;}
+.send-mini:active{transform:scale(.95);}
+/* 加号附件面板（相机/相册/文件） */
+.attach-panel{position:absolute;left:10px;right:10px;bottom:70px;background:#fff;border-radius:20px;
+  z-index:23;display:none;padding:16px;box-shadow:0 10px 40px rgba(10,30,80,.2);}
+.attach-panel.show{display:block;animation:slideUp .25s cubic-bezier(.2,.8,.3,1);}
+.attach-row{display:flex;gap:10px;}
+.attach-item{flex:1;background:#F5F6F8;border-radius:14px;padding:18px 0 14px;text-align:center;
+  font-size:13px;color:var(--ink);}
+.attach-item:active{background:#ECEDF0;}
+.attach-item .ai{font-size:26px;display:block;margin-bottom:8px;}
+.ai-note{flex-shrink:0;text-align:center;font-size:var(--t-sub);color:#B4BDCD;padding:4px 0 10px;}
+/* 加载骨架 */
+.loadbar{display:flex;align-items:center;gap:8px;justify-content:center;color:var(--ink-3);
+  font-size:12px;padding:8px 0;}
+
+/* ============ 欢迎态 ============ */
+#welcome-body{flex:1;position:relative;overflow:hidden;display:flex;flex-direction:column;}
+.hero2{flex:1;position:relative;display:flex;flex-direction:column;overflow:hidden;}
+.figwrap{flex:1;position:relative;display:flex;align-items:center;justify-content:center;}
+.figwrap .halo{position:absolute;width:320px;height:320px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,.95) 0%,rgba(214,232,255,.55) 55%,transparent 75%);opacity:0;
+  animation:fadeIn 1.2s ease .05s forwards;}
+@keyframes fadeIn{to{opacity:1;}}
+.figure2{width:225px;border-radius:20px;position:relative;z-index:1;opacity:0;transform:translateY(18px);
+  animation:heroIn .8s cubic-bezier(.2,.7,.3,1) .1s forwards;}
+@keyframes heroIn{to{opacity:1;transform:translateY(0);}}
+.greet2{padding:6px 30px 16px;position:relative;z-index:2;}
+.g2t{font-size:30px;font-weight:800;opacity:0;animation:fadeIn .5s ease .5s forwards;}
+.g2s{font-size:16px;color:var(--ink-2);margin-top:8px;line-height:1.5;min-height:24px;}
+.g2s .caret{display:inline-block;width:2px;height:16px;background:var(--blue);vertical-align:-2px;
+  animation:blink .8s step-end infinite;margin-left:2px;}
+@keyframes blink{50%{opacity:0;}}
+/* 声音图标按钮（开=喇叭，静音=静音喇叭） */
+.snd-icn{position:absolute;top:12px;right:16px;z-index:6;width:38px;height:38px;border-radius:50%;
+  background:rgba(255,255,255,.92);box-shadow:var(--shadow-sm);display:flex;align-items:center;justify-content:center;}
+.snd-icn svg{width:20px;height:20px;}
+
+/* ============ 消息内嵌组件：产品卡 ============ */
+.pcard{width:300px;background:#fff;border-radius:var(--card-r);box-shadow:var(--shadow);overflow:hidden;margin-bottom:10px;}
+.pcard .banner{position:relative;height:120px;display:flex;align-items:center;padding:0 18px;color:#fff;
+  background:linear-gradient(120deg,#1A66FF 0%,#4E93FF 60%,#7FB4FF 100%);}
+.pcard .banner.yellow{background:linear-gradient(120deg,#FFB13A 0%,#FFCF7A 100%);color:#7A4A00;}
+.pcard .banner.green{background:linear-gradient(120deg,#0E9F6E 0%,#5CD6A2 100%);}
+.pcard .banner .bt{font-size:19px;font-weight:700;line-height:1.3;text-shadow:0 1px 4px rgba(0,0,0,.15);}
+.pcard .banner .bs{font-size:12px;opacity:.9;margin-top:4px;}
+.pcard .badge{position:absolute;top:0;right:14px;background:linear-gradient(180deg,#FF8A3C,#FF5C00);
+  color:#fff;font-size:11px;padding:14px 6px 6px;border-radius:0 0 8px 8px;writing-mode:horizontal-tb;
+  clip-path:polygon(0 0,100% 0,100% 100%,50% 82%,0 100%);}
+.pcard .rows{padding:10px 16px 4px;}
+.pcard .row{display:flex;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px;align-items:baseline;}
+.pcard .row:last-child{border-bottom:none;}
+.pcard .row .k{width:76px;color:var(--ink-3);flex-shrink:0;}
+.pcard .row .v{flex:1;text-align:right;color:var(--ink);line-height:1.45;}
+.pcard .row .v .ver-chip{background:var(--blue-soft);color:var(--blue);border-radius:14px;padding:2px 10px;font-size:12px;}
+.pcard .pc-btn{display:block;width:calc(100% - 32px);margin:6px 16px 16px;background:var(--blue);color:#fff;
+  border-radius:12px;padding:12px 0;font-size:15px;font-weight:600;text-align:center;}
+.pcard .pc-btn:active{transform:scale(.98);}
+.link-line{color:var(--blue);text-decoration:underline;word-break:break-all;}
+
+/* ============ 对比表格 ============ */
+.cmp-wrap{width:300px;background:#fff;border-radius:var(--card-r);box-shadow:var(--shadow);padding:14px;margin-bottom:10px;}
+.cmp-opt{border:1px solid var(--blue);color:var(--blue);background:#F0F5FF;border-radius:16px;padding:8px 0;font-size:12.5px;font-weight:600;cursor:pointer;}
+.cmp-opt:active{background:#DCE8FF;}
+.cmp-sum{font-size:14px;line-height:1.6;}
+.cmp-sum .hl{color:var(--blue);font-weight:700;}
+.cmp-scroll{overflow-x:auto;margin-top:10px;border:1px solid var(--line);border-radius:10px;}
+.cmp-table{border-collapse:collapse;font-size:12px;min-width:100%;}
+.cmp-table th,.cmp-table td{padding:8px 12px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);
+  text-align:left;white-space:nowrap;max-width:170px;}
+.cmp-table th{background:#F6F9FF;color:var(--ink-2);font-weight:500;position:sticky;left:0;z-index:2;}
+.cmp-table td.dim{background:#FAFCFF;color:var(--ink-3);position:sticky;left:0;font-weight:500;}
+.cmp-table tr:last-child th,.cmp-table tr:last-child td{border-bottom:none;}
+.cmp-hint{font-size:11px;color:var(--ink-3);margin-top:6px;}
+.lnk{color:var(--blue);font-weight:600;}
+/* 推荐产品卡（对比结论） */
+.reccard{width:300px;background:#fff;border-radius:var(--card-r);box-shadow:var(--shadow);padding:14px 16px;margin-bottom:10px;}
+.reccard .rt{font-size:15px;font-weight:700;margin-bottom:10px;}
+.reccard .rname{font-size:15px;font-weight:700;}
+.reccard .rtags{margin:5px 0 8px;}
+.reccard .rtag{display:inline-block;font-size:10px;border-radius:4px;padding:2px 6px;margin-right:4px;}
+.reccard .rrow{display:flex;font-size:13px;padding:8px 0;border-top:1px dashed var(--line);}
+.reccard .rrow .k{color:var(--ink-3);}
+.reccard .rrow .v{margin-left:auto;font-weight:600;}
+.reccard .rfoot{display:flex;align-items:center;margin-top:10px;}
+.reccard .price{color:var(--red);font-size:17px;font-weight:800;}
+.reccard .go{margin-left:auto;background:var(--blue);color:#fff;border-radius:18px;padding:8px 20px;font-size:13px;font-weight:600;}
+.fb{width:30px;height:30px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(20,40,80,.1);
+  display:flex;align-items:center;justify-content:center;font-size:13px;}
+.fb:active{transform:scale(.92);}
+
+/* ============ 授权卡片 / 提示卡 ============ */
+.authcard{width:300px;background:#fff;border-radius:var(--card-r);box-shadow:var(--shadow);padding:16px;margin-bottom:10px;}
+.authcard .ah{display:flex;align-items:center;gap:8px;font-weight:600;font-size:15px;margin-bottom:8px;}
+.authcard .ah .ic{width:28px;height:28px;border-radius:8px;background:var(--blue-soft);display:flex;
+  align-items:center;justify-content:center;font-size:14px;}
+.authcard .ab{font-size:13px;color:var(--ink-2);line-height:1.65;}
+.authcard .ab b{color:var(--ink);}
+.authcard .btns{display:flex;gap:10px;margin-top:12px;}
+.authcard .btns button{flex:1;border-radius:10px;padding:9px 0;font-size:14px;}
+.authcard .btns .ok{background:var(--blue);color:#fff;font-weight:600;}
+.authcard .btns .no{background:#F2F4F8;color:var(--ink-2);}
+.tipcard{width:300px;background:#FFF9EC;border:1px solid #FFE4AE;border-radius:14px;padding:12px 14px;
+  font-size:13px;color:#8A5B00;line-height:1.6;margin-bottom:10px;}
+.tipcard.blue{background:#F0F6FF;border-color:#CFE0FF;color:#2A5CC9;}
+
+/* ============ 半屏弹窗 / 抽屉 / 浮层 ============ */
+.mask{position:absolute;inset:0;background:rgba(15,25,45,.45);z-index:20;display:none;}
+.mask.show{display:block;animation:fadeIn .2s ease;}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#F7F9FD;border-radius:22px 22px 0 0;z-index:21;
+  transform:translateY(105%);transition:transform .32s cubic-bezier(.2,.8,.3,1);max-height:86%;
+  display:flex;flex-direction:column;box-shadow:0 -8px 40px rgba(10,30,80,.2);}
+.sheet.show{transform:translateY(0);}
+.sheet-head{padding:16px 18px 10px;display:flex;align-items:center;flex-shrink:0;}
+.sheet-head .st{font-size:16px;font-weight:700;display:flex;align-items:center;gap:6px;}
+.sheet-head .st .ic{width:22px;height:22px;border-radius:6px;background:var(--blue-soft);color:var(--blue);
+  display:flex;align-items:center;justify-content:center;font-size:12px;}
+.sheet-head .ss{font-size:12px;color:var(--ink-3);margin-left:8px;}
+.sheet-head .x{margin-left:auto;width:30px;height:30px;font-size:16px;color:var(--ink-3);}
+.sheet-body{flex:1;overflow-y:auto;padding:0 16px 12px;}
+.sheet-foot{padding:10px 16px calc(12px + 8px);flex-shrink:0;background:linear-gradient(180deg,rgba(247,249,253,0),#F7F9FD 30%);}
+/* 搜索框 */
+.searchbar{display:flex;align-items:center;background:#EEF1F6;border-radius:10px;padding:9px 12px;gap:6px;margin-bottom:10px;}
+.searchbar input{flex:1;border:none;background:transparent;font-size:13px;}
+/* 险种标签横滑 */
+.cat-tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none;}
+.cat-tabs::-webkit-scrollbar{display:none;}
+.cat-tab{flex-shrink:0;padding:7px 16px;border-radius:10px;background:#fff;font-size:13px;color:var(--ink-2);
+  border:1px solid #E7EBF2;}
+.cat-tab.active{background:var(--blue);color:#fff;border-color:var(--blue);font-weight:600;}
+/* 产品选择列表 */
+.pick{display:flex;align-items:center;background:#fff;border-radius:12px;padding:13px 14px;margin-bottom:9px;
+  font-size:14px;border:1.5px solid transparent;transition:all .15s;}
+.pick .cb{width:20px;height:20px;border-radius:6px;border:1.5px solid #D4DBE6;margin-left:auto;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;}
+.pick.sel{border-color:var(--blue);}
+.pick.sel .cb{background:var(--blue);border-color:var(--blue);}
+.pick.dis{opacity:.4;cursor:not-allowed;}
+/* 已选标签 */
+.sel-tags{display:flex;flex-wrap:wrap;gap:8px;padding:8px 0 2px;}
+.sel-tag{background:var(--blue-soft);color:var(--blue);font-size:12px;border-radius:8px;padding:5px 8px;
+  display:flex;align-items:center;gap:6px;}
+.sel-tag .x{font-weight:700;}
+.primary-btn{display:block;width:100%;background:var(--blue);color:#fff;border-radius:14px;padding:13px 0;
+  font-size:15px;font-weight:600;}
+.primary-btn:disabled{background:#B9CCF3;cursor:not-allowed;}
+.primary-btn:active:not(:disabled){transform:scale(.98);}
+.ghost-btn{display:block;width:100%;background:#EDF1F8;color:var(--ink-2);border-radius:14px;padding:12px 0;font-size:14px;}
+
+/* ============ 抽屉式设置 ============ */
+#drawer .me{display:flex;align-items:center;gap:14px;padding:6px 4px 16px;}
+#drawer .me .bigav{width:58px;height:58px;border-radius:50%;overflow:hidden;background:#DCE9FF;flex-shrink:0;}
+#drawer .me .bigav img{width:100%;height:100%;object-fit:cover;}
+#drawer .me .nm{font-size:17px;font-weight:700;}
+#drawer .me .edit{font-size:12px;color:var(--blue);margin-left:8px;}
+#drawer .me input.nick{border:none;border-bottom:1.5px solid var(--blue);font-size:15px;width:110px;padding:2px 4px;background:transparent;}
+#drawer .me .ph{font-size:13px;color:var(--ink-3);margin-top:3px;}
+.drow{display:flex;align-items:center;background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:9px;
+  font-size:14px;box-shadow:0 1px 3px rgba(20,40,80,.05);}
+.drow .lab{flex:1;}
+.drow .sub{font-size:11px;color:var(--ink-3);margin-top:2px;}
+.drow .val{color:var(--ink-3);font-size:13px;}
+.drow .arrow{color:#C4CBD8;margin-left:6px;}
+.dgroup{font-size:12px;color:var(--ink-3);padding:8px 6px 6px;}
+.switch{width:44px;height:26px;border-radius:13px;background:#DDE3EE;position:relative;transition:background .2s;flex-shrink:0;}
+.switch::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;
+  transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.15);}
+.switch.on{background:var(--blue);}
+.switch.on::after{left:21px;}
+/* 保单关系标签与简介 */
+.rel-tag{font-size:10px;color:var(--blue);background:var(--blue-soft);border-radius:4px;padding:2px 6px;
+  margin-left:6px;vertical-align:1px;}
+.pintro{font-size:12px;color:var(--ink-2);margin-top:4px;line-height:1.5;}
+/* 二级设置页（个人档案）可直填输入框 */
+.drow input.ipt{flex:1;border:none;background:transparent;text-align:right;font-size:14px;color:var(--ink);
+  min-width:0;padding:0 2px;}
+.drow input.ipt::placeholder{color:#B7C0CF;}
+.drow input.ipt:focus{outline:none;color:var(--blue);}
+.profile-tip{font-size:12px;color:var(--ink-3);line-height:1.7;padding:12px 4px 0;}
+/* 左侧抽屉式设置 */
+.drawer-left{top:0;bottom:0;left:0;right:auto;width:79%;max-height:none;height:100%;
+  border-radius:0 22px 22px 0;transform:translateX(-105%);}
+.drawer-left.show{transform:translateX(0);}
+.pf-edit{margin-left:8px;font-size:12px;color:var(--blue);flex-shrink:0;}
+.pf-edit:active{opacity:.7;}
+.pf-edit input{border:none;border-bottom:1.5px solid var(--blue);font-size:14px;width:90px;
+  padding:2px 4px;background:transparent;text-align:right;}
+.mini-btn2{background:var(--blue);color:#fff;font-size:12px;border-radius:14px;padding:6px 14px;flex-shrink:0;}
+.auth-note{font-size:11px;color:var(--ink-3);line-height:1.6;margin-top:8px;}
+/* 长消息（单条大卡） */
+.bubble.wide{max-width:318px;}
+.bubble .cmp-wrap{width:auto;margin-top:8px;}
+.bubble .reccard{width:auto;margin:10px 0 6px;box-shadow:none;border:1px solid var(--line);}
+/* 二次确认对话框（默认隐藏，.show 显示） */
+.confirm-box{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.9);z-index:31;
+  width:300px;background:#fff;border-radius:18px;padding:22px 20px 16px;text-align:center;opacity:0;
+  transition:all .2s;pointer-events:none;box-shadow:0 12px 40px rgba(10,30,80,.25);}
+.confirm-box.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto;}
+.confirm-box .ct{font-size:16px;font-weight:700;margin-bottom:8px;}
+.confirm-box .cd{font-size:13px;color:var(--ink-2);line-height:1.6;margin-bottom:16px;text-align:left;}
+.confirm-box .cb{display:flex;gap:10px;}
+.confirm-box .cb button{flex:1;border-radius:11px;padding:10px 0;font-size:14px;}
+.confirm-box .cb .c-ok{background:var(--red);color:#fff;font-weight:600;}
+.confirm-box .cb .c-no{background:#F2F4F8;color:var(--ink-2);}
+
+/* ============ 理赔表单（ref-06 风格） ============ */
+.claim-form{position:absolute;inset:0;background:#F7F9FF;z-index:22;display:none;flex-direction:column;}
+.claim-form.show{display:flex;animation:slideUp .3s cubic-bezier(.2,.8,.3,1);}
+@keyframes slideUp{from{transform:translateY(40px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.claim-form .cf-inner{flex:1;overflow-y:auto;padding:26px 26px 10px;position:relative;}
+.claim-form .blob{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(224,236,255,.9),transparent 70%);z-index:0;}
+.claim-form h2{font-size:34px;font-weight:800;position:relative;z-index:1;}
+.claim-form .csub{font-size:17px;color:var(--ink-2);margin:10px 0 40px;position:relative;z-index:1;}
+.claim-form .fld{margin-bottom:30px;position:relative;z-index:1;}
+.claim-form .fld label{display:block;font-size:16px;font-weight:600;margin-bottom:14px;}
+.claim-form .fld input{width:100%;border:none;border-bottom:1px solid #E2E7F0;background:transparent;
+  font-size:16px;padding:6px 2px 12px;color:var(--ink);}
+.claim-form .fld input::placeholder{color:#C2CAD8;}
+.claim-form .fld input:focus{border-bottom-color:var(--blue);}
+.claim-form .fld .err{font-size:12px;color:var(--red);margin-top:8px;display:none;}
+.claim-form .fld.error input{border-bottom-color:var(--red);}
+.claim-form .fld.error .err{display:block;}
+.claim-form .note{font-size:12px;color:var(--ink-3);line-height:1.7;background:#F1F5FF;border-radius:10px;
+  padding:10px 12px;margin-bottom:26px;position:relative;z-index:1;}
+.claim-form .btns{padding:0 26px 30px;position:relative;z-index:1;}
+.claim-form .btns .primary-btn{background:var(--blue);}
+.claim-form .later{display:block;text-align:center;margin-top:12px;font-size:13px;color:var(--ink-3);
+  text-decoration:underline;}
+
+/* ============ 详情页浮层（ref-08） ============ */
+#ov-detail{position:absolute;inset:0;background:#F7F9FF;z-index:25;display:none;flex-direction:column;}
+#ov-policy,#ov-fileview{position:absolute;inset:0;background:#F7F9FF;z-index:26;display:none;flex-direction:column;}
+#ov-policy.show,#ov-fileview.show{display:flex;}
+#ov-detail.show{display:flex;animation:slideUp .3s cubic-bezier(.2,.8,.3,1);}
+#ov-detail .dt-head,#ov-policy .dt-head{height:46px;display:flex;align-items:center;padding:0 12px;background:#fff;flex-shrink:0;}
+#ov-detail .dt-head .tt,#ov-policy .dt-head .tt{flex:1;text-align:center;font-size:16px;font-weight:600;}
+#ov-detail .dt-body,#ov-policy .dt-body{flex:1;overflow-y:auto;padding-bottom:70px;}
+#ov-policy .dt-body{padding-bottom:24px;} /* 保单详情无底部操作栏 */
+#ov-detail .dt-banner{height:130px;background:linear-gradient(120deg,#FF9A3C,#FFC97A);display:flex;
+  align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:800;text-shadow:0 1px 6px rgba(0,0,0,.12);}
+#ov-detail .dt-meta{background:#fff;padding:4px 16px;margin-bottom:10px;}
+#ov-detail .dt-meta .mrow{display:flex;padding:11px 0;border-bottom:1px solid var(--line);font-size:14px;}
+#ov-detail .dt-meta .mrow:last-child{border-bottom:none;}
+#ov-detail .dt-meta .mk{width:88px;color:var(--ink-3);flex-shrink:0;}
+.plan-tabs{display:flex;gap:8px;padding:10px 16px;overflow-x:auto;background:#fff;margin-bottom:10px;scrollbar-width:none;}
+.plan-tabs::-webkit-scrollbar{display:none;}
+.plan-tab{flex-shrink:0;min-width:86px;text-align:center;background:#F4F6FA;border-radius:10px;padding:10px 8px;font-size:13px;color:var(--ink-2);}
+.plan-tab .pv{font-size:12px;color:var(--ink-3);margin-top:3px;}
+.plan-tab.active{background:var(--blue);color:#fff;}
+.plan-tab.active .pv{color:#CFE0FF;}
+.duty{background:#fff;border-radius:var(--card-r);margin:0 12px 12px;padding:14px 16px;box-shadow:var(--shadow-sm);}
+.duty .dh{display:flex;font-size:13px;color:var(--ink-3);padding-bottom:8px;}
+.duty .dh .r{flex:1;text-align:right;}
+.duty .drow2{display:flex;align-items:center;padding:12px 0;border-top:1px solid var(--line);font-size:14px;}
+.duty .drow2 .amt{margin-left:auto;font-weight:600;}
+.duty .drow2 .amt .arr{color:#C4CBD8;font-size:12px;margin-left:4px;}
+.dt-foot{position:absolute;left:0;right:0;bottom:0;background:#fff;display:flex;align-items:center;
+  padding:10px 16px 22px;gap:14px;box-shadow:0 -4px 16px rgba(20,40,80,.08);z-index:2;}
+.dt-foot .price{font-size:24px;font-weight:800;color:var(--red);}
+.dt-foot .price small{font-size:13px;color:var(--ink-3);font-weight:400;}
+.dt-foot .buy{flex:1;background:var(--blue);color:#fff;border-radius:14px;padding:13px 0;text-align:center;
+  font-size:16px;font-weight:600;}
+
+/* ============ 我的保单 ============ */
+#scr-policies .pol-scroll{flex:1;overflow-y:auto;padding:12px 14px 20px;display:flex;flex-direction:column;gap:12px;min-height:0;}
+#scr-report .pol-scroll{flex:1;overflow-y:auto;min-height:0;}
+.pol-card{background:#fff;border-radius:var(--card-r);box-shadow:var(--shadow-sm);overflow:hidden;}
+.pol-sec{display:flex;align-items:center;padding:14px 16px 6px;}
+.pol-sec .pt{font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px;}
+.pol-sec .pt .ic{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;}
+.pol-sec .act{margin-left:auto;font-size:12px;color:var(--blue);}
+.pol-empty{padding:16px;text-align:center;font-size:13px;color:var(--ink-3);}
+.pol-empty .big{font-size:30px;margin-bottom:8px;}
+.pol-empty .mini-btn{display:inline-block;margin-top:10px;background:var(--blue);color:#fff;border-radius:18px;
+  padding:8px 22px;font-size:13px;}
+.ghead{display:flex;align-items:center;padding:12px 16px 8px;cursor:pointer;}
+.ghead .gname{font-size:14px;font-weight:600;}
+.ghead .gcnt{font-size:12px;color:var(--ink-3);margin-left:8px;}
+.ghead .car{margin-left:auto;color:#C4CBD8;font-size:12px;transition:transform .2s;}
+.ghead .car.open{transform:rotate(90deg);}
+.pol-item{display:flex;margin:0 12px 9px;background:#FAFBFE;border:1px solid #F0F3F9;border-radius:12px;padding:12px 14px;}
+.pol-item .pi-l{flex:1;min-width:0;}
+.pol-item .pn{font-size:14px;font-weight:600;}
+.pol-item .pm{font-size:12px;color:var(--ink-3);margin-top:3px;}
+.pol-item .tag4x{font-size:10px;color:var(--blue);background:var(--blue-soft);border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:1px;}
+.pol-item .pi-r{margin-left:10px;text-align:right;flex-shrink:0;}
+.st-chip{font-size:11px;border-radius:12px;padding:2px 9px;display:inline-block;}
+.st-ok{background:#E8F8F0;color:#0E9F6E;}
+.st-warn{background:#FFF4E5;color:#E8830C;}
+.st-dead{background:#F1F3F7;color:#98A1B3;}
+.st-fail{background:#FDECEA;color:#E02D1B;}
+.pol-item .amt{font-size:13px;font-weight:600;margin-top:6px;}
+.gap-card{background:linear-gradient(135deg,#F3F8FF,#FFFFFF);border:1px solid #DCE8FF;border-radius:var(--card-r);
+  padding:14px 16px;font-size:13px;line-height:1.7;}
+.gap-card .gt{font-size:14px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.gap-card .gt .ic{width:22px;height:22px;border-radius:6px;background:var(--blue);color:#fff;display:flex;
+  align-items:center;justify-content:center;font-size:12px;}
+.gap-card .em{color:var(--blue);font-weight:600;}
+.gap-card .gapbtn{display:inline-block;margin-top:8px;background:var(--blue);color:#fff;border-radius:16px;
+  padding:7px 18px;font-size:12px;}
+.dup-tip{background:#FFF9EC;border:1px solid #FFE4AE;border-radius:12px;padding:11px 14px;font-size:12px;
+  color:#8A5B00;line-height:1.6;}
+.upl-item{display:flex;align-items:center;margin:0 12px 9px;background:#FAFBFE;border:1px solid #F0F3F9;
+  border-radius:12px;padding:12px 14px;font-size:13px;}
+.upl-item .un{font-weight:600;font-size:14px;}
+.upl-item .ut{font-size:11px;color:var(--ink-3);margin-top:2px;}
+.upl-item .st{margin-left:auto;}
+.prgs{height:4px;border-radius:2px;background:#EDF1F7;margin-top:8px;overflow:hidden;}
+.prgs i{display:block;height:100%;width:0;background:var(--blue);border-radius:2px;transition:width .3s;}
+.updated{font-size:11px;color:var(--ink-3);text-align:right;padding:0 16px 10px;}
+
+/* ============ 手机号授权浮层 ============ */
+#ov-phoneauth{position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:28;display:none;align-items:flex-end;}
+#ov-phoneauth.show{display:flex;}
+#ov-phoneedit{position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:29;display:none;align-items:flex-end;}
+#ov-phoneedit.show{display:flex;}
+.pa-box{width:100%;background:#fff;border-radius:22px 22px 0 0;padding:22px 20px 30px;animation:slideUp .3s cubic-bezier(.2,.8,.3,1);}
+.pa-box .pa-t{text-align:center;font-size:16px;font-weight:700;margin-bottom:16px;}
+.pa-box .pa-app{display:flex;align-items:center;gap:12px;background:#F7F9FD;border-radius:14px;padding:14px;margin-bottom:14px;}
+.pa-box .pa-app .aic{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#1A66FF,#5EA0FF);
+  color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;}
+.pa-box .pa-app .an{font-size:14px;font-weight:600;}
+.pa-box .pa-app .ad{font-size:12px;color:var(--ink-3);margin-top:2px;}
+/* 微信风格手机号选择行 */
+.wx-num{display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;padding:15px 0 13px;background:#fff;font-size:18px;color:#111;}
+.wx-num .last{font-size:12px;color:#07C160;}
+/* 计划书锁定态 */
+#rp-lock{position:absolute;inset:0;z-index:12;display:none;align-items:center;justify-content:center;background:rgba(247,249,255,.6);backdrop-filter:blur(6px);}
+#rp-lock.show{display:flex;}
+#rp-lock .lk{width:280px;background:#fff;border-radius:16px;box-shadow:0 10px 40px rgba(15,30,70,.16);padding:26px 22px 20px;text-align:center;}
+#rp-lock .lk .li{width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,#E8B45A,#C9862B);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:24px;}
+#rp-lock .lk .lt{font-size:15.5px;font-weight:800;color:#7A4E15;}
+#rp-lock .lk .ld{font-size:12px;color:#8A6B33;line-height:1.7;margin:8px 0 14px;text-align:left;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}50%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
+.pa-btns{display:flex;flex-direction:column;gap:10px;}
+
+/* ============ 异常 Toast ============ */
+#toast{position:absolute;left:50%;bottom:130px;transform:translateX(-50%) translateY(20px);z-index:40;
+  background:rgba(20,28,45,.88);color:#fff;font-size:13px;border-radius:12px;padding:11px 18px;opacity:0;
+  transition:all .25s;pointer-events:none;max-width:300px;text-align:center;line-height:1.5;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* 网络异常 banner */
+.net-banner{margin:0 14px 10px;background:#FDECEA;border:1px solid #F6C6C0;border-radius:12px;padding:11px 14px;
+  font-size:13px;color:#C0392B;display:flex;align-items:center;gap:8px;}
+.net-banner .retry{margin-left:auto;background:var(--red);color:#fff;font-size:12px;border-radius:14px;padding:4px 14px;flex-shrink:0;}
+
+/* ============ 右侧需求标注面板 ============ */
+#anno{width:352px;flex-shrink:0;background:#fff;border-radius:16px;box-shadow:var(--shadow-sm);
+  display:flex;flex-direction:column;overflow:hidden;}
+#anno .ah2{padding:16px 16px 10px;border-bottom:1px solid var(--line);display:flex;align-items:center;flex-shrink:0;}
+#anno .ah2 .t{font-size:15px;font-weight:700;}
+#anno .ah2 .cnt{font-size:11px;color:var(--ink-3);margin-left:8px;}
+#anno .ah2 .tg{margin-left:auto;font-size:12px;color:var(--blue);border:1px solid var(--blue);
+  border-radius:14px;padding:4px 12px;}
+#anno .ah2 .tg.off{color:var(--ink-3);border-color:#D8DFEA;}
+#anno .alist{flex:1;overflow-y:auto;padding:14px 16px;}
+.anno-ids{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 12px;padding:10px 12px;background:#F4F7FE;border:1px solid #DFE8FA;border-radius:10px;}
+.anno-ids .lab{font-size:11px;color:var(--ink-3);margin-right:2px;}
+.anno-ids .id{font-size:11px;font-weight:700;color:var(--blue);background:#fff;border:1px solid #CFDDFB;border-radius:6px;padding:2px 7px;}
+.anno-sec ul li b{color:var(--blue);}
+.anno-sec{margin-bottom:16px;}
+.anno-chip{display:inline-block;background:var(--blue);color:#fff;font-size:12px;border-radius:8px;
+  padding:5px 10px;font-weight:600;margin-bottom:8px;}
+.anno-sec ul{list-style:none;}
+.anno-sec li{font-size:12.5px;color:var(--ink-2);line-height:1.75;padding:7px 10px;background:#F7F9FD;
+  border-radius:8px;margin-bottom:6px;border-left:3px solid #B9CFF7;}
+.anno-sec li::before{content:'「摘」';color:var(--blue);font-weight:600;margin-right:5px;font-size:11px;}
+#anno.off .alist{display:none;}
+#anno .aempty{padding:30px 20px;text-align:center;color:var(--ink-3);font-size:13px;}
+
+/* ============ 控制面板 ============ */
+#ctrl{position:fixed;right:20px;bottom:20px;z-index:100;width:238px;background:rgba(255,255,255,.97);
+  border-radius:16px;box-shadow:0 10px 40px rgba(15,30,70,.22);overflow:hidden;transition:all .25s;}
+#ctrl.min{width:120px;}
+#ctrl .ch{display:flex;align-items:center;padding:11px 14px;cursor:pointer;background:#F7F9FD;}
+#ctrl .ch .t{font-size:13px;font-weight:700;}
+#ctrl .ch .m{margin-left:auto;font-size:11px;color:var(--ink-3);}
+#ctrl .cb{padding:12px 14px 14px;max-height:60vh;overflow-y:auto;}
+#ctrl.min .cb{display:none;}
+#ctrl .cl{font-size:11px;color:var(--ink-3);margin:8px 0 5px;}
+#ctrl .toggles{display:flex;flex-wrap:wrap;gap:7px;}
+#ctrl .tg2{font-size:11.5px;border:1px solid #D8E1F0;border-radius:14px;padding:5px 11px;color:var(--ink-2);}
+#ctrl .tg2.on{background:var(--blue);border-color:var(--blue);color:#fff;}
+#ctrl .seg{display:flex;border:1px solid #D8E1F0;border-radius:9px;overflow:hidden;}
+#ctrl .seg button{flex:1;font-size:11.5px;padding:6px 0;color:var(--ink-2);}
+#ctrl .seg button.on{background:var(--blue);color:#fff;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- 左侧屏幕导航 -->
+  <aside id="sidenav">
+    <h1>白鸽智羽 · 高保真原型</h1>
+    <div class="ver">需求说明书 · 对话驱动 + 智能分流</div>
+    <div class="group">对话窗口（二）</div>
+    <button class="navbtn active" data-scr="welcome"><span class="no">1</span>欢迎态 · 青鸾形象</button>
+    <button class="navbtn" data-scr="chat"><span class="no">2</span>会话态 · 消息流与时间戳</button>
+    <button class="navbtn" data-scr="followup"><span class="no">3</span>引导式追问 · 四轮</button>
+    <button class="navbtn" data-scr="recommend"><span class="no">4</span>产品推荐 · 站内卡</button>
+    <button class="navbtn" data-scr="external"><span class="no">5</span>产品推荐 · 外跳卡</button>
+    <button class="navbtn" data-scr="compare"><span class="no">6</span>产品对比 · 弹窗+表格</button>
+    <div class="group">保单与账户（一 / 六 / 七）</div>
+    <button class="navbtn" data-scr="policies"><span class="no">7</span>我的保单 · 同步+解读</button>
+    <button class="navbtn" data-scr="report"><span class="no">7a</span>专属保险计划书</button>
+    <button class="navbtn" data-scr="drawer"><span class="no">8</span>抽屉式设置</button>
+    <button class="navbtn" data-scr="login"><span class="no">8b</span>登录页 · 匿名进入</button>
+    <div class="group">理赔与异常（二 / 异常处理）</div>
+    <button class="navbtn" data-scr="claim"><span class="no">9</span>理赔身份核验</button>
+    
+  </aside>
+
+  <!-- 中部手机 -->
+  <main id="stage">
+    <div id="phone"><div id="screen">
+      <!-- 状态栏 -->
+      <div class="p-status"><span id="clock">16:00</span><div class="island"></div>
+        <div class="right"><svg width="17" height="11" viewBox="0 0 17 11"><g fill="#1C2333"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1" opacity=".35"/></g></svg>
+        <span style="font-size:12px;font-weight:600;">5G</span><svg width="24" height="11" viewBox="0 0 24 11"><rect x="0" y="0" width="21" height="11" rx="3" fill="none" stroke="#1C2333" opacity=".4"/><rect x="1.6" y="1.6" width="15" height="7.8" rx="1.6" fill="#1C2333"/><rect x="22" y="3.4" width="2" height="4.2" rx="1" fill="#1C2333" opacity=".4"/></svg></div>
+      </div>
+      <!-- 小程序导航 -->
+      <div class="p-nav">
+        <button class="back" id="nav-left">‹</button>
+        <div class="title" id="nav-title">白鸽智羽</div>
+        <div class="capsule"><span>•••</span><span class="div"></span><span>⊙</span></div>
+      </div>
+
+      <div class="p-body">
+      <!-- ========== 1 欢迎态 ========== -->
+      <section class="screen active" id="scr-welcome">
+        <div id="welcome-body">
+          <button class="snd-icn" id="snd-icn" title="声音开关"></button>
+          <div class="hero2">
+            <div class="figwrap">
+              <div class="halo"></div>
+              <img class="figure2" src="avatar-full.png" alt="小白（青鸾形象）">
+            </div>
+            <div class="greet2">
+              <div class="g2t" id="greet-t1">嗨，我是小白</div>
+              <div class="g2s" id="greet-t2"></div>
+            </div>
+          </div>
+        </div>
+        <div class="chips" id="welcome-chips"></div>
+        <div class="inputbar">
+          <div class="pillbar">
+            <button class="plus-btn">＋</button>
+            <input id="welcome-input" placeholder="有什么我可以帮您的吗？">
+            <button class="pillbtn voice-btn"><svg viewBox="0 0 24 24" fill="none" stroke="#1C2333" stroke-width="1.8" stroke-linecap="round"><circle cx="5" cy="12" r="1.6" fill="#1C2333" stroke="none"/><path d="M9.5 8.5a5 5 0 0 1 0 7M13.5 6a8.5 8.5 0 0 1 0 12M17.5 3.5a12 12 0 0 1 0 17"/></svg></button>
+            <button class="send-mini" id="welcome-send">发送</button>
+          </div>
+        </div>
+        <div class="ai-note">部分内容由AI生成，不构成保险服务建议</div>
+      </section>
+
+      <!-- ========== 2 会话态 ========== -->
+      <section class="screen" id="scr-chat">
+        <div class="chat-scroll" id="chat-main"></div>
+        <div class="chips" id="chat-chips"></div>
+        <div class="inputbar">
+          <div class="pillbar">
+            <button class="plus-btn">＋</button>
+            <input id="chat-input" placeholder="发送消息或按住说话">
+            <button class="pillbtn voice-btn"></button>
+            <button class="send-mini" id="chat-send">发送</button>
+          </div>
+        </div>
+        <div class="ai-note">部分内容由AI生成，不构成保险服务建议</div>
+      </section>
+
+      <!-- ========== 3 引导式追问 ========== -->
+      <section class="screen" id="scr-followup">
+        <div class="chat-scroll" id="chat-fu"></div>
+        <div class="chips" id="fu-chips"></div>
+        <div class="inputbar">
+          <div class="pillbar">
+            <button class="plus-btn">＋</button>
+            <input id="fu-input" placeholder="发送消息或按住说话">
+            <button class="pillbtn voice-btn"></button>
+            <button class="send-mini" id="fu-send">发送</button>
+          </div>
+        </div>
+        <div class="ai-note">部分内容由AI生成，不构成保险服务建议</div>
+      </section>
+
+      <!-- ========== 4 产品推荐 · 站内 ========== -->
+      <section class="screen" id="scr-recommend">
+        <div class="chat-scroll" id="chat-rec">
+          <div class="ts-label" id="rec-ts">今天 16:00</div>
+          <div class="msg-row u"><div class="avatar uav">🧑</div><div class="bubble">孩子9月要上小学了，有没有适合的保险？</div></div>
+          <div class="msg-row"><div class="avatar"><img src="avatar-head.png" alt="小白"></div>
+            <div class="bubble">好的，基于「关爱学生保险」的需求，为您匹配了专为 3-30 周岁人群设计的综合保障方案。该产品不仅涵盖<b>意外身故与医疗</b>，更包含高额的<b>疾病住院医疗及重大疾病保障</b>，全面守护学生成长期的健康与安全，且保费亲民，性价比极高。</div></div>
+          <div class="msg-row"><div class="avatar" style="visibility:hidden"></div>
+            <div style="flex:1;display:flex;justify-content:flex-start;">
+            <div class="pcard">
+              <div class="banner yellow"><div><div class="bt">白鸽-关爱学生保险</div><div class="bs">关爱学生刻不容缓</div></div><div class="badge">热销</div></div>
+              <div class="rows">
+                <div class="row"><span class="k">方案版本</span><span class="v"><span class="ver-chip">幼儿园C款</span></span></div>
+                <div class="row"><span class="k">核心亮点</span><span class="v">涵盖新冠责任&amp;涵盖重大疾病&amp;高额住院医疗</span></div>
+                <div class="row"><span class="k">保费参考</span><span class="v"><b>100.00</b> 起</span></div>
+              </div>
+              <button class="pc-btn" id="btn-buy-in">立即选购</button>
+            </div>
+            <div class="fb-bar"></div></div></div>
+        </div>
+        <div class="chips" id="chips-recommend"></div>
+        <div class="inputbar">
+          <div class="pillbar">
+            <button class="plus-btn">＋</button>
+            <input placeholder="发送消息或按住说话" data-chat="rec">
+            <button class="pillbtn voice-btn"></button>
+            <button class="send-mini" data-send="rec">发送</button>
+          </div>
+        </div>
+        <div class="ai-note">部分内容由AI生成，不构成保险服务建议</div>
+      </section>
+
+      <!-- ========== 5 产品推荐 · 外跳 ========== -->
+      <section class="screen" id="scr-external">
+        <div class="chat-scroll" id="chat-ext">
+          <div class="ts-label" id="ext-ts">今天 16:02</div>
+          <div class="msg-row u"><div class="avatar uav">🧑</div><div class="bubble">帮我介绍下这款保险</div></div>
+          <div class="msg-row"><div class="avatar"><img src="avatar-head.png" alt="小白"></div>
+            <div class="bubble">为您详细介绍这款【平安白鸽运动保险（互联网版）】：
+              <ul>
+                <li><span class="em">承保公司</span>：中国平安财产保险股份有限公司</li>
+                <li><span class="em">适用人群</span>：28天-65周岁，热爱运动人群</li>
+                <li><span class="em">保障期限</span>：可选 7 天 / 30 天 / 1 年</li>
+                <li><span class="em">核心保障</span>：意外身故/伤残 50 万，意外医疗 5 万（0 免赔，100% 报销），住院津贴 100 元/天</li>
+                <li><span class="em">保费</span>：3.00 起</li>
+                <li><span class="em">产品特色</span>：日常意外可保&amp;非职业赛事适用&amp;扩展高风险运动</li>
+              </ul>
+              该产品暂不支持在小程序内打开详情，复制链接到浏览器即可查看～</div></div>
+          <div class="msg-row"><div class="avatar" style="visibility:hidden"></div>
+            <div style="flex:1;display:flex;justify-content:flex-start;">
+            <div class="pcard">
+              <div class="banner"><div><div class="bt">平安白鸽运动保险（互联网版）</div><div class="bs">为寻求刺激的您量身打造</div></div><div class="badge">外跳</div></div>
+              <div class="rows">
+                <div class="row"><span class="k">方案版本</span><span class="v"><span class="ver-chip">经典版等</span></span></div>
+                <div class="row"><span class="k">核心亮点</span><span class="v">日常意外可保&amp;非职业赛事适用&amp;扩展高风险运动</span></div>
+                <div class="row"><span class="k">保费参考</span><span class="v"><b>3.00</b> 起</span></div>
+                <div class="row"><span class="k">购买链接</span><span class="v link-line">https://newm.baigebao.com/prod/sport-yl</span></div>
+              </div>
+              <button class="pc-btn" id="btn-copy-link">复制链接去浏览器打开</button>
+            </div></div>
+        </div>
+        <div class="chips" id="chips-external"></div>
+        <div class="inputbar">
+          <div class="pillbar">
+            <button class="plus-btn">＋</button>
+            <input placeholder="发送消息或按住说话" data-chat="ext">
+            <button class="pillbtn voice-btn"></button>
+            <button class="send-mini" data-send="ext">发送</button>
+          </div>
+        </div>
+        <div class="ai-note">部分内容由AI生成，不构成保险服务建议</div>
+      </section>
+
+      <!-- ========== 6 产品对比 ========== -->
+      <section class="screen" id="scr-compare">
+        <div class="chat-scroll" id="chat-cmp">
+          <div class="ts-label" id="cmp-ts">今天 16:04</div>
+          <div class="msg-row u"><div class="avatar uav">🧑</div><div class="bubble">对比产品</div></div>
+        </div>
+        <div class="chips" id="chips-compare"></div>
+        <div class="inputbar">
+          <div class="pillbar">
+            <button class="plus-btn">＋</button>
+            <input placeholder="发送消息或按住说话" data-chat="cmp">
+            <button class="pillbtn voice-btn"></button>
+            <button class="send-mini" data-send="cmp">发送</button>
+          </div>
+        </div>
+        <div class="ai-note">部分内容由AI生成，不构成保险服务建议</div>
+        <!-- 对比弹窗 -->
+        <div class="mask" id="mask-cmp"></div>
+        <div class="sheet" id="sheet-cmp">
+          <div class="sheet-head"><div class="st"><span class="ic">📊</span>产品对比</div><span class="ss">对比保险差异，帮您选最对的保险</span><button class="x" id="cmp-x">✕</button></div>
+          <div class="sheet-body">
+            <div style="font-size:14px;font-weight:600;margin-bottom:10px;">请选择要对比的两款产品</div>
+            <div class="searchbar"><span>🔍</span><input id="cmp-search" placeholder="在此输入任何您想了解的保险产品"></div>
+            <div class="cat-tabs" id="cmp-tabs"></div>
+            <div id="cmp-list"></div>
+          </div>
+          <div class="sheet-foot">
+            <div class="sel-tags" id="cmp-tags"></div>
+            <button class="primary-btn" id="cmp-go" disabled>帮我比</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 7 我的保单 ========== -->
+      <section class="screen" id="scr-policies">
+        <div class="pol-scroll" id="pol-body"></div>
+      </section>
+
+      <!-- ========== 7a 专属保险计划书 ========== -->
+      <section class="screen" id="scr-report">
+        <div class="pol-scroll" style="background:linear-gradient(180deg,#FBF3E4 0%,#FDF9F1 34%,#FFFFFF 100%;">
+          <div style="text-align:center;padding:18px 0 4px;">
+            <div style="font-size:26px;font-weight:800;letter-spacing:2px;color:#8A5A1E;">专属<span style="color:#C9862B;">保险计划书</span></div>
+            <div style="display:inline-block;margin-top:8px;background:linear-gradient(135deg,#E8B45A,#C9862B);color:#fff;font-size:13px;letter-spacing:6px;padding:5px 18px;border-radius:4px;">家享安心 · 专享守护</div>
+          </div>
+          <div style="background:linear-gradient(135deg,#FFF9EE,#FDF3DF);border:1.5px solid #E4C48C;border-radius:14px;padding:18px 16px;position:relative;overflow:hidden;">
+            <div style="position:absolute;top:-22px;right:-22px;width:92px;height:92px;border-radius:50%;background:radial-gradient(circle,#F3D9A4,transparent 70%);"></div>
+            <div style="font-size:17px;font-weight:800;color:#7A4E15;margin-bottom:8px;">白鸽智羽 · 私人定制</div>
+            <div style="font-size:14px;line-height:1.8;color:#5C4322;" id="rp-greet">林小满先生/女士，很高兴为您服务！<br>我已为您整理好，您的<span style="color:#C9862B;font-weight:700;">家庭保险规划书</span></div>
+            <div style="margin-top:12px;font-size:11px;color:#B08D5C;" id="rp-time">报告生成时间：2026-09-29 09:20:05</div>
+          </div>
+          <div style="background:#fff;border:1.5px solid #E4C48C;border-radius:14px;padding:14px 16px;" id="rp-insight">
+            <div style="font-size:14px;font-weight:800;color:#7A4E15;">您的保障偏好</div>
+            <div style="font-size:11px;color:#B08D5C;margin:2px 0 10px;">基于您在白鸽平台的投保记录分析 · 仅用于优化您的保障方案</div>
+            <div style="display:flex;gap:12px;align-items:flex-start;">
+              <div style="flex-shrink:0;background:linear-gradient(180deg,#FFF9EE,#FFFDF7);border:1px solid #F0E2C4;border-radius:12px;padding:6px 4px 2px;">
+                <svg width="168" height="152" viewBox="0 0 160 146" style="display:block;">
+                  <g fill="none" stroke="#EBDCBB" stroke-width="1">
+                    <polygon points="80,17 132.3,55 112.3,116.5 47.7,116.5 27.7,55"/>
+                    <polygon points="80,35.3 114.9,60.7 101.6,101.7 58.4,101.7 45.1,60.7"/>
+                    <polygon points="80,53.7 97.4,66.4 90.8,86.8 69.2,86.8 62.6,66.4"/>
+                    <line x1="80" y1="72" x2="80" y2="17"/><line x1="80" y1="72" x2="132.3" y2="55"/><line x1="80" y1="72" x2="112.3" y2="116.5"/><line x1="80" y1="72" x2="47.7" y2="116.5"/><line x1="80" y1="72" x2="27.7" y2="55"/>
+                  </g>
+                  <polygon points="80,25.3 111.4,61.8 94.5,92 73.5,80.9 64.3,66.9" fill="rgba(201,134,43,.22)" stroke="#C9862B" stroke-width="1.6" stroke-linejoin="round"/>
+                  <g fill="#C9862B"><circle cx="80" cy="25.3" r="2.4"/><circle cx="111.4" cy="61.8" r="2.4"/><circle cx="94.5" cy="92" r="2.4"/><circle cx="73.5" cy="80.9" r="2.4"/><circle cx="64.3" cy="66.9" r="2.4"/></g>
+                  <g font-size="8.5" fill="#8A6B33" text-anchor="middle" font-weight="600">
+                    <text x="80" y="11">健康险</text>
+                    <text x="139" y="52">意外险</text>
+                    <text x="118" y="128">家财险</text>
+                    <text x="44" y="128">责任险</text>
+                    <text x="21" y="52">车险</text>
+                  </g>
+                </svg>
+              </div>
+              <div style="flex:1;min-width:0;">
+                <div style="background:#FFF9EE;border:1px solid #F0E2C4;border-radius:10px;padding:9px 10px;font-size:11.5px;color:#5C4322;line-height:1.6;">
+                  <b style="color:#7A4E15;">🏅 保障意识强</b><br>已连续 4 年为家人配置保障
+                </div>
+                <div style="background:#FFF9EE;border:1px solid #F0E2C4;border-radius:10px;padding:9px 10px;font-size:11.5px;color:#5C4322;line-height:1.6;margin-top:6px;">
+                  <b style="color:#7A4E15;">❤️ 偏好医疗保障</b><br>医疗健康类保障占比较高
+                </div>
+                <div style="background:#FFF9EE;border:1px solid #F0E2C4;border-radius:10px;padding:9px 10px;font-size:11.5px;color:#5C4322;line-height:1.6;margin-top:6px;">
+                  <b style="color:#7A4E15;">👨‍👩‍👧 家庭支柱</b><br>已为 4 位家人安排保障
+                </div>
+              </div>
+            </div>
+            <div style="margin-top:12px;">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;">
+                <span style="font-size:12px;font-weight:700;color:#7A4E15;">历年保费投入</span>
+                <span style="font-size:10px;color:#B08D5C;">单位：元</span>
+              </div>
+              <svg width="100%" height="86" viewBox="0 0 330 86" preserveAspectRatio="xMidYMid meet" style="display:block;margin-top:4px;">
+                <g>
+                  <rect x="20" y="66" width="34" height="12" rx="3" fill="url(#barg)"/>
+                  <rect x="86" y="8" width="34" height="70" rx="3" fill="url(#barg)"/>
+                  <rect x="152" y="46" width="34" height="32" rx="3" fill="url(#barg)"/>
+                  <rect x="218" y="69" width="34" height="9" rx="3" fill="url(#barg)"/>
+                  <rect x="284" y="79" width="34" height="3" rx="1.5" fill="url(#barg)"/>
+                  <defs><linearGradient id="barg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E8B45A"/><stop offset="1" stop-color="#C9862B"/></linearGradient></defs>
+                  <g font-size="8.5" fill="#8A6B33" text-anchor="middle">
+                    <text x="37" y="62">596</text><text x="103" y="5" font-weight="700">2,051</text><text x="169" y="42">894</text><text x="235" y="65">325</text><text x="301" y="72">15</text>
+                  </g>
+                  <g font-size="9" fill="#B08D5C" text-anchor="middle">
+                    <text x="37" y="85">2022</text><text x="103" y="85">2023</text><text x="169" y="85">2024</text><text x="235" y="85">2025</text><text x="301" y="85">2026</text>
+                  </g>
+                </g>
+              </svg>
+            </div>
+            <div style="margin-top:8px;font-size:10px;color:#C4A976;line-height:1.6;">以上偏好与洞察仅基于您在白鸽平台的投保记录生成，不涉及其他任何个人信息。</div>
+          </div>
+          <div style="background:#fff;border:1.5px solid #E4C48C;border-radius:14px;overflow:hidden;">
+            <div style="margin:-1px auto 0;width:170px;background:linear-gradient(135deg,#E8B45A,#C9862B);color:#fff;font-size:13px;font-weight:700;letter-spacing:1px;padding:6px 0;border-radius:0 0 12px 12px;text-align:center;" id="rp-title">林小满专属保险计划书</div>
+            <div style="display:grid;grid-template-columns:64px 1fr 1fr;font-size:12px;margin:10px 12px 4px;">
+              <div style="background:#F7E8C8;color:#7A4E15;font-weight:700;padding:8px 6px;text-align:center;border:1px solid #EAD3A2;">家庭成员</div>
+              <div style="background:#F7E8C8;color:#7A4E15;font-weight:700;padding:8px 6px;text-align:center;border:1px solid #EAD3A2;">核心风险</div>
+              <div style="background:#F7E8C8;color:#7A4E15;font-weight:700;padding:8px 6px;text-align:center;border:1px solid #EAD3A2;">保障推荐</div>
+              <div style="padding:10px 6px;text-align:center;border:1px solid #F0E2C4;color:#5C4322;">本人</div>
+              <div style="padding:10px 6px;border:1px solid #F0E2C4;color:#5C4322;line-height:1.6;">大额医疗支出风险、重大疾病治疗费用缺口</div>
+              <div style="padding:10px 6px;border:1px solid #F0E2C4;color:#5C4322;line-height:1.6;">百万医疗险（保额 400 万）</div>
+              <div style="padding:10px 6px;text-align:center;border:1px solid #F0E2C4;color:#5C4322;">配偶</div>
+              <div style="padding:10px 6px;border:1px solid #F0E2C4;color:#5C4322;line-height:1.6;">癌症治疗费用风险，特药负担高</div>
+              <div style="padding:10px 6px;border:1px solid #F0E2C4;color:#5C4322;line-height:1.6;">中老年防癌险（含特药）</div>
+              <div style="padding:10px 6px;text-align:center;border:1px solid #F0E2C4;color:#5C4322;">母亲</div>
+              <div style="padding:10px 6px;border:1px solid #F0E2C4;color:#5C4322;line-height:1.6;">意外骨折风险，住院照护支出</div>
+              <div style="padding:10px 6px;border:1px solid #F0E2C4;color:#5C4322;line-height:1.6;">老年人骨折险（已到期，建议续保）</div>
+              <div style="padding:10px 6px;text-align:center;border:1px solid #F0E2C4;color:#5C4322;">子女</div>
+              <div style="padding:10px 6px;border:1px solid #F0E2C4;color:#5C4322;line-height:1.6;">意外与疾病住院，成长期健康风险</div>
+              <div style="padding:10px 6px;border:1px solid #F0E2C4;color:#5C4322;line-height:1.6;">关爱学生保险（保障中）</div>
+            </div>
+          </div>
+          <div style="background:#fff;border:1.5px solid #E4C48C;border-radius:14px;padding:14px 16px;">
+            <div style="font-size:14px;font-weight:800;color:#7A4E15;margin-bottom:6px;">综合结论</div>
+            <div style="font-size:12.5px;line-height:1.8;color:#5C4322;">家庭整体已覆盖<b>医疗、重疾、意外</b>三大基础责任；本人出行场景暂无配置，母亲的骨折险已到期。建议优先补上出行意外保障，并为母亲办理续保。</div>
+            <button class="pc-btn" id="rp-go-rec" style="background:linear-gradient(135deg,#E8B45A,#C9862B);margin-top:10px;">根据报告看看推荐 →</button>
+          </div>
+          
+          <div style="background:#fff;border:1.5px solid #E4C48C;border-radius:14px;padding:14px 16px;" id="rp-recs">
+            <div style="font-size:14px;font-weight:800;color:#7A4E15;">为您推荐</div>
+            <div style="font-size:11px;color:#B08D5C;margin:2px 0 4px;">结合综合结论，针对家庭保障缺口匹配的 3 款产品</div>
+            <div class="rp-rec" data-pn="平安白鸽运动保险（互联网版）" style="display:flex;align-items:center;gap:10px;border:1px solid #F0E2C4;border-radius:12px;padding:11px 12px;margin-top:8px;cursor:pointer;">
+              <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#E8B45A,#C9862B);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🏃</div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:13.5px;font-weight:700;color:#3A2E14;">平安白鸽运动保险（互联网版）</div>
+                <div style="font-size:11px;color:#8A6B33;margin-top:2px;">建议本人配置 · 意外身故伤残 50 万 + 意外医疗 5 万</div>
+              </div>
+              <div style="text-align:right;flex-shrink:0;">
+                <div style="font-size:14px;font-weight:800;color:#C9862B;">¥3.00<span style="font-size:10px;font-weight:400;"> 起</span></div>
+                <div style="font-size:10.5px;color:#B08D5C;margin-top:2px;">查看详情 ›</div>
+              </div>
+            </div>
+            <div class="rp-rec" data-pn="中老年人防癌险（含特药）" style="display:flex;align-items:center;gap:10px;border:1px solid #F0E2C4;border-radius:12px;padding:11px 12px;margin-top:8px;cursor:pointer;">
+              <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#E8B45A,#C9862B);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🛡️</div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:13.5px;font-weight:700;color:#3A2E14;">中老年人防癌险（含特药）</div>
+                <div style="font-size:11px;color:#8A6B33;margin-top:2px;">覆盖配偶癌症治疗风险 · 确诊住院可报销，含特药责任</div>
+              </div>
+              <div style="text-align:right;flex-shrink:0;">
+                <div style="font-size:14px;font-weight:800;color:#C9862B;">¥1020.00<span style="font-size:10px;font-weight:400;"> 起</span></div>
+                <div style="font-size:10.5px;color:#B08D5C;margin-top:2px;">查看详情 ›</div>
+              </div>
+            </div>
+            <div class="rp-rec" data-pn="老年人骨折险" style="display:flex;align-items:center;gap:10px;border:1px solid #F0E2C4;border-radius:12px;padding:11px 12px;margin-top:8px;cursor:pointer;">
+              <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#E8B45A,#C9862B);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🦴</div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:13.5px;font-weight:700;color:#3A2E14;">老年人骨折险</div>
+                <div style="font-size:11px;color:#8A6B33;margin-top:2px;">母亲保单已到期，建议续保 · 意外骨折住院津贴保障</div>
+              </div>
+              <div style="text-align:right;flex-shrink:0;">
+                <div style="font-size:14px;font-weight:800;color:#C9862B;">¥198.00<span style="font-size:10px;font-weight:400;"> 起</span></div>
+                <div style="font-size:10.5px;color:#B08D5C;margin-top:2px;">查看详情 ›</div>
+              </div>
+            </div>
+          </div>
+          <div style="text-align:center;font-size:10.5px;color:#B08D5C;padding:2px 0 8px;">本报告由 AI 生成，不构成保险服务建议 · 数据截至报告生成时间</div>
+        </div>
+        <div id="rp-lock">
+          <div class="lk">
+            <div class="li">🔒</div>
+            <div class="lt">专属保险计划书已就绪</div>
+            <div class="ld">授权手机号后，即可基于您在白鸽平台的订单与上传的保单，为您生成专属的家庭保险规划书。</div>
+            <button class="pc-btn" id="rp-lock-auth" style="background:linear-gradient(135deg,#E8B45A,#C9862B);margin:0;">微信一键授权手机号</button>
+            <div style="font-size:10.5px;color:#B08D5C;margin-top:10px;">仅用于匹配您的保单信息，不涉及其他个人信息</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 8 抽屉式设置 ========== -->
+      <section class="screen" id="scr-drawer">
+        <div class="chat-scroll" style="filter:blur(1px);opacity:.75;">
+          <div class="ts-label">今天 16:06</div>
+          <div class="msg-row u"><div class="avatar uav">🧑</div><div class="bubble">帮我看看保单</div></div>
+          <div class="msg-row"><div class="avatar"><img src="avatar-head.png" alt="小白"></div><div class="bubble">好的，这是您的保单概览～背景即对话页，抽屉半屏覆盖不阻挡对话。</div></div>
+        </div>
+        <div class="chips" style="filter:blur(1px);opacity:.75;"><button class="chip">帮选保险</button><button class="chip">保单解读</button></div>
+        <div class="inputbar" style="filter:blur(1px);opacity:.75;">
+          <div class="pillbar">
+            <button class="plus-btn">＋</button>
+            <input placeholder="发送消息或按住说话" disabled>
+            <button class="pillbtn voice-btn"></button>
+          </div>
+        </div>
+        <div class="ai-note">部分内容由AI生成，不构成保险服务建议</div>
+      </section>
+
+      <!-- ========== 8b 登录页（匿名用户从设置进入） ========== -->
+      <section class="screen" id="scr-login">
+        <div class="pol-scroll" style="justify-content:center;padding:0 26px;">
+          <div style="font-size:24px;font-weight:800;color:var(--ink);margin-bottom:26px;">欢迎使用</div>
+          <div style="display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);border-radius:16px;padding:14px 16px;margin-bottom:14px;background:#fff;">
+            <span style="font-size:18px;">📱</span><span style="font-weight:600;color:var(--ink);">+86</span>
+            <span style="color:var(--line);">|</span>
+            <input id="lg-phone" placeholder="请输入手机号" style="border:none;outline:none;flex:1;font-size:15px;background:transparent;" maxlength="11">
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);border-radius:16px;padding:14px 16px;margin-bottom:22px;background:#fff;">
+            <span style="font-size:18px;">🔑</span>
+            <input id="lg-code" placeholder="请输入6位验证码" style="border:none;outline:none;flex:1;font-size:15px;background:transparent;" maxlength="6">
+            <button id="lg-sendcode" style="background:#DCE8FF;color:var(--blue);border:none;border-radius:14px;padding:8px 12px;font-size:13px;font-weight:600;">获取验证码</button>
+          </div>
+          <button id="lg-reg" disabled style="width:100%;background:#EBEDF2;color:#9AA3B5;border:none;border-radius:24px;padding:14px 0;font-size:16px;font-weight:700;margin-bottom:12px;">注册 / 登录</button>
+          <button id="lg-quick" style="width:100%;background:var(--blue);color:#fff;border:none;border-radius:24px;padding:14px 0;font-size:16px;font-weight:700;">手机号快捷登录</button>
+          <div id="lg-agree" style="display:flex;align-items:center;gap:8px;margin-top:16px;font-size:12px;color:var(--ink-2);cursor:pointer;">
+            <span id="lg-check" style="width:16px;height:16px;border-radius:50%;border:1.5px solid var(--ink-3);display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:#fff;">✓</span>
+            我已阅读并同意《用户协议》和《隐私政策》
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 9 理赔身份核验 ========== -->
+      <section class="screen" id="scr-claim">
+        <div class="chat-scroll" id="chat-claim"></div>
+        <div class="chips" id="claim-chips"></div>
+        <div class="inputbar">
+          <div class="pillbar">
+            <button class="plus-btn">＋</button>
+            <input id="claim-input" placeholder="发送消息或按住说话">
+            <button class="pillbtn voice-btn"></button>
+            <button class="send-mini" id="claim-send">发送</button>
+          </div>
+        </div>
+        <div class="ai-note">部分内容由AI生成，不构成保险服务建议</div>
+        <!-- 理赔 · 选择报案保单（底部弹窗） -->
+        <div class="mask" id="mask-clm"></div>
+        <div class="sheet" id="sheet-clm">
+          <div class="sheet-head"><div class="st"><span class="ic">🛡</span>选择报案保单</div><button class="x" id="clm-x">✕</button></div>
+          <div class="sheet-body" id="clm-list"></div>
+        </div>
+      </section>
+
+      <!-- ========== 全局浮层 ========== -->
+      <!-- 保单解读 · 选择要解读的保险（底部弹窗） -->
+      <div class="mask" id="mask-read"></div>
+      <div class="sheet" id="sheet-read">
+        <div class="sheet-head"><div class="st"><span class="ic">📄</span>选择要解读的保险</div><button class="x" id="read-x">✕</button></div>
+        <div class="sheet-body" id="read-list"></div>
+      </div>
+      <!-- 设置抽屉（全局，可从任意屏幕唤起） -->
+      <div class="mask" id="mask-drawer"></div>
+      <div class="sheet drawer-left" id="drawer">
+        <div class="sheet-head"><div class="st">设置</div><button class="x" id="drawer-x">✕</button></div>
+        <div class="sheet-body" id="drawer-body"></div>
+      </div>
+      <div class="confirm-box" id="confirm-logout">
+        <div class="ct">退出登录</div>
+        <div class="cd">是否要退出登录？退出后将无法查询到本人的历史保单。</div>
+        <div class="cb"><button class="c-no" id="lo-no">取消</button><button class="c-ok" id="lo-ok">确认</button></div>
+      </div>
+      <!-- 删除上传保单二次确认 -->
+      <div class="confirm-box" id="confirm-del">
+        <div class="ct">删除保单</div>
+        <div class="cd" id="del-txt">确认删除这份保单？删除后该保单的解读结果将一并移除，且不可恢复。</div>
+        <div class="cb"><button class="c-no" id="del-no">取消</button><button class="c-ok" id="del-ok">确认删除</button></div>
+      </div>
+      <!-- 加号附件面板 -->
+      <div class="attach-panel" id="attach-panel">
+        <div class="attach-row">
+          <button class="attach-item"><span class="ai">📷</span>相机</button>
+          <button class="attach-item"><span class="ai">🖼</span>相册</button>
+          <button class="attach-item"><span class="ai">📁</span>文件</button>
+        </div>
+      </div>
+      <!-- 产品详情页 -->
+      <div id="ov-detail">
+        <div class="dt-body">
+          <div class="dt-banner">白鸽-关爱学生保险</div>
+          <div class="dt-meta">
+            <div class="mrow"><span class="mk">保险公司</span><span>华泰财产保险有限公司</span></div>
+            <div class="mrow"><span class="mk">承保年龄</span><span>3-30 周岁</span></div>
+            <div class="mrow"><span class="mk">保障期限</span><span>1 年</span></div>
+          </div>
+          <div class="plan-tabs" id="plan-tabs"></div>
+          <div class="duty">
+            <div class="dh"><span>保障责任</span><span class="r">保险金额</span></div>
+            <div class="drow2"><span>意外身故/伤残保险金</span><span class="amt" id="duty-1">80,000 元</span></div>
+            <div class="drow2"><span>意外伤害医疗保险金</span><span class="amt">10,000 元 <span class="arr">⌄</span></span></div>
+            <div class="drow2"><span>住院医疗保险金</span><span class="amt">100,000 元 <span class="arr">⌄</span></span></div>
+            <div class="drow2"><span>重大疾病保险金</span><span class="amt">100,000 元 <span class="arr">⌄</span></span></div>
+          </div>
+        </div>
+        <div class="dt-foot"><div class="price"><span id="dt-price">¥200.00</span> <small>起</small></div><button class="buy" id="dt-buy">立即投保</button></div>
+      </div>
+      <!-- 手机号授权浮层 -->
+      <div id="ov-phoneauth">
+        <div class="pa-box" style="background:#EDEDED;">
+          <div class="pa-t" style="text-align:left;">申请获取并验证你的手机号</div>
+          <div style="text-align:left;font-size:12.5px;color:#8A9099;margin:-6px 0 16px;">协助你创建账号</div>
+          <div style="background:#fff;border-radius:10px;overflow:hidden;">
+            <button class="wx-num" id="pa-allow"><span>180****5678</span><span class="last">上次提供</span></button>
+            <button class="wx-num" id="pa-allow2" style="border-top:1px solid #E5E5E5;"><span>181****2233</span></button>
+          </div>
+          <button class="wx-num" id="pa-deny" style="background:#fff;border-radius:10px;margin-top:12px;"><span>不允许</span></button>
+          <div style="margin-top:20px;text-align:center;"><span style="color:#576B95;font-size:12.5px;cursor:pointer;">管理号码</span></div>
+        </div>
+      </div>
+      <!-- 更换手机号（登录后编辑：验证码验证 / 微信一键获取） -->
+      <div id="ov-phoneedit">
+        <div class="pa-box">
+          <div class="pa-t">更换手机号</div>
+          <div class="pa-app"><div class="aic">鸽</div><div><div class="an">当前手机号</div><div class="ad" id="pe-cur">138****5678</div></div></div>
+          <div style="padding:4px 0 10px;">
+            <div style="display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;">
+              <span style="font-size:13px;color:var(--ink-3);">+86</span><span style="color:var(--line);">|</span>
+              <input id="pe-phone" placeholder="请输入新手机号" maxlength="11" style="border:none;outline:none;flex:1;font-size:14px;">
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;">
+              <input id="pe-code" placeholder="请输入6位验证码" maxlength="6" style="border:none;outline:none;flex:1;font-size:14px;">
+              <button id="pe-send" style="background:#DCE8FF;color:var(--blue);border:none;border-radius:12px;padding:7px 10px;font-size:12.5px;font-weight:600;">获取验证码</button>
+            </div>
+          </div>
+          <div class="pa-btns">
+            <button class="primary-btn" id="pe-wx">微信一键获取手机号</button>
+            <button class="primary-btn" id="pe-ok">验证并更换</button>
+            <button class="ghost-btn" id="pe-cancel">取消</button>
+          </div>
+        </div>
+      </div>
+      <!-- 保单详情（订单详情，全屏浮层） -->
+      <div id="ov-policy">
+        <div class="dt-body" id="pl-body"></div>
+      </div>
+      <!-- 上传文件预览（全屏） -->
+      <div id="ov-fileview">
+        <div class="dt-body" style="padding:14px;">
+          <div style="background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px;">
+            <div style="display:flex;gap:12px;align-items:center;">
+              <span style="font-size:30px;">📄</span>
+              <div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:13.5px;" id="fv-name">—</div>
+              <div style="font-size:11.5px;color:var(--ink-3);margin-top:3px;" id="fv-meta">—</div></div>
+            </div>
+          </div>
+          <!-- 直接展示上传的文件本体 -->
+          <div style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:22px 18px;box-shadow:0 1px 4px rgba(20,40,80,.06);">
+            <div style="display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding-bottom:12px;">
+              <span style="font-size:18px;">🕊️</span>
+              <div style="flex:1;"><div style="font-size:13px;font-weight:700;">白鸽在线 · 电子保单</div>
+                <div style="font-size:11px;color:var(--ink-3);margin-top:2px;">BAIGE ONLINE · ELECTRONIC POLICY</div></div>
+            </div>
+            <div style="text-align:center;font-size:16px;font-weight:800;margin:16px 0 2px;" id="fv-title">—</div>
+            <div style="text-align:center;font-size:11px;color:var(--ink-3);">本文件为您上传的保单原件</div>
+            <div style="margin-top:16px;font-size:12.5px;line-height:2;color:var(--ink);">
+              <div style="display:flex;justify-content:space-between;"><span style="color:var(--ink-3);">投保人</span><span>林小满</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:var(--ink-3);">被保险人</span><span>详见保单正文</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:var(--ink-3);">保险期间</span><span>详见保单正文</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:var(--ink-3);">保险费</span><span>详见保单正文</span></div>
+            </div>
+            <div style="margin-top:14px;font-size:12px;color:var(--ink-2);line-height:1.9;border-top:1px dashed var(--line);padding-top:12px;">
+              特别约定：本保险单所载明的保险责任、责任免除及理赔规则，以保险条款及保单正文约定为准。<br>
+              本文件为您本人上传，仅用于为您提供保单解读与保障分析服务。
+            </div>
+          </div>
+          </div>
+        </div>
+      </div>
+      <!-- 推荐反馈弹窗（踩） -->
+      <div class="mask" id="mask-fb"></div>
+      <div class="sheet" id="sheet-fb">
+        <div class="sheet-head"><div class="st"><span class="ic">📝</span>告诉小白哪里不满意</div><button class="x" id="fb-x">✕</button></div>
+        <div class="sheet-body" id="fb-list"></div>
+      </div>
+      <!-- Toast -->
+      <div id="toast"></div>
+      </div><!-- /p-body -->
+    </div></div>
+  </main>
+
+  <!-- 右侧需求标注 -->
+  <aside id="anno">
+    <div class="ah2"><div class="t">需求标注</div><div class="cnt" id="anno-cnt"></div>
+      <button class="tg" id="anno-toggle">隐藏全部标注</button></div>
+    <div class="alist" id="anno-list"></div>
+  </aside>
+</div>
+
+<!-- 控制面板 -->
+<div id="ctrl">
+  <div class="ch" id="ctrl-head"><span class="t">🎛 原型控制台</span><span class="m" id="ctrl-min">收起</span></div>
+  <div class="cb">
+    <div class="cl">屏幕切换</div>
+    <div class="toggles" id="ctrl-screens"></div>
+    <div class="cl">标注</div>
+    <div class="toggles">
+      <button class="tg2 on" id="tg-anno">需求标注：开</button>
+      <button class="tg2 on" id="tg-anim">入场动效：开</button>
+    </div>
+    <div class="cl">模拟账户状态（影响 7/8/9 号屏）</div>
+    <div class="seg"><button id="seg-anon">匿名未绑手机号</button><button id="seg-bound" class="on">已绑手机号</button></div>
+    <div class="cl">声音开关（全局）</div>
+    <div class="seg"><button id="seg-sndoff">静音</button><button id="seg-sndon" class="on">开启播报</button></div>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   白鸽智羽小程序高保真原型 · 交互脚本
+   架构：对话驱动 + 智能分流；助手称谓「小白」，形象为青鸾
+   ================================================================ */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+
+/* ---------- 全局状态 ---------- */
+const state = {
+  screen:'welcome', annoOn:true, animOn:true,
+  identity:'bound',            // 'anon' | 'bound'
+  soundOn:true,
+  authGiven:false,             // 保单授权卡片
+  welcomePlayed:false,
+  chatStarted:false,
+};
+
+/* ---------- Toast ---------- */
+let toastTimer=null;
+function toast(msg){
+  const t=$('#toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+/* ---------- 时钟 ---------- */
+function tickClock(){
+  const d=new Date();
+  $('#clock').textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+tickClock(); setInterval(tickClock,15000);
+
+/* ================================================================
+   时间戳规则（八、全局交互）
+   精确到分钟 · 5 分钟节流分组 · 今天/昨天/周X/MM月DD日 四种格式 · 跨天重归组
+   ================================================================ */
+const WEEK=['周日','周一','周二','周三','周四','周五','周六'];
+function fmtTsLabel(d){
+  const now=new Date();
+  const hm=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  const s0=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime();
+  const sd=new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();
+  const dayDiff=Math.round((s0-sd)/86400000);
+  if(dayDiff===0) return '今天 '+hm;
+  if(dayDiff===1) return '昨天 '+hm;
+  if(dayDiff<=7)  return WEEK[d.getDay()]+' '+hm;
+  return String(d.getMonth()+1).padStart(2,'0')+' 月 '+String(d.getDate()).padStart(2,'0')+' 日 '+hm;
+}
+/* 消息列表渲染：首条必带标签，其后同一 5 分钟窗口不重复；跨天强制重归组 */
+function renderMsgs(container,msgs){
+  container.innerHTML='';
+  let lastLabelTime=null;
+  msgs.forEach(m=>{
+    const newDay=!lastLabelTime||new Date(lastLabelTime).toDateString()!==new Date(m.t).toDateString();
+    const gapOk=!lastLabelTime||(m.t-lastLabelTime)>=5*60*1000;
+    if(!lastLabelTime||newDay||gapOk){
+      const lb=document.createElement('div');lb.className='ts-label';lb.textContent=fmtTsLabel(new Date(m.t));
+      container.appendChild(lb); lastLabelTime=m.t;
+    }
+    container.appendChild(buildMsg(m));
+  });
+  container.scrollTop=container.scrollHeight;
+}
+function buildMsg(m){
+  if(m.html && m.node) return m.node;
+  const row=document.createElement('div');row.className='msg-row '+(m.w==='u'?'u':'');
+  const av=document.createElement('div');av.className='avatar'+(m.w==='u'?' uav':'');
+  if(m.w==='b'){const im=document.createElement('img');im.src='avatar-head.png';im.alt='小白';av.appendChild(im);}
+  else av.textContent='🧑';
+  const bb=document.createElement('div');bb.className='bubble';bb.innerHTML=m.x;
+  row.appendChild(av);row.appendChild(bb);
+  return row;
+}
+function pushMsg(container,msgs,m){
+  msgs.push(m);
+  /* 重渲染最近分组即可：简单起见全量重渲染（原型可接受） */
+  renderMsgs(container,msgs);
+}
+
+/* ================================================================
+   快捷芯片（二、统一对话窗口）：帮选保险 / 保单解读 / 对比产品 / 术语咨询 / 我要理赔
+   ================================================================ */
+const CHIPS=[
+  {t:'帮选保险',ic:'🧭'},{t:'保单解读',ic:'📄'},{t:'对比产品',ic:'📊'},{t:'术语咨询',ic:'📖'},{t:'我要理赔',ic:'🩺'}
+];
+function buildChips(el,handler){
+  el.innerHTML='';
+  CHIPS.forEach(c=>{
+    const b=document.createElement('button');b.className='chip';b.innerHTML=c.ic+' '+c.t;
+    b.onclick=()=>handler(c.t);el.appendChild(b);
+  });
+}
+
+/* ================================================================
+   1. 欢迎态
+   ================================================================ */
+const GREET_1='嗨，我是小白';
+const GREET_2='我是您的专属管家，有什么我可以帮您的吗？';
+const SVG_SND_ON='<svg viewBox="0 0 24 24" fill="none"><path d="M11 5 6.5 8.5H3.5v7h3L11 19V5z" fill="#1C2333"/><path d="M15.5 8.8a4.2 4.2 0 0 1 0 6.4M18 6.3a7.6 7.6 0 0 1 0 11.4" stroke="#1A66FF" stroke-width="1.8" stroke-linecap="round"/></svg>';
+const SVG_SND_OFF='<svg viewBox="0 0 24 24" fill="none"><path d="M11 5 6.5 8.5H3.5v7h3L11 19V5z" fill="#9AA3B5"/><path d="M15.5 9.5l5 5M20.5 9.5l-5 5" stroke="#9AA3B5" stroke-width="1.8" stroke-linecap="round"/></svg>';
+const SVG_VOICE='<svg viewBox="0 0 24 24" fill="none" stroke="#1C2333" stroke-width="1.8" stroke-linecap="round"><circle cx="5" cy="12" r="1.6" fill="#1C2333" stroke="none"/><path d="M9.5 8.5a5 5 0 0 1 0 7M13.5 6a8.5 8.5 0 0 1 0 12M17.5 3.5a12 12 0 0 1 0 17"/></svg>';
+const SVG_GEAR='<svg viewBox="0 0 24 24" fill="none" stroke="#1C2333" stroke-width="2" stroke-linecap="round"><path d="M4 7h7M17.5 7H20M4 17h3.5M14 17h6"/><circle cx="14" cy="7" r="2.3"/><circle cx="10" cy="17" r="2.3"/></svg>';
+function playWelcome(){
+  const t1=$('#greet-t1'),t2=$('#greet-t2');
+  const fig=$('.figure2'),halo=$('.figwrap .halo');
+  if(!state.animOn){
+    [fig,halo,t1].forEach(x=>{x.style.animation='none';x.style.opacity='1';x.style.transform='none';});
+    t2.textContent=GREET_2;state.welcomePlayed=true;return;
+  }
+  fig.style.animation='none';halo.style.animation='none';t1.style.animation='none';
+  void fig.offsetWidth;
+  fig.style.animation='';halo.style.animation='';t1.style.animation='';
+  t2.innerHTML='';
+  let j=0;const s2=setInterval(()=>{
+    if(j<GREET_2.length){t2.innerHTML=GREET_2.slice(0,++j)+'<span class="caret"></span>';}
+    else{clearInterval(s2);t2.textContent=GREET_2;}
+  },45);
+  state.welcomePlayed=true;
+}
+function welcomeGo(text){
+  state.chatStarted=true;
+  switchScreen('chat');
+  if(text)setTimeout(()=>chatHandle(text),350);
+}
+buildChips($('#welcome-chips'),globalChip);
+$('#welcome-send').onclick=()=>{const v=$('#welcome-input').value.trim();if(v){$('#welcome-input').value='';$('#welcome-send').classList.remove('show');welcomeGo(v);}else{welcomeGo(null);}};
+$('#welcome-input').addEventListener('keydown',e=>{if(e.key==='Enter')$('#welcome-send').click();});
+$('#snd-icn').onclick=()=>{state.soundOn=!state.soundOn;renderSound();};
+function renderSound(){
+  $('#snd-icn').innerHTML=state.soundOn?SVG_SND_ON:SVG_SND_OFF;
+  $('#seg-sndon').classList.toggle('on',state.soundOn);
+  $('#seg-sndoff').classList.toggle('on',!state.soundOn);
+}
+
+/* ================================================================
+   2. 会话态（含历史消息与时间戳演示）
+   ================================================================ */
+const MIN=60*1000,HOUR=60*MIN,DAY=24*HOUR;
+let mainMsgs=[];
+function seedChat(){
+  const now=Date.now();
+  mainMsgs=[
+    {t:now-12*DAY-2*HOUR,w:'u',x:'上次咨询的学生险什么时候生效？'},
+    {t:now-12*DAY-2*HOUR-MIN,w:'b',x:'您好，我是小白～您的「白鸽-关爱学生保险（幼儿园C款）」已于 2026-09-01 生效，保障期 2026-09-01 至 2027-08-31，当前状态：保障中。'},
+    {t:now-4*DAY-HOUR,w:'u',x:'医疗险的免赔额是什么意思？'},
+    {t:now-4*DAY-HOUR-MIN,w:'b',x:'免赔额是保险公司不承担、需由您自己承担的部分。比如免赔额 1 万元，医疗费用先扣除 1 万，剩余部分再按比例报销。还有想了解的术语随时问我～'},
+    {t:now-DAY-3*HOUR,w:'u',x:'对比一下两款医疗险'},
+    {t:now-DAY-3*HOUR-MIN,w:'b',x:'好的～点击「对比产品」芯片，勾选 2 款产品，我会给您整体对比和购买建议。'},
+    {t:now-4*HOUR,w:'u',x:'帮我看看妈妈的保单快到期了吗？'},
+    {t:now-4*HOUR+2*MIN,w:'b',x:'您母亲的防癌险将于 10 月 18 日到期，到期前 30 天我会提醒您，要不要看看续保方案？'},
+    {t:now-2*HOUR,w:'u',x:'好，稍后看看'},
+    {t:now-2*HOUR+MIN,w:'b',x:'好的，临近到期我会在对话页提醒您（站内提醒为主，也可以开启微信订阅提醒）～'},
+  ];
+  renderMsgs($('#chat-main'),mainMsgs);
+  $('#chat-main').dataset.last=String(mainMsgs[mainMsgs.length-1].t);
+}
+/* 实时追加消息：复用「5 分钟节流 + 跨天重归组」时间戳规则 */
+function appendLive(el,who,x){
+  const now=Date.now();
+  const last=parseFloat(el.dataset.last||'0');
+  const newDay=last&&new Date(last).toDateString()!==new Date(now).toDateString();
+  if(!last||(now-last)>=5*60*1000||newDay){
+    const lb=document.createElement('div');lb.className='ts-label';lb.textContent=fmtTsLabel(new Date(now));
+    el.appendChild(lb);
+  }
+  el.dataset.last=String(now);
+  const node=buildMsg({w:who,x:x});
+  el.appendChild(node);
+  /* 长消息不停在最后，而是停在新消息开头附近 */
+  if(node.offsetHeight>340){
+    const cr=el.getBoundingClientRect(),rr=node.getBoundingClientRect();
+    el.scrollTop+=rr.top-cr.top-66;
+  }else{
+    el.scrollTop=el.scrollHeight;
+  }
+}
+const CANNED_REPLIES=[
+  '收到～已为您记录，我会自动识别您想办的事，直接说就行。',
+  '明白～这个问题涉及您的个人数据，需要先获得您的授权才能答得更准，您可以在「设置-我的保单」里开启自动同步。',
+  '好的～如果需要，我可以帮您：①推荐产品 ②对比产品 ③解读保单 ④解释术语，直接说就行。'
+];
+let cannedIdx=0;
+/* 意图识别（演示规则）：买保险类诉求 → 进入引导式追问 */
+const INTENT_BUY=/(买|投保|配置|挑选|推荐|选)[^。]{0,8}(保险|险|保障)|(医疗险|意外险|防癌|旅行险|学生险)/;
+function intentPre(text){ /* 用户已表达的维度自动跳过，不重复追问 */
+  const a=[];
+  if(/爸爸|妈妈|父母|父亲|母亲|长辈|老人/.test(text))a.push('父母长辈');
+  else if(/孩子|儿子|女儿|娃|学生/.test(text))a.push('孩子');
+  else if(/配偶|老婆|丈夫|爱人/.test(text))a.push('配偶');
+  return a;
+}
+function chatHandle(text){
+  if(!text)return;
+  const el=$('#chat-main');
+  const fu=el.__fu;
+  if(fu&&!fu.done){ /* 用户打字 → 立即终止追问，切换自由对话 */
+    fu.done=true;
+    appendLive(el,'u',esc(text));
+    appendLive(el,'b','好的，我们直接聊～您可以继续描述需求，我来帮您处理。');
+    return;
+  }
+  appendLive(el,'u',esc(text));
+  showTyping(el,()=>{
+    if(INTENT_BUY.test(text)){ /* 识别投保意图 → 追问缺失信息 */
+      fuStartIn(el,true,'好的，我来帮您挑～先了解几个基本情况：',intentPre(text));
+      return;
+    }
+    let reply;
+    if(text.includes('术语')||text.includes('免赔'))reply='【免赔额】指保险合同中约定的、由被保险人自行承担、保险公司不予赔付的部分。常见分为绝对免赔额与相对免赔额。例如某医疗险免赔额 1 万元：医疗费用 3 万元时，先扣除 1 万元，剩余 2 万元再按约定比例报销。还想了解「等待期」「现金价值」等术语吗？';
+    else reply=CANNED_REPLIES[cannedIdx++%CANNED_REPLIES.length];
+    appendLive(el,'b',reply);
+  });
+}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function showTyping(container,done){
+  const row=document.createElement('div');row.className='msg-row';
+  row.innerHTML='<div class="avatar"><img src="avatar-head.png" alt="小白"></div><div class="bubble typing"><i></i><i></i><i></i></div>';
+  container.appendChild(row);container.scrollTop=container.scrollHeight;
+  setTimeout(()=>{row.remove();done();},900);
+}
+buildChips($('#chat-chips'),globalChip);
+$('#chat-send').onclick=()=>{const v=$('#chat-input').value.trim();if(v){$('#chat-input').value='';$('#chat-send').classList.remove('show');chatHandle(v);}};
+$('#chat-input').addEventListener('keydown',e=>{if(e.key==='Enter')$('#chat-send').click();});
+
+/* ================================================================
+   3. 引导式追问（三、引导式追问 · 最多 4 轮 + 逃生口）
+   ================================================================ */
+const FU_ROUNDS={
+  r1:{q:'这份保险是为谁投保的呢？',opts:['自己','配偶','父母长辈','孩子'],esc:'其他'},
+  r2:{
+    '自己':['18-30','30-40','40-50','50-65'],
+    '配偶':['18-30','30-40','40-50','50-65'],
+    '父母长辈':['50-60','60-70','70-80','80 岁以上'],
+    '孩子':['0-6','7-17','18-30']
+  },
+  r3:{q:'主要想覆盖什么场景呢？',opts:['出行旅行','疾病医疗','日常或运动意外'],esc:'不太清楚'},
+  r4:{
+    '出行旅行':{q:'目的地是哪里呢？',opts:['境内','日韩东南亚','澳新','美加','欧洲申根','全球','泰国','留学或打工度假'],esc:'不太清楚'},
+    '疾病医疗':{q:'更关注哪类医疗险？',opts:['百万医疗','防癌专项','老人专属防癌','日常医疗'],esc:'不太清楚'},
+    '日常或运动意外':{q:'活动类型是？',opts:['日常居家','运动健身','高风险运动','体育赛事','航空出行'],esc:'不太清楚'}
+  }
+};
+let fuMsgs=[],fuState={step:0,answers:[]};
+/* 引导式追问引擎：可在任意对话容器内运行（状态挂在容器 __fu 上，互不干扰） */
+function fuStartIn(el,keep,intro,pre){
+  if(!keep){el.innerHTML='';el.dataset.last='';}
+  el.__fu={step:0,answers:(pre&&pre.length?pre.slice():[]),done:false};
+  if(el.__fu.answers.length)el.__fu.step=1; /* 已表达的维度自动跳过 */
+  appendLive(el,'b',intro||'好的～为了帮您挑到合适的产品，我先了解几个基本情况：');
+  if(el.__fu.answers.length)appendLive(el,'b','收到，就按「'+el.__fu.answers[0]+'」来推荐～');
+  fuAsk(el);
+}
+function fuAsk(el){
+  const s=el.__fu;
+  if(s.done)return;
+  if(s.step===0)fuOptions(el,FU_ROUNDS.r1.q,FU_ROUNDS.r1.opts,FU_ROUNDS.r1.esc);
+  else if(s.step===1)fuOptions(el,'请问被保险人今年多大呢？',FU_ROUNDS.r2[s.answers[0]]||FU_ROUNDS.r2['自己'],'不太清楚');
+  else if(s.step===2)fuOptions(el,FU_ROUNDS.r3.q,FU_ROUNDS.r3.opts,FU_ROUNDS.r3.esc);
+  else if(s.step===3){
+    const sc=s.answers[2];
+    const br=FU_ROUNDS.r4[sc];
+    if(br)fuOptions(el,br.q,br.opts,br.esc);
+    else fuFinish(el);
+  }
+  else fuFinish(el);
+}
+function fuOptions(el,q,opts,escText){
+  const s=el.__fu;
+  appendLive(el,'b',q);
+  /* 已选回溯条（选项卡片可回溯） */
+  if(s.answers.length){
+    const tb=document.createElement('div');tb.className='tracebar';
+    tb.innerHTML='<span class="trace-chip"><span>已选</span>'+s.answers.join(' → ')+'</span>';
+    el.appendChild(tb);
+  }
+  const card=document.createElement('div');card.className='opt-card';
+  const ot=document.createElement('div');ot.className='ot';ot.textContent='第 '+(s.step+1)+' 轮 · 点击选择';
+  card.appendChild(ot);
+  opts.forEach(o=>{
+    const b=document.createElement('button');b.className='opt';b.textContent=o;
+    b.onclick=()=>{if(s.done)return;card.querySelectorAll('.opt').forEach(x=>{x.disabled=true;if(x.textContent===o)x.classList.add('done');});
+      appendLive(el,'u',o);s.answers.push(o);s.step++;
+      setTimeout(()=>fuAsk(el),350);};
+    card.appendChild(b);
+  });
+  const esc2=document.createElement('button');esc2.className='opt escape';esc2.textContent=escText||'不太清楚';
+  esc2.onclick=()=>{
+    if(s.done)return;
+    esc2.disabled=true;
+    card.querySelectorAll('.opt').forEach(x=>x.disabled=true);
+    appendLive(el,'u',esc2.textContent);
+    if(escText==='其他'){ /* 选「其他」：用户画像里没有家庭成员信息，仍需继续问年龄与场景 */
+      s.answers.push('其他');s.step++;
+      appendLive(el,'b','好的，那我按通用的方式继续帮您挑～');
+      setTimeout(()=>fuAsk(el),350);
+    }else{
+      /* 逃生口统一记为「场景不明确」，推荐时按人群兜底 */
+      s.answers.push(escText==='不太清楚'?'场景不明确':escText);s.step=99;
+      appendLive(el,'b','好的，交给我！结合您的情况，我优先从覆盖面更广、人群适配度高的方案挑起～');
+      setTimeout(()=>fuFinish(el),700);
+    }
+  };
+  card.appendChild(esc2);
+  el.appendChild(card);el.scrollTop=1e6;
+}
+/* 按画像匹配推荐产品：孩子→学平险；父母长辈→防癌险；出行→运动险；其余（含其他/场景不明确）→百万医疗 */
+function pickRec(s){
+  const a=s.answers;const who=a[0]||'自己';const sc=a[2]||'';
+  if(who==='孩子')return{n:'白鸽-关爱学生保险',slogan:'关爱学生刻不容缓',hl:'意外+疾病住院医疗+重疾保障',price:'100.00',cls:'yellow',badge:'推荐'};
+  if(who==='父母长辈')return{n:'中老年人防癌险',slogan:'给爸妈的安心保障',hl:'确诊癌症住院可报销，含特药责任',price:'1020.00',cls:'',badge:'推荐'};
+  if(sc==='出行旅行')return{n:'平安白鸽运动保险（互联网版）',slogan:'出行运动全覆盖',hl:'意外身故伤残 50 万 + 意外医疗 5 万',price:'3.00',cls:'',badge:'热销'};
+  return{n:'白鸽百万医疗保障计划',slogan:'大额医疗支出有依靠',hl:'住院医疗报销最高 400 万，免赔额 1 万，30 天-65 周岁可投',price:'137.00',cls:'',badge:'推荐'};
+}
+function fuFinish(el){
+  const s=el.__fu;
+  s.done=true;
+  const rec=pickRec(s);
+  /* 匹配结果合并为 1 条消息：文字 + 产品卡 + 预算调整入口同处一个气泡 */
+  const row=document.createElement('div');row.className='msg-row';
+  row.innerHTML='<div class="avatar"><img src="avatar-head.png" alt="小白"></div>'+
+    '<div class="bubble" style="flex:1;max-width:100%;">信息收集完毕，为您匹配到以下产品：'+
+    '<div class="pcard" style="margin:10px 0;"><div class="banner '+rec.cls+'"><div><div class="bt">'+rec.n+'</div><div class="bs">'+rec.slogan+'</div></div><div class="badge">'+rec.badge+'</div></div>'+
+    '<div class="rows"><div class="row"><span class="k">适配画像</span><span class="v">'+(s.answers.slice(0,3).join(' · ')||'按您的描述')+'</span></div>'+
+    '<div class="row"><span class="k">核心亮点</span><span class="v">'+rec.hl+'</span></div>'+
+    '<div class="row"><span class="k">保费参考</span><span class="v"><b>'+rec.price+'</b> 起</span></div></div>'+
+    '<button class="pc-btn">立即选购</button></div>'+
+    '觉得不合适？<span class="em">告诉我预算我重新挑</span>～'+
+    '<div class="fb-bar" data-target="'+rec.n+'"></div></div>';
+  row.querySelector('.pc-btn').onclick=()=>switchScreen('recommend');
+  el.appendChild(row);el.scrollTop=1e6;
+  mountFbBars(el);
+}
+function fuUserText(el,text){
+  if(el.__fu)el.__fu.done=true;
+  appendLive(el,'u',esc(text));
+  appendLive(el,'b','好的，我们直接聊～引导追问已停止，切换到自由对话。您可以继续描述需求，比如「想给爸爸买份防癌险」。');
+}
+$('#fu-send').onclick=()=>{const v=$('#fu-input').value.trim();if(v){$('#fu-input').value='';$('#fu-send').classList.remove('show');fuUserText($('#chat-fu'),v);}};
+$('#fu-input').addEventListener('keydown',e=>{if(e.key==='Enter')$('#fu-send').click();});
+buildChips($('#fu-chips'),globalChip);
+
+/* ================================================================
+   4/5 站内 / 外跳产品卡
+   ================================================================ */
+/* 产品详情复用外层小程序导航：标题显示产品名，返回键关闭浮层 */
+function openDetail(name){
+  $('#nav-title').textContent=name;
+  const nl=$('#nav-left');nl.innerHTML='‹';nl.onclick=closeDetail;
+  $('#ov-detail').classList.add('show');
+}
+function closeDetail(){
+  $('#ov-detail').classList.remove('show');
+  restoreNav();
+}
+$('#btn-buy-in').onclick=()=>{ openDetail('白鸽-关爱学生保险'); };
+$('#dt-buy').onclick=()=>toast('演示原型：跳转投保流程（详见 V1.2 投保链路）');
+/* 方案 Tab */
+const PLANS=[['小学及以上A款','200元'],['幼儿园A款','200元'],['小学及以上B款','150元'],['幼儿园B款','150元'],['小学及以上C款','100元'],['幼儿园C款','100元']];
+(function(){
+  const box=$('#plan-tabs');
+  PLANS.forEach((p,i)=>{
+    const b=document.createElement('button');b.className='plan-tab'+(i===5?' active':'');
+    b.innerHTML=p[0]+'<div class="pv">'+p[1]+'</div>';
+    b.onclick=()=>{box.querySelectorAll('.plan-tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');
+      $('#dt-price').textContent='¥'+p[1].replace('元','')+'.00';
+      const map={'200':'80,000','150':'50,000','100':'30,000'};
+      $('#duty-1').textContent=map[p[1].replace('元','')]+' 元';
+    };
+    box.appendChild(b);
+  });
+})();
+$('#btn-copy-link').onclick=()=>toast('链接已复制，请粘贴到浏览器打开');
+
+/* rec / ext / cmp / err 简易发送 */
+[['rec','#chat-rec'],['ext','#chat-ext'],['cmp','#chat-cmp'],['err','#chat-err']].forEach(([k,sel])=>{
+  const input=$('[data-chat="'+k+'"]'),send=$('[data-send="'+k+'"]');
+  if(!input)return;
+  const go=()=>{const v=input.value.trim();if(!v)return;input.value='';
+    const row=document.createElement('div');row.className='msg-row u';
+    row.innerHTML='<div class="avatar uav">🧑</div><div class="bubble">'+esc(v)+'</div>';
+    $(sel).appendChild(row);$(sel).scrollTop=1e6;
+    showTyping($(sel),()=>{const r2=document.createElement('div');r2.className='msg-row';
+      r2.innerHTML='<div class="avatar"><img src="avatar-head.png" alt="小白"></div><div class="bubble">收到～本屏为固定演示流程，您可以点击上方芯片或屏幕导航继续体验其他功能。</div>';
+      $(sel).appendChild(r2);$(sel).scrollTop=1e6;});
+  };
+  send.onclick=go;input.addEventListener('keydown',e=>{if(e.key==='Enter')go();});
+});
+
+/* ================================================================
+   6. 产品对比（四、产品对比 + 五、回复组件化）
+   ================================================================ */
+const CMP_PRODUCTS={
+  '意外防护':['平安白鸽运动保险（互联网版）','白鸽-富邦两岸通保（互联网版）','白鸽体育活动意外险','可意保家庭成员意外险','白鸽-富邦台青居无忧（互联网版）'],
+  '出行旅行':['境内旅行保障计划','亚太旅行险','欧洲申根签证保险','全球旅行险尊享版','留学延期无忧'],
+  '医疗健康':['白鸽百万医疗保障计划','E生平安防癌宝','中老年人防癌险','京彩一生百万医疗','少儿住院万元护']
+};
+const CMP_DATA={
+  '白鸽百万医疗保障计划':{'承保公司':'众安在线财产保险','投保年龄':'30 天-65 周岁','保障期限':'1 年','免赔额':'1 万（一般医疗）','报销比例':'100%（经社保）','保费':'137 元 / 年','适合人群':'追求高额住院报销的健康人群'},
+  'E生平安防癌宝':{'承保公司':'平安健康保险','投保年龄':'28 天-70 周岁','保障期限':'1 年','免赔额':'0 / 2 万可选','报销比例':'100%（癌症医疗）','保费':'9 元起 / 年','适合人群':'关注癌症保障、年龄偏大人群'}
+};
+let cmpSel=[];
+function openCmpSheet(){ $('#mask-cmp').classList.add('show');$('#sheet-cmp').classList.add('show');renderCmpTabs();renderCmpList('意外防护'); }
+function closeCmpSheet(){ $('#mask-cmp').classList.remove('show');$('#sheet-cmp').classList.remove('show'); }
+$('#cmp-x').onclick=closeCmpSheet;
+$('#mask-cmp').onclick=closeCmpSheet;
+function renderCmpTabs(){
+  const box=$('#cmp-tabs');box.innerHTML='';
+  /* 责任保障仅 1 款，凑不齐 2 个可比对象，弹窗不展示该标签 */
+  Object.keys(CMP_PRODUCTS).forEach((k,i)=>{
+    const b=document.createElement('button');b.className='cat-tab'+(i===0?' active':'');b.textContent=k;
+    b.onclick=()=>{box.querySelectorAll('.cat-tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');
+      cmpFilter='';renderCmpList(k);};
+    box.appendChild(b);
+  });
+}
+let cmpFilter='';
+function renderCmpList(cat){
+  const box=$('#cmp-list');box.innerHTML='';
+  CMP_PRODUCTS[cat].filter(p=>!cmpFilter||p.includes(cmpFilter)).forEach(p=>{
+    const d=document.createElement('div');d.className='pick';
+    const sel=cmpSel.includes(p);
+    if(sel)d.classList.add('sel');
+    if(!sel&&cmpSel.length>=2)d.classList.add('dis'); /* 选满置灰 */
+    d.innerHTML='<span>'+p+'</span><span class="cb">'+(sel?'✓':'')+'</span>';
+    d.onclick=()=>{
+      if(d.classList.contains('dis'))return;
+      if(sel){cmpSel=cmpSel.filter(x=>x!==p);}
+      else{if(cmpSel.length>=2)return;cmpSel.push(p);}
+      renderCmpList(cat);renderCmpTags();
+    };
+    box.appendChild(d);
+  });
+  if(!box.children.length)box.innerHTML='<div class="pol-empty">未找到相关产品</div>';
+}
+function renderCmpTags(){
+  const box=$('#cmp-tags');box.innerHTML='';
+  cmpSel.forEach(p=>{
+    const t=document.createElement('span');t.className='sel-tag';
+    t.innerHTML=p+' <span class="x">✕</span>';
+    t.querySelector('.x').onclick=()=>{cmpSel=cmpSel.filter(x=>x!==p);renderCmpTabs.lastCat=renderCmpTabs.lastCat||'意外防护';renderCmpList(renderCmpTabs.lastCat);renderCmpTags();};
+    box.appendChild(t);
+  });
+  const btn=$('#cmp-go');
+  btn.disabled=cmpSel.length!==2; /* 不足 2 个时对比按钮禁用 */
+  btn.textContent=cmpSel.length<2?('已选 '+cmpSel.length+'/2 · 再选 '+(2-cmpSel.length)+' 款'):'帮我比';
+}
+$('#cmp-search').addEventListener('input',e=>{
+  cmpFilter=e.target.value.trim();
+  const active=$('#cmp-tabs .cat-tab.active');
+  renderCmpList(active?active.textContent:'意外防护');
+});
+$('#cmp-go').onclick=()=>{
+  if(cmpSel.length!==2)return;
+  const [a,b]=cmpSel;
+  cmpSel=[];
+  closeCmpSheet();
+  const el=$('#chat-cmp');
+  appendLive(el,'u','请帮我整体对比'+a+'和'+b);
+  showTyping(el,()=>{
+    const da=CMP_DATA[a]||{},db=CMP_DATA[b]||{};
+    /* 对比结果合并为 1 条消息 */
+    const row=document.createElement('div');row.className='msg-row';
+    row.innerHTML='<div class="avatar"><img src="avatar-head.png" alt="小白"></div><div class="bubble wide">'+
+      '好的，这两款都是保险公司承保的医疗险，但定位不同，帮您从几个关键维度对比：'+
+      '<div class="cmp-scroll"><table class="cmp-table"><tr><th>对比项</th><th>'+a+'</th><th>'+b+'</th></tr>'+
+      ['承保公司','投保年龄','保障期限','免赔额','报销比例','保费','适合人群'].map(k=>'<tr><td class="dim">'+k+'</td><td>'+(da[k]||'—')+'</td><td>'+(db[k]||'—')+'</td></tr>').join('')+
+      '</table></div><div class="cmp-hint">表格可左右横滑</div>'+
+      '<div style="margin-top:10px;"><b>核心差异：</b></div>'+
+      '<ul><li><b>保障广度：</b><span class="lnk">'+a+'</span> 覆盖一般疾病住院，不限病种，实用性更强；<span class="lnk">'+b+'</span> 只保癌症相关治疗，但投保年龄放宽到 70 周岁，健康告知也更宽松。</li>'+
+      '<li><b>续保稳定性：</b>两款在癌症保障上均可续保；'+a.split('（')[0]+' 的一般医疗保障为 20 年保证续保，防癌医疗险则无一般医疗保障。</li>'+
+      '<li><b>价格：</b>防癌医疗险保费约为百万医疗的一半，适合预算有限或买不了百万医疗险的人群。</li></ul>'+
+      '<b>总结：</b>您目前没有大额住院医疗保障，<span class="lnk">'+a+'</span> 保障更全面，一般疾病住院也能赔，更适合作为基础保障；<span class="lnk">'+b+'</span> 更适合年龄偏大、有慢病或买不了百万医疗险的情况。'+
+      '综合来看，您本人更推荐 <span class="lnk">'+a+'</span>。<div style="font-size:11px;color:var(--ink-3);margin-top:4px;">建议仅供参考，保险保障详情以保险合同为准</div>'+
+      '<div class="reccard"><div class="rt">为您推荐以下产品</div><div class="rname">'+a+'</div><div class="rtags"><span class="rtag" style="background:#FFF1E5;color:#C26A1B;">众安保险 · 全网不怕比</span><span class="rtag" style="background:#EAF3FF;color:#1A66FF;">♥ 安心赔</span></div>'+
+      '<div class="rrow"><span class="k">保额</span><span class="v">400万</span></div><div class="rrow"><span class="k">报销范围</span><span class="v">住院医疗费</span></div><div class="rrow"><span class="k">保证续保</span><span class="v">最长20年</span></div>'+
+      '<div class="rfoot"><span class="price">11.42元 起</span><button class="go">去看看</button></div></div>'+
+      '这两款里您更看重保障全面性，还是更在意保费预算和投保门槛？'+
+      '<div class="fb-bar"></div>'+
+      '</div>';
+    el.appendChild(row);
+    row.querySelector('.go').onclick=()=>toast('演示原型：跳转「'+a+'」详情页');
+    mountFbBars(el); /* 点赞/踩：点亮动效 + 反馈弹窗 */
+    /* 停在新消息开头附近，不直接跳到最底 */
+    const cr=el.getBoundingClientRect(),rr=row.getBoundingClientRect();
+    el.scrollTop+=rr.top-cr.top-66;
+  });
+};
+
+/* ================================================================
+   7. 我的保单（六、我的保单）
+   ================================================================ */
+const POL_DATA={
+  self:[
+    {n:'白鸽百万医疗保障计划',c:'众安在线财产保险',p:'2026-01-10 至 2027-01-09',st:['保障中','st-ok'],a:'137 元/年',intro:'住院医疗报销，最高 400 万，免赔额 1 万',rel:'本人',no:'1025500660139026331',plan:'标准版',duties:[['一般医疗（含住院）','400 万'],['重疾医疗保险金','400 万'],['特殊门诊医疗','100 万'],['门诊手术医疗','100 万']]},
+    {n:'平安白鸽运动保险（互联网版）',c:'中国平安财产保险',p:'2026-09-01 至 2026-09-30',st:['即将到期','st-warn'],a:'3 元',intro:'意外身故伤残 50 万 + 意外医疗 5 万',rel:'本人',no:'10255006601390263371',plan:'经典版',duties:[['意外身故、伤残','10 万元'],['意外伤害医疗','1.5 万元'],['意外住院津贴','100 元/天'],['扩展高风险运动意外身故、伤残','10 万元'],['扩展高风险运动意外医疗','1.5 万元']]}
+  ],
+  spouse:[{n:'中老年人防癌险',c:'华泰财产保险',p:'2025-11-02 至 2026-11-01',st:['保障中','st-ok'],a:'1020 元/年',intro:'确诊癌症住院可报销，含特药责任',rel:'配偶',no:'10255006601390263352',plan:'增强版',duties:[['癌症住院医疗','200 万'],['癌症确诊保险金','5 万'],['质子重离子医疗','100 万'],['抗癌特药费用','50 万']]}],
+  mother:[{n:'老年人骨折险',c:'华泰财产保险',p:'2025-09-20 至 2026-09-19',st:['已到期','st-dead'],a:'68 元/年',intro:'意外骨折医疗 + 住院津贴',rel:'父母',no:'10255006601390263353',plan:'基础版',duties:[['意外骨折医疗','2 万'],['骨折住院津贴','80 元/天'],['意外身故伤残','5 万']]}],
+  child:[{n:'白鸽-关爱学生保险（幼儿园C款）',c:'华泰财产保险',p:'2026-09-01 至 2027-08-31',st:['保障中','st-ok'],a:'100 元/年',intro:'意外 + 疾病住院医疗 + 重疾保障',rel:'子女',no:'10255006601390263354',plan:'幼儿园C款',duties:[['意外身故、伤残','8 万'],['疾病住院医疗','30 万'],['重大疾病保险金','10 万'],['意外伤害医疗','1 万']]}]
+};
+const UPL_DATA=[
+  {n:'平安e生保长期医疗',t:'09-20 14:32 上传',st:['保障中','st-ok'],p:'2026-03-20 至 2027-03-19',intro:'一般疾病住院医疗报销，最高 200 万',file:'pdf · 3.1MB',no:'UP20260920001'},
+  {n:'惠民保参保凭证',t:'09-19 09:10 上传',st:['即将到期','st-warn'],p:'2026-01-01 至 2026-09-30',intro:'住院与大病补充报销，惠民专属保障',file:'pdf · 1.2MB',no:'UP20260919002'},
+];
+/* 被保人信息（详情页演示数据） */
+const REL_META={
+  '本人':{insured:'林小满',gender:'女',age:'30 岁',occ:'互联网从业人员（内勤）',cert:'350722199909090022',phone:'18059880224'},
+  '配偶':{insured:'王志强',gender:'男',age:'35 岁',occ:'企业职员',cert:'350722199909090022',phone:'18059880225'},
+  '父母':{insured:'李桂芳',gender:'女',age:'62 岁',occ:'退休',cert:'350722199909090022',phone:'18059880226'},
+  '子女':{insured:'林乐乐',gender:'男',age:'5 岁',occ:'学龄前儿童',cert:'350722199909090022',phone:'—'}
+};
+/* 自动同步最近更新时间（模块级，点击「更新」后刷新） */
+let SYNC_TIME='09:02';
+function renderPolicies(){
+  const box=$('#pol-body');box.innerHTML='';
+  const bound=state.identity==='bound';
+  const h=(icon,color,txt,act)=>'<div class="pol-sec"><div class="pt"><span class="ic" style="background:'+color+'">'+icon+'</span>'+txt+'</div>'+(act||'')+'</div>';
+  /* 顶部入口 · 专属保险计划书 */
+  const entry=document.createElement('div');entry.className='pol-card';entry.style.cursor='pointer';
+  entry.innerHTML='<div class="pol-sec" style="margin:0;"><div class="pt" id="pol-report-open" style="cursor:pointer;"><span class="ic" style="background:linear-gradient(135deg,#D9A441,#B8792C);">📖</span>专属保险计划书<span style="margin-left:auto;color:var(--ink-3);font-size:16px;">›</span></div></div>';
+  box.appendChild(entry);
+  setTimeout(()=>{const o=$('#pol-report-open');if(o)o.onclick=()=>switchScreen('report');},0);
+  /* 区域一 · 自动同步（更新时间可手动刷新，SYNC_TIME 为模块级状态） */
+  const sec1=document.createElement('div');sec1.className='pol-card';
+  if(bound&&state.authGiven){
+    sec1.innerHTML=h('⇣','#1A66FF','自动同步 · 来自白鸽订单','<span class="act">已授权 · <span id="pol-sync-refresh" style="color:var(--blue);cursor:pointer;">↻ 更新</span></span>')+'<div class="updated" id="pol-sync-time">更新于 '+SYNC_TIME+'</div>';
+    const groups=[['本人 👤',POL_DATA.self],['配偶 💑',POL_DATA.spouse],['母亲 👵',POL_DATA.mother],['子女 🧒',POL_DATA.child]];
+    groups.forEach(([g,arr],gi)=>{
+      const gh=document.createElement('div');gh.className='ghead';
+      gh.innerHTML='<span class="gname">'+g+'</span><span class="gcnt">'+arr.length+' 张保单</span><span class="car open '+(gi>0?'':'')+'">›</span>';
+      const list=document.createElement('div');
+      const open=gi===0;
+      list.style.display=open?'block':'none';
+      gh.querySelector('.car').style.transform=open?'rotate(90deg)':'rotate(0)';
+      gh.onclick=()=>{const o=list.style.display!=='none';list.style.display=o?'none':'block';gh.querySelector('.car').style.transform=o?'rotate(0)':'rotate(90deg)';};
+      arr.forEach(p=>{
+        const it=document.createElement('div');it.className='pol-item';
+        it.innerHTML='<div class="pi-l"><div class="pn">'+p.n+'<span class="rel-tag">'+p.rel+'</span></div>'+
+          '<div class="pm">保障期 '+p.p+'</div>'+
+          '<div class="pintro">'+p.intro+'</div>'+
+          '<div class="amt">保费 '+p.a+' · '+p.c+'</div></div>'+
+          '<div class="pi-r"><span class="st-chip '+p.st[1]+'">'+p.st[0]+'</span>'+
+          '<span class="pol-view" style="color:var(--blue);cursor:pointer;display:block;margin-top:8px;font-size:11px;">查看保单 ›</span></div>';
+        it.querySelector('.pol-view').onclick=e=>{e.stopPropagation();openPolicyDetail(p);};
+        list.appendChild(it);
+      });
+      sec1.appendChild(gh);sec1.appendChild(list);
+    });
+  }else{
+    sec1.innerHTML=h('⇣','#9AA3B5','自动同步 · 来自白鸽订单','')
+      +'<div class="pol-empty"><div class="big">📂</div><button class="mini-btn" id="pol-open-sync">'+(state.identity==='anon'?'绑定手机号并开启':'开启自动同步')+'</button><div class="auth-note" style="text-align:left;">开启后将查询您使用本手机号在白鸽投保的订单（保险公司、产品、保障期、缴费状态），用于保障分析和续保提醒。</div></div>';
+    setTimeout(()=>{const b=$('#pol-open-sync');if(b)b.onclick=()=>{
+      /* 授权直接在本页完成，不需要去对话里授权 */
+      if(state.identity==='anon'){ paContext='policies'; $('#ov-phoneauth').classList.add('show'); }
+      else{ state.authGiven=true;renderPolicies();toast('已开启自动同步，正在为您查询白鸽订单…'); }
+    };},0);
+  }
+  box.appendChild(sec1);
+  /* 区域二 · 手动上传：先填产品名称再上传文件；名称不展示扫描件/PDF/照片/JPG 等字样；支持查看与删除 */
+  const sec2=document.createElement('div');sec2.className='pol-card';
+  sec2.innerHTML=h('⇪','#12B76A','手动上传','<span class="act" id="pol-upload">＋ 上传</span>');
+  /* 上传表单（点＋上传展开） */
+  const upForm=document.createElement('div');upForm.style.cssText='display:none;padding:10px 12px 4px;';
+  upForm.innerHTML='<div style="font-size:12px;color:var(--ink-3);margin-bottom:6px;">第一步：填写保险产品名称</div>'+
+    '<input id="upl-name" maxlength="30" placeholder="如：平安e生保长期医疗" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px;outline:none;margin-bottom:10px;">'+
+    '<div style="font-size:12px;color:var(--ink-3);margin-bottom:6px;">第二步：上传保单文件（PDF / 图片，≤10MB）</div>'+
+    '<div id="upl-file" style="border:1px dashed var(--blue);border-radius:10px;padding:12px;text-align:center;font-size:13px;color:var(--blue);cursor:pointer;">📄 点击选择文件</div>'+
+    '<button class="mini-btn" id="upl-go" style="width:100%;margin-top:10px;">确认上传</button>';
+  sec2.appendChild(upForm);
+  /* 上传进度 */
+  const upDemo=document.createElement('div');upDemo.style.cssText='padding:2px 12px 14px;display:none;';
+  upDemo.innerHTML='<div class="upl-item" style="margin:0 0 8px;"><div style="flex:1;"><div class="un" id="up-name">—</div><div class="ut">上传中 · <span id="up-meta">—</span></div><div class="prgs"><i id="up-prg"></i></div></div></div>';
+  sec2.appendChild(upDemo);
+  const renderUpl=()=>{
+    sec2.querySelectorAll('.upl-item.upl-real').forEach(x=>x.remove());
+    UPL_DATA.forEach((u,i)=>{
+      const it=document.createElement('div');it.className='upl-item upl-real';
+      it.innerHTML='<div style="flex:1;"><div class="un">'+u.n+'<span class="st-chip '+u.st[1]+'" style="margin-left:6px;">'+u.st[0]+'</span></div>'+
+        '<div class="pm" style="font-size:11px;color:var(--ink-2);margin-top:2px;">保障期 '+u.p+'</div>'+
+        '<div class="pintro">'+u.intro+'</div>'+
+        '<div class="ut">'+u.t+(u.file?' · '+u.file:'')+' · <span class="upl-view" data-i="'+i+'" style="color:var(--blue);cursor:pointer;">查看文件</span> · <span class="upl-del" data-i="'+i+'" style="color:var(--red);cursor:pointer;">删除</span></div></div>';
+      sec2.appendChild(it);
+    });
+    sec2.querySelectorAll('.upl-del').forEach(d=>d.onclick=e=>{
+      e.stopPropagation();
+      askDelUpload(+d.dataset.i);
+    });
+    sec2.querySelectorAll('.upl-view').forEach(v=>v.onclick=e=>{
+      e.stopPropagation();
+      const u=UPL_DATA[+v.dataset.i];if(u)openFileView(u);
+    });
+  };
+  renderUpl();
+  box.appendChild(sec2);
+  setTimeout(()=>{
+    /* 手动更新：立即重新查询名下保单与状态，刷新更新时间 */
+    const rf=$('#pol-sync-refresh');
+    if(rf)rf.onclick=()=>{
+      if(rf.dataset.busy)return;
+      rf.dataset.busy='1';rf.textContent='查询中…';
+      setTimeout(()=>{
+        const d=new Date();
+        SYNC_TIME=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+        renderPolicies();
+        const all=[].concat(POL_DATA.self,POL_DATA.spouse,POL_DATA.mother,POL_DATA.child);
+        const cnt={};all.forEach(p=>{const k=p.st[0];cnt[k]=(cnt[k]||0)+1;});
+        const desc=Object.keys(cnt).map(k=>k+' '+cnt[k]+' 张').join('，');
+        toast('已更新：名下共 '+all.length+' 张保单（'+desc+'）');
+      },1100);
+    };
+    const up=$('#pol-upload');
+    if(up)up.onclick=()=>{
+      upForm.style.display=upForm.style.display==='none'?'block':'none';
+      if(upForm.style.display==='block'){if(upForm.scrollIntoView)upForm.scrollIntoView({behavior:'smooth',block:'center'});$('#upl-name').focus();}
+    };
+    const fsel=$('#upl-file');
+    if(fsel)fsel.onclick=()=>{
+      const nm=$('#upl-name').value.trim();
+      if(!nm){toast('请先填写保险产品名称');$('#upl-name').focus();return;}
+      fsel.textContent='📄 已选择：'+nm+'（演示文件 · pdf · 2.4MB）';
+      fsel.dataset.picked='1';
+    };
+    const go=$('#upl-go');
+    if(go)go.onclick=()=>{
+      const nm=$('#upl-name').value.trim();
+      if(!nm){toast('请先填写保险产品名称');$('#upl-name').focus();return;}
+      if(fsel.dataset.picked!=='1'){toast('请先选择要上传的文件');return;}
+      /* 名称清洗：去掉扫描件/PDF/照片/JPG 等文件字样 */
+      const clean=nm.replace(/（扫描件）|\(扫描件\)|扫描件|\.pdf|\.PDF|\.jpg|\.jpeg|\.png|\.JPG|\.PNG|照片|图片|扫描/g,'').trim()||nm;
+      upForm.style.display='none';fsel.dataset.picked='';
+      upDemo.style.display='block';
+      $('#up-name').textContent=clean;
+      $('#up-meta').textContent='pdf · 2.4MB';
+      let p=0;const iv=setInterval(()=>{p+=20;$('#up-prg').style.width=Math.min(p,100)+'%';
+        if(p>=100){clearInterval(iv);upDemo.style.display='none';
+          UPL_DATA.push({n:clean,t:'刚刚上传',st:['保障中','st-ok'],p:'2026-10-08 至 2027-10-07',intro:'保障责任以保单文件内容为准，可点击查看文件',file:'pdf · 2.4MB'});
+          renderUpl();
+          $('#upl-name').value='';
+          toast('上传成功：'+clean);}
+      },220);
+    };
+  },0);
+}
+/* 保单详情（订单详情）：全屏浮层，字段结构参考白鸽订单详情页 */
+function openPolicyDetail(p){
+  const m=REL_META[p.rel]||REL_META['本人'];
+  const payT='2026-10-08 11:40:50',payNo='261008567570970'+(p.no.length%10);
+  const row=(k,v,blue)=>'<div style="display:flex;justify-content:space-between;gap:12px;padding:11px 2px;border-bottom:1px solid #F0F2F7;font-size:13px;"><span style="color:var(--ink-3);flex-shrink:0;">'+k+'</span><span style="text-align:right;'+(blue?'color:var(--blue);':'')+'">'+v+'</span></div>';
+  const sec=t=>'<div style="display:flex;align-items:center;gap:6px;font-size:15px;font-weight:700;margin:18px 0 4px;"><span style="width:4px;height:16px;border-radius:2px;background:var(--blue);"></span>'+t+'</div>';
+  $('#pl-body').innerHTML=
+    '<div style="background:linear-gradient(135deg,#3D7BFF,#1A66FF);border-radius:0 0 16px 16px;color:#fff;padding:18px 18px 22px;position:relative;">'+
+      '<div style="font-size:19px;font-weight:800;">'+p.n+'</div>'+
+      '<div style="font-size:12px;opacity:.9;margin-top:6px;">保单号：'+p.no+'</div>'+
+      '<div style="position:absolute;right:16px;top:16px;border:1.5px solid rgba(255,255,255,.8);border-radius:14px;padding:4px 12px;font-size:12px;font-weight:600;">已出单</div>'+
+    '</div>'+
+    '<div style="background:#fff;padding:4px 16px;">'+
+      row('保障期限',p.p.replace(/ /g,''))+
+      row('保障方案',p.plan||'经典版')+
+      row('投保人名称',m.insured)+
+      row('证件类型','身份证')+
+      row('证件号码',m.cert)+
+      row('手机号码',m.phone.replace(/^(\d{3})(\d{5})(\d{3})$/,'$1$2$3'),true)+
+      row('性别',m.gender)+
+      row('年龄',m.age)+
+    '</div>'+
+    sec('更多信息')+
+    '<div style="background:#fff;padding:4px 16px;">'+
+      row('被保人名称',m.insured)+
+      row('被保人证件类型','身份证')+
+      row('被保人证件号码',m.cert)+
+      row('被保人手机号码',m.phone,true)+
+      row('受益人','法定受益人')+
+      row('职业类别',m.occ)+
+    '</div>'+
+    sec('保障责任')+
+    '<div style="background:#fff;padding:8px 16px 12px;">'+
+      '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--ink-3);padding:8px 2px 6px;"><span>保障责任</span><span>保险金额</span></div>'+
+      p.duties.map(d=>'<div style="display:flex;justify-content:space-between;gap:12px;padding:10px 2px;border-top:1px solid #F0F2F7;font-size:13px;"><span>'+d[0]+'</span><span style="color:var(--ink-2);flex-shrink:0;">'+d[1]+' ∨</span></div>').join('')+
+    '</div>'+
+    sec('保费支付记录')+
+    '<div style="background:#EEF3FE;border-radius:12px;padding:12px 16px;margin:0 16px;">'+
+      row('支付时间',payT)+row('订单号',payNo)+row('支付保费',p.a)+
+    '</div>';
+  /* 详情页复用外层小程序导航：标题改「保单详情」，返回键关闭浮层回到我的保单 */
+  $('#nav-title').textContent='保单详情';
+  const nl=$('#nav-left');nl.innerHTML='‹';nl.onclick=closePolicyDetail;
+  $('#ov-policy').classList.add('show');
+  $('#pl-body').scrollTop=0;
+}
+function closePolicyDetail(){
+  $('#ov-policy').classList.remove('show');
+  restoreNav();
+}
+/* 恢复当前屏的导航标题与左侧按钮（详情浮层关闭后调用） */
+function restoreNav(){
+  $('#nav-title').textContent=SCREENS[state.screen].title;
+  const nl=$('#nav-left');
+  if(state.screen==='policies'||state.screen==='login'){nl.innerHTML='‹';nl.onclick=()=>{switchScreen('chat');};}
+  else if(state.screen==='report'){nl.innerHTML='‹';nl.onclick=()=>{switchScreen('policies');};}
+  else{nl.innerHTML=SVG_GEAR;nl.onclick=openDrawer;}
+}
+
+/* 文件预览（底部弹窗） */
+function openFileView(u){
+  $('#fv-name').textContent=u.n;
+  $('#fv-meta').textContent=(u.file||'pdf · 2.4MB')+' · '+u.t+' · '+u.p;
+  $('#fv-title').textContent=u.n;
+  $('#nav-title').textContent='文件预览';
+  const nl=$('#nav-left');nl.innerHTML='‹';nl.onclick=closeFileView;
+  $('#ov-fileview').classList.add('show');
+}
+function closeFileView(){
+  const was=$('#ov-fileview').classList.contains('show');
+  $('#ov-fileview').classList.remove('show');
+  if(was)restoreNav();
+}
+
+/* ================================================================
+   7a 专属保险计划书 + 8b 登录页
+   ================================================================ */
+function renderReport(){
+  /* 未授权：锁定态，仅可看到上传保单信息，引导微信一键授权 */
+  const unlocked=state.authGiven&&state.identity==='bound';
+  const lock=$('#rp-lock'),scroll=document.querySelector('#scr-report .pol-scroll');
+  if(lock)lock.classList.toggle('show',!unlocked);
+  if(scroll)scroll.style.filter=unlocked?'':'blur(7px)';
+  if(!unlocked){
+    const b=$('#rp-lock-auth');
+    if(b)b.onclick=()=>{paContext='report';$('#ov-phoneauth').classList.add('show');};
+    return;
+  }
+  const bound=state.identity==='bound';
+  const nick=accountNick();
+  $('#rp-greet').innerHTML=(bound?nick+'先生/女士':'您好')+'，很高兴为您服务！<br>我已为您整理好，您的<span style="color:#C9862B;font-weight:700;">家庭保险规划书</span>';
+  $('#rp-title').textContent=(bound?nick:'我的')+'专属保险计划书';
+  $('#rp-time').textContent='报告生成时间：'+new Date().toLocaleString('zh-CN',{hour12:false}).replace(/\//g,'-');
+  const g=$('#rp-go-rec');if(g)g.onclick=()=>switchScreen('recommend');
+  $$('#rp-recs .rp-rec').forEach(c=>c.onclick=()=>{openDetail(c.dataset.pn);});
+}
+let lgAgreed=false;
+function renderLogin(){
+  lgAgreed=false;
+  const c=$('#lg-check');c.style.background='transparent';c.style.color='transparent';
+  $('#lg-phone').value='';$('#lg-code').value='';$('#lg-reg').disabled=true;
+}
+$('#lg-agree').onclick=()=>{lgAgreed=!lgAgreed;const c=$('#lg-check');
+  c.style.background=lgAgreed?'var(--blue)':'transparent';c.style.color=lgAgreed?'#fff':'transparent';};
+$('#lg-sendcode').onclick=function(){
+  const ph=$('#lg-phone').value.trim();
+  if(!/^1\d{10}$/.test(ph)){toast('请先输入正确的手机号');return;}
+  let s=60;this.disabled=true;this.textContent=s+'s 后重发';
+  const iv=setInterval(()=>{s--;this.textContent=s+'s 后重发';
+    if(s<=0){clearInterval(iv);this.disabled=false;this.textContent='获取验证码';}},1000);
+  toast('验证码已发送（演示验证码 123456）');
+};
+function lgTryLogin(){
+  if(!lgAgreed){toast('请先勾选《用户协议》和《隐私政策》');
+    const c=$('#lg-check');c.classList.remove('shake');void c.offsetWidth;c.classList.add('shake');return;}
+  state.identity='bound';renderIdentity();
+  switchScreen('chat');
+  toast('登录成功，历史对话与保单已同步至本账户');
+}
+$('#lg-quick').onclick=lgTryLogin;
+$('#lg-reg').onclick=lgTryLogin;
+[$('#lg-phone'),$('#lg-code')].forEach(i=>i.addEventListener('input',()=>{
+  $('#lg-reg').disabled=!($('#lg-phone').value.trim().length===11&&$('#lg-code').value.trim().length===6);
+}));
+
+/* ================================================================
+   手机号授权浮层（一、账户与登录 · 微信一键授权 + 协议勾选）
+   ================================================================ */
+/* 微信风格手机号授权弹窗：点击加密手机号即授权 */
+let paContext='drawer';
+function paGrant(fromBtn){
+  $('#ov-phoneauth').classList.remove('show');
+  state.identity='bound';renderIdentity();
+  toast('已授权手机号 '+fromBtn+' · token 有效期 7 天，过期前 3 天静默续签');
+  /* 匿名数据合并 */
+  setTimeout(()=>toast('匿名期间的历史对话与已上传保单已自动合并至本账户，不丢失、不重复'),2400);
+  if(paContext==='policies'){state.authGiven=true;renderPolicies();}
+  else if(paContext==='drawer'){state.authGiven=true;renderDrawer();toast('已开启自动同步，正在为您查询白鸽订单…');}
+  else if(paContext==='report'){state.authGiven=true;renderReport();toast('已为您生成专属保险计划书');}
+}
+$('#pa-allow').onclick=()=>paGrant('180****5678');
+$('#pa-allow2').onclick=()=>paGrant('181****2233');
+$('#pa-deny').onclick=()=>{
+  $('#ov-phoneauth').classList.remove('show');
+  toast('已拒绝授权：继续以匿名身份使用，基础功能不受影响');
+  if(paContext==='policies')renderPolicies();
+  if(paContext==='report')renderReport();
+};
+
+/* ================================================================
+   8. 抽屉式设置（七、抽屉式设置）
+   ================================================================ */
+let personalized=true;
+/* 删除上传保单：二次确认，避免误删 */
+let delIdx=null;
+function askDelUpload(i){
+  delIdx=i;
+  const u=UPL_DATA[i];if(!u)return;
+  $('#del-txt').textContent='确认删除「'+u.n+'」？删除后该保单的解读结果将一并移除，且不可恢复。';
+  $('#confirm-del').classList.add('show');
+}
+$('#del-no').onclick=()=>{delIdx=null;$('#confirm-del').classList.remove('show');};
+$('#del-ok').onclick=()=>{
+  if(delIdx==null)return;
+  const name=UPL_DATA[delIdx].n;
+  UPL_DATA.splice(delIdx,1);delIdx=null;
+  $('#confirm-del').classList.remove('show');
+  renderPolicies();
+  toast('已删除「'+name+'」');
+};
+
+/* 更换手机号：验证码验证 或 微信一键获取（两个入口任选其一） */
+function openPhoneEdit(){
+  $('#pe-cur').textContent=accountPhone();
+  $('#pe-phone').value='';$('#pe-code').value='';
+  $('#ov-phoneedit').classList.add('show');
+}
+const maskPhone=p=>p.replace(/^(\d{3})\d{4}(\d{4})$/,'$1****$2');
+function setPhone(p){window.__phone=maskPhone(p);$('#ov-phoneedit').classList.remove('show');renderIdentity();toast('手机号已更新为 '+maskPhone(p));}
+$('#pe-send').onclick=function(){
+  const v=$('#pe-phone').value.trim();
+  if(!/^1\d{10}$/.test(v)){toast('请先输入正确的手机号');return;}
+  let s=60;this.disabled=true;this.textContent=s+'s 后重发';
+  const iv=setInterval(()=>{s--;this.textContent=s+'s 后重发';
+    if(s<=0){clearInterval(iv);this.disabled=false;this.textContent='获取验证码';}},1000);
+  toast('验证码已发送（演示验证码 123456）');
+};
+$('#pe-wx').onclick=()=>setPhone('13900001234');
+$('#pe-ok').onclick=()=>{
+  const p=$('#pe-phone').value.trim(),c=$('#pe-code').value.trim();
+  if(!/^1\d{10}$/.test(p)){toast('请先输入正确的手机号');return;}
+  if(c.length!==6){toast('请输入 6 位验证码');return;}
+  setPhone(p);
+};
+$('#pe-cancel').onclick=()=>$('#ov-phoneedit').classList.remove('show');
+
+/* 左侧抽屉式设置：我的保单 / 退出登录（匿名时为登录） */
+/* 账户实名昵称：登录后可在抽屉内直接编辑（≤10 字），不再单设个人档案页 */
+function accountNick(){
+  if(window.__nick&&window.__nick!=='未填写')return window.__nick;
+  return state.identity==='bound'?'林小满':'未填写';
+}
+/* 账户手机号：登录后可在抽屉内更换（验证码验证 / 微信一键获取） */
+function accountPhone(){
+  if(window.__phone)return window.__phone;
+  return state.identity==='bound'?'138****5678':'未绑定手机号';
+}
+/* 已知保单总数：已授权含白鸽订单 + 手动上传 */
+function totalPolicies(){
+  let n=UPL_DATA.length;
+  if(state.identity==='bound'&&state.authGiven){
+    n+=POL_DATA.self.length+POL_DATA.spouse.length+POL_DATA.mother.length+POL_DATA.child.length;
+  }
+  return n;
+}
+function renderDrawer(){
+  const b=$('#drawer-body');
+  const bound=state.identity==='bound';
+  const nick=accountNick();
+  const phone=accountPhone();
+  const cnt=totalPolicies();
+  b.innerHTML=
+    (bound
+      ? '<div class="drow"><span class="lab">姓名</span><input class="ipt" id="dw-name" maxlength="10" placeholder="10 个字以内" value="'+nick+'" style="max-width:150px;"></div>'+
+        '<div class="drow" id="dw-phone"><span class="lab">手机号</span><span style="color:var(--ink-2);font-size:13px;">'+phone+'</span><span class="arrow" style="color:var(--blue);">更换 ›</span></div>'
+      : '')+
+    '<div class="drow" id="dw-policies" style="cursor:pointer;"><span class="lab">我的保单</span><span style="color:var(--ink-3);font-size:12px;">'+(cnt>0?'已有 '+cnt+' 份保单':'暂无保单')+'</span><span class="arrow">›</span></div>'+
+    (bound
+      ?'<div class="drow" id="dw-logout" style="color:var(--red);"><span class="lab" style="color:var(--red);">退出登录</span><span class="arrow">›</span></div>'
+      :'<div class="drow" id="dw-login"><span class="lab" style="color:var(--blue);font-weight:600;">登录</span><span class="arrow">›</span></div>');
+  $('#dw-policies').onclick=()=>{closeDrawer();switchScreen('policies');};
+  const lo=$('#dw-logout');
+  if(lo)lo.onclick=()=>{$('#confirm-logout').classList.add('show');};
+  const lg=$('#dw-login');
+  if(lg)lg.onclick=()=>{closeDrawer();switchScreen('login');};
+  /* 姓名：点击即改，10 字以内，失焦即存 */
+  const ni=$('#dw-name');
+  if(ni){
+    ni.onclick=e=>e.stopPropagation();
+    const save=()=>{
+      let v=ni.value.trim().slice(0,10);
+      if(v.length>10)v=v.slice(0,10);
+      window.__nick=v||'未填写';
+      renderIdentity();
+    };
+    ni.addEventListener('blur',save);
+    ni.addEventListener('change',()=>{save();toast('姓名已保存（10 个字以内）');});
+    ni.addEventListener('input',()=>{if(ni.value.length>10)ni.value=ni.value.slice(0,10);});
+  }
+  const ph=$('#dw-phone');
+  if(ph)ph.onclick=()=>openPhoneEdit();
+}
+function openDrawer(){renderDrawer();$('#mask-drawer').classList.add('show');$('#drawer').classList.add('show');}
+function closeDrawer(){$('#mask-drawer').classList.remove('show');$('#drawer').classList.remove('show');}
+$('#mask-drawer').onclick=()=>{closeDrawer();$('#confirm-logout').classList.remove('show');};
+$('#drawer-x').onclick=closeDrawer;
+$('#lo-no').onclick=()=>$('#confirm-logout').classList.remove('show');
+$('#lo-ok').onclick=()=>{
+  $('#confirm-logout').classList.remove('show');closeDrawer();
+  state.identity='anon';state.authGiven=false;window.__nick=undefined;window.__age=undefined;window.__phone=undefined;renderIdentity();
+  toast('退出登录成功，已进入匿名状态');
+};
+
+/* ================================================================
+   快捷芯片统一分流（各屏固定四芯片共用）
+   ================================================================ */
+function globalChip(t){
+  if(t==='帮选保险'){
+    switchScreen('chat');
+    setTimeout(()=>{appendLive($('#chat-main'),'u','帮选保险');fuStartIn($('#chat-main'),true,'好的，我来帮您挑～先了解几个基本情况：');},280);
+  }else if(t==='保单解读'){
+    switchScreen('chat');
+    setTimeout(baodanFlow,280);
+  }else if(t==='对比产品'){
+    if(state.screen==='compare')openCmpSheet();
+    else switchScreen('compare'); /* 进入对比屏自动唤起弹窗 */
+  }else if(t==='术语咨询'){
+    switchScreen('chat');
+    setTimeout(()=>appendLive($('#chat-main'),'b','请问是哪个术语让您困惑呢，我会用最专业最通俗的话帮您解答哦～'),280);
+  }else if(t==='我要理赔'){
+    /* 理赔：先问为谁报案（本人 / 为他人） */
+    switchScreen('claim');
+    setTimeout(claimReset,200);
+  }
+}
+/* 保单解读：查询（自动同步 + 手动上传） → 底部弹窗选择 → 针对性解读 */
+function baodanFlow(){
+  const el=$('#chat-main');
+  appendLive(el,'u','保单解读');
+  showTyping(el,()=>{
+    const bound=state.authGiven&&state.identity==='bound';
+    /* 自动同步的订单 + 手动上传的保单，统一作为可解读对象 */
+    const synced=bound?[].concat(POL_DATA.self,POL_DATA.spouse,POL_DATA.mother,POL_DATA.child):[];
+    const upl=UPL_DATA.map(u=>({__upl:1,n:u.n,st:u.st,p:u.p,intro:u.intro,rel:'本人',t:u.t}));
+    const all=synced.concat(upl);
+    if(!all.length){
+      appendLive(el,'b','目前暂未查询到您的保单：请通过「我的保单」上传保单，或绑定手机号开启自动同步后再来解读～');
+      return;
+    }
+    appendLive(el,'b','已为您查询到 <b>'+all.length+'</b> 份保单，请选择本次要解读的保险～');
+    openReadSheet(all,p=>{
+      appendLive(el,'u','解读「'+p.n+'」');
+      showTyping(el,()=>{p.__upl?readUplDetail(el,p):baodanDetail(el,p);});
+    });
+  });
+}
+/* 手动上传保单的解读（无结构化条款，指引到文件正文） */
+function readUplDetail(el,u){
+  appendLive(el,'b',    '这是您'+esc(u.t||'此前上传')+'的「<b>'+u.n+'</b>」：'+
+    '<ul><li>保障期间：'+u.p+'</li><li>来源：手动上传的保单文件</li></ul>'+
+    '具体保障责任、报销规则与保额以保单文件正文为准；您可以在「我的保单」里随时打开这份文件查看～');
+  appendLive(el,'b','需要我继续说明哪一项？');
+}
+/* 保单解读 · 选择要解读的保险（底部弹窗） */
+function openReadSheet(list,onPick){
+  const box=$('#read-list');box.innerHTML='';
+  const tip=document.createElement('div');
+  tip.style.cssText='font-size:13px;color:var(--ink-2);margin-bottom:10px;';
+  tip.innerHTML='已为您匹配到 <b>'+list.length+'</b> 份保单，请选择本次要解读的保险';
+  box.appendChild(tip);
+  list.forEach(p=>{
+    const it=document.createElement('div');
+    it.style.cssText='display:flex;align-items:center;gap:10px;padding:12px 4px;border-bottom:1px solid var(--line);';
+    it.innerHTML='<div style="flex:1;min-width:0;">'+
+      '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span class="st-chip '+p.st[1]+'" style="font-size:10px;">'+p.st[0]+'</span><b style="font-size:13.5px;">'+p.n+'</b>'+(p.__upl?'<span class="st-chip st-dead" style="font-size:10px;">手动上传</span>':'')+'</div>'+
+      '<div style="font-size:11px;color:var(--ink-3);margin-top:3px;">被保人 '+(p.rel||'本人')+' · 保障期 '+p.p+'</div>'+
+      '<div style="font-size:12px;color:var(--ink-2);margin-top:2px;line-height:1.5;">'+p.intro+'</div></div>'+
+      '<button class="cmp-opt" style="padding:8px 14px;background:var(--blue);color:#fff;border-color:var(--blue);flex-shrink:0;">解读</button>';
+    it.querySelector('button').onclick=()=>{closeReadSheet();onPick(p);};
+    box.appendChild(it);
+  });
+  $('#mask-read').classList.add('show');
+  $('#sheet-read').classList.add('show');
+}
+function closeReadSheet(){$('#mask-read').classList.remove('show');$('#sheet-read').classList.remove('show');}
+$('#read-x').onclick=()=>{closeReadSheet();if(state.screen==='chat')appendLive($('#chat-main'),'b','好的，您可以随时点底部「保单解读」芯片再来解读～');};
+$('#mask-read').onclick=closeReadSheet;
+/* 选中保单后：详情卡（保险公司/投保对象/保障期限/保障天数 + 三个操作）+ 追问 */
+function baodanDetail(el,p){
+  const days=(()=>{const m=p.p.match(/(\d{4})-(\d{2})-(\d{2}).*(\d{4})-(\d{2})-(\d{2})/);
+    if(!m)return '—';const d1=new Date(+m[1],+m[2]-1,+m[3]),d2=new Date(+m[4],+m[5]-1,+m[6]);
+    return Math.max(1,Math.round((d2-d1)/86400000))+' 天';})();
+  const row=document.createElement('div');row.className='msg-row';
+  row.innerHTML='<div class="avatar" style="visibility:hidden"></div><div style="flex:1;display:flex;justify-content:flex-start;"><div class="cmp-wrap" style="width:300px;">'+
+    '<div style="font-weight:700;font-size:14px;margin-bottom:6px;">查询到您的保单</div>'+
+    '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;"><span class="st-chip '+p.st[1]+'" style="font-size:10px;">'+p.st[0]+'</span><b style="font-size:13px;">'+p.n+'</b></div>'+
+    '<div style="border-top:1px solid var(--line);">'+
+    '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line);font-size:12px;"><span style="color:var(--ink-3);">保险公司</span><span>'+p.c+'</span></div>'+
+    '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line);font-size:12px;"><span style="color:var(--ink-3);">投保对象</span><span>'+(p.rel==='本人'?accountNick():p.rel)+'</span></div>'+
+    '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line);font-size:12px;"><span style="color:var(--ink-3);">保障期限</span><span>'+p.p.replace(/ /g,'')+'</span></div>'+
+    '<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12px;"><span style="color:var(--ink-3);">保障天数</span><span>'+days+'</span></div></div>'+
+    '</div></div>';
+  el.appendChild(row);el.scrollTop=1e6;
+  appendLive(el,'b','保障期间为 '+p.p.replace(/ /g,'')+'，由'+p.c+'承保。需要我帮您查看这份保单的具体保障责任，还是有其他想了解的？');
+}
+
+/* ================================================================
+   9. 理赔身份核验（二、统一对话窗口 · 理赔身份核验）
+   ================================================================ */
+let claimMsgs=[],claimStep='ask';
+function claimReset(){
+  claimMsgs=[];claimStep='ask';
+  $('#chat-claim').innerHTML='';
+  closeClmSheet();
+  const t=document.createElement('div');t.className='ts-label';t.textContent='今天 '+$('#clock').textContent;
+  $('#chat-claim').appendChild(t);
+  claimBot('理赔报案前，小白需要先确认<b>为谁报案</b>。请问本次是为您本人报案，还是为他人报案呢？');
+  claimOptions(['本人报案','为他人报案']);
+}
+function claimBot(html){
+  const row=document.createElement('div');row.className='msg-row';
+  row.innerHTML='<div class="avatar"><img src="avatar-head.png" alt="小白"></div><div class="bubble">'+html+'</div>';
+  $('#chat-claim').appendChild(row);$('#chat-claim').scrollTop=1e6;
+}
+function claimTyping(done){
+  const row=document.createElement('div');row.className='msg-row';
+  row.innerHTML='<div class="avatar"><img src="avatar-head.png" alt="小白"></div><div class="bubble typing"><i></i><i></i><i></i></div>';
+  $('#chat-claim').appendChild(row);$('#chat-claim').scrollTop=1e6;
+  setTimeout(()=>{row.remove();done();},800);
+}
+/* loading 气泡：带文字的查询等待态，查询完成后整条移除 */
+function claimLoading(text,ms,done){
+  const row=document.createElement('div');row.className='msg-row';
+  row.innerHTML='<div class="avatar"><img src="avatar-head.png" alt="小白"></div><div class="bubble typing" style="color:var(--ink-2);font-size:13px;display:flex;align-items:center;gap:8px;">'+text+'<i></i><i></i><i></i></div>';
+  $('#chat-claim').appendChild(row);$('#chat-claim').scrollTop=1e6;
+  setTimeout(()=>{row.remove();done&&done();},ms||1500);
+}
+/* 底部弹窗：选择报案保单（每行右侧「报案」按钮） */
+function openClmSheet(list,insured){
+  const box=$('#clm-list');box.innerHTML='';
+  box.innerHTML='<div style="font-size:13px;color:var(--ink-2);margin-bottom:10px;">已匹配到被保险人 <b>'+esc(insured)+'</b> 的保单，请选择您本次想进行报案的保单</div>';
+  list.forEach(p=>{
+    const it=document.createElement('div');
+    it.style.cssText='display:flex;align-items:center;gap:10px;padding:12px 4px;border-bottom:1px solid var(--line);';
+    it.innerHTML='<div style="flex:1;">'+
+      '<div style="display:flex;align-items:center;gap:6px;"><span class="st-chip '+p.st[1]+'" style="font-size:10px;">'+p.st[0]+'</span><b style="font-size:13.5px;">'+p.n+'</b></div>'+
+      '<div style="font-size:11px;color:var(--ink-3);margin-top:3px;">保障期 '+p.p+' · '+p.c+'</div>'+
+      '<div style="font-size:12px;color:var(--ink-2);margin-top:2px;line-height:1.5;">'+p.intro+'</div></div>'+
+      '<button class="cmp-opt" style="padding:8px 14px;background:var(--blue);color:#fff;border-color:var(--blue);">报案</button>';
+    it.querySelector('button').onclick=()=>{
+      closeClmSheet();
+      claimUser('使用「'+p.n+'」报案');
+      claimStep='time';
+      claimTyping(()=>{
+        claimBot('好的，本次使用「'+p.n+'」报案。请描述本次出险情况：出险时间是什么时候？');
+        claimOptions(['2026-09-20 上午','2026-09-21 下午','记不清了'],claimTimePicked);
+      });
+    };
+    box.appendChild(it);
+  });
+  $('#mask-clm').classList.add('show');
+  $('#sheet-clm').classList.add('show');
+}
+function closeClmSheet(){$('#mask-clm').classList.remove('show');$('#sheet-clm').classList.remove('show');}
+$('#clm-x').onclick=closeClmSheet;
+$('#mask-clm').onclick=closeClmSheet;
+/* 选项卡片：handler 决定该轮点选后走哪一步，避免后续步骤被误接回身份核验 */
+function claimOptions(opts,handler){
+  const card=document.createElement('div');card.className='opt-card';
+  opts.forEach(o=>{
+    const b=document.createElement('button');b.className='opt';b.textContent=o;
+    b.onclick=()=>{card.querySelectorAll('.opt').forEach(x=>x.disabled=true);
+      claimUser(o);(handler||claimPick)(o);};
+    card.appendChild(b);
+  });
+  $('#chat-claim').appendChild(card);$('#chat-claim').scrollTop=1e6;
+}
+function claimUser(text){
+  const row=document.createElement('div');row.className='msg-row u';
+  row.innerHTML='<div class="avatar uav">🧑</div><div class="bubble">'+esc(text)+'</div>';
+  $('#chat-claim').appendChild(row);$('#chat-claim').scrollTop=1e6;
+}
+function claimPick(o){
+  claimTyping(()=>{
+    if(o==='本人报案'){
+      if(state.identity==='bound'){
+        /* 已登录：loading 查询名下保单 → 移除 loading → 底部弹窗选择 */
+        claimStep='querying';
+        claimLoading('正在查询您名下的保单，请耐心等待…',1600,()=>{
+          claimBot('已匹配到被保险人 <b>'+accountNick()+'</b> 的保单，请选择您本次想进行报案的保单');
+          openClmSheet(POL_DATA.self,accountNick());
+          claimStep='choosePolicy';
+        });
+      }else{
+        /* 匿名未绑定：会话内引导填写，无快捷按钮 */
+        claimId={name:'',id:'',scene:'本人报案'};
+        claimStep='needId';
+        claimBot('您的账户还未绑定手机号，无法自动匹配身份信息。本次报案须先获取被保险人的姓名 + 身份证号，才能查询到相应的订单信息。<br>请直接在下方输入框发送，格式：<b>姓名，身份证号</b>，例如：<b>张三，350722199909090022</b>');
+      }
+    }else{
+      /* 为他人报案：一律会话内填写姓名 + 身份证号，无快捷按钮 */
+      claimId={name:'',id:'',scene:'为他人报案'};
+      claimStep='needId';
+      claimBot('请先填写被保险人的姓名 + 身份证号用于查询保单信息。<br>请直接在下方输入框发送，格式：<b>姓名，身份证号</b>，例如：<b>张三，350722199909090022</b>');
+    }
+  });
+}
+function claimTimePicked(o){
+  claimStep='reason';
+  claimTyping(()=>{
+    claimBot('收到，出险时间记为 <b>'+o+'</b>。请问出险原因是？');
+    claimOptions(['意外摔倒','疾病住院','交通事故'],claimReasonPicked);
+  });
+}
+function claimReasonPicked(o){
+  claimStep='done';
+  claimTyping(()=>{
+    claimBot('已记录：<b>'+o+'</b>。报案信息已提交，受理号 <b>LP20260929001</b>，请补充以下材料后等待审核：<br>· 门诊/住院病历与费用清单<br>· 费用发票原件<br>· 被保险人身份证正反面<br><br>材料可在对话里直接发给我～');
+  });
+}
+/* 会话内收集姓名 + 身份证号：记录场景，核对通过后按身份查询保单并弹底部选择 */
+let claimId={name:'',id:'',scene:''};
+$('#claim-send').onclick=()=>{
+  const v=$('#claim-input').value.trim();if(!v)return;
+  $('#claim-input').value='';
+  claimUser(esc(v));
+  if(claimStep==='needId'){
+    claimTyping(()=>{
+      const parts=v.replace(/[，,]/g,',').split(',');
+      const name=(parts[0]||'').trim(),id=(parts[1]||'').trim();
+      if(!name||!/^\d{17}[\dXx]$/.test(id)){
+        claimBot('没有识别到完整信息～请按 <b>姓名，身份证号</b> 的格式发送，例如：张三，350722199909090022（身份证号 18 位）。');
+        return;
+      }
+      claimId={name:name,id:id,scene:claimId.scene||'为他人报案'};
+      claimStep='confirmId';
+      claimBot('已收到，请核对：<br>· 姓名：<b>'+esc(name)+'</b><br>· 身份证号：<b>'+esc(id)+'</b>（原样回显，可重新填写修改）');
+      claimOptions(['确认无误，继续理赔','重新填写'],claimIdQuick);
+    });
+    return;
+  }
+  claimTyping(()=>claimBot('收到～理赔流程中如需补充材料或修改信息，随时告诉我。'));
+};
+function claimIdQuick(o){
+  if(o==='确认无误，继续理赔'){
+    claimStep='querying';
+    claimLoading('正在查询被保险人名下的保单，请耐心等待…',1600,()=>{
+      const insured=claimId.name;
+      claimBot('已匹配到被保险人 <b>'+esc(insured)+'</b> 的保单，请选择您本次想进行报案的保单');
+      /* 演示：为本人用本人在保保单，为他人用家庭成员保单 */
+      const list=claimId.scene==='为他人报案'?[].concat(POL_DATA.mother,POL_DATA.child):POL_DATA.self;
+      openClmSheet(list,insured);
+      claimStep='choosePolicy';
+    });
+    return;
+  }
+  if(o==='重新填写'){
+    claimStep='needId';
+    claimBot('请重新发送，格式：<b>姓名，身份证号</b>，例如：<b>张三，350722199909090022</b>');
+  }
+}
+$('#claim-input').addEventListener('keydown',e=>{if(e.key==='Enter')$('#claim-send').click();});
+/* 推荐消息反馈：点赞（高亮+动效）/ 踩（弹窗选原因） */
+const FB_OPTIONS=['推荐的产品不符合我的需求','保障内容看不明白','保费超出我的预算','想看看其他产品','信息不够详细','其他原因（可补充说明）'];
+function mountFbBars(root){
+  root.querySelectorAll('.fb-bar').forEach(bar=>{
+    if(bar.dataset.ready)return;bar.dataset.ready='1';
+    const up=document.createElement('button');up.className='fb';up.textContent='👍';up.title='点个赞';
+    const down=document.createElement('button');down.className='fb';down.textContent='👎';down.title='不满意';
+    up.style.position='relative';down.style.position='relative';
+    up.onclick=()=>{
+      if(up.classList.contains('on-up')||down.classList.contains('on-down'))return;
+      up.classList.add('on-up');
+      heartBurst(up); /* 爱心飘散特效 */
+    };
+    down.onclick=()=>{
+      if(up.classList.contains('on-up')||down.classList.contains('on-down'))return;
+      openFbSheet(()=>down.classList.add('on-down'));
+    };
+    bar.append(up,down);
+  });
+}
+/* 点赞时冒出爱心粒子 */
+function heartBurst(btn){
+  const glyphs=['❤️','💖','💗'];
+  for(let i=0;i<3;i++){
+    const h=document.createElement('span');h.className='heart-fly';h.textContent=glyphs[i];
+    h.style.left=(4+Math.random()*16)+'px';
+    h.style.animationDelay=(i*0.13)+'s';
+    btn.appendChild(h);
+    setTimeout(()=>h.remove(),1200);
+  }
+}
+let fbDone=null;
+function openFbSheet(onDone){
+  fbDone=onDone||null;
+  const list=$('#fb-list');list.innerHTML='';
+  FB_OPTIONS.forEach((o,i)=>{
+    const b=document.createElement('button');b.className='fb-opt';
+    b.innerHTML='<span class="radio"></span>'+o;
+    b.onclick=()=>{list.querySelectorAll('.fb-opt').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+      /* 选「其他原因」时展开 100 字补充输入框 */
+      const box=$('#fb-other-box');
+      if(box)box.style.display=o.includes('其他原因')?'block':'none';
+    };
+    list.appendChild(b);
+  });
+  /* 其他原因补充说明（≤100 字） */
+  const other=document.createElement('div');other.id='fb-other-box';other.style.cssText='display:none;';
+  other.innerHTML='<textarea id="fb-other-txt" maxlength="100" placeholder="请简要描述您不满意的原因（100 字以内）" style="width:100%;box-sizing:border-box;height:76px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;font-family:inherit;resize:none;outline:none;margin-top:10px;"></textarea>'+
+    '<div style="text-align:right;font-size:11px;color:var(--ink-3);margin-top:2px;"><span id="fb-other-cnt">0</span>/100</div>';
+  list.appendChild(other);
+  const txt=other.querySelector('#fb-other-txt');
+  txt.addEventListener('input',()=>{$('#fb-other-cnt').textContent=txt.value.length;});
+  const sub=document.createElement('button');sub.className='mini-btn';sub.style.cssText='width:100%;margin-top:14px;';
+  sub.textContent='提交反馈';
+  sub.onclick=()=>{
+    const on=list.querySelector('.fb-opt.on');
+    if(!on){toast('请先选择一个原因');return;}
+    if(on.textContent.includes('其他原因')&&!txt.value.trim()){toast('请填写具体原因，或直接提交其他选项');return;}
+    closeFbSheet();
+    if(fbDone)fbDone();
+    toast('感谢您的反馈，我们会持续优化');
+  };
+  list.appendChild(sub);
+  $('#mask-fb').classList.add('show');$('#sheet-fb').classList.add('show');
+}
+function closeFbSheet(){$('#mask-fb').classList.remove('show');$('#sheet-fb').classList.remove('show');}
+$('#fb-x').onclick=closeFbSheet;
+$('#mask-fb').onclick=closeFbSheet;
+
+/* 理赔屏与各屏共用同一组全局快捷芯片，随时可回到对话 */
+buildChips($('#claim-chips'),globalChip);
+
+/* ================================================================
+   10. 异常态
+   ================================================================ */
+
+/* ================================================================
+   屏幕切换 + 需求标注
+   ================================================================ */
+const SCREENS={
+  "welcome": {
+    "title": "白鸽智羽",
+    "anno": [
+      {
+        "s": "CHAT-01 欢迎与会话",
+        "q": [
+          "CHAT-01 欢迎态｜当天首次进入显示青鸾女性形象，助手自称「小白」；欢迎态不展示问题卡片。输入框、语音按钮、快捷芯片常驻。用户发送文字/语音/点击芯片后切换为会话态。",
+          "验收｜历史消息不包含欢迎态气泡；欢迎语受全局声音开关控制；欢迎态不显示时间标签。",
+          "ACC-01 匿名进入｜首次进入静默获取 openid 建立匿名身份，不弹登录页；匿名身份可承载历史对话与手动上传记录。验收：首次进入可直接咨询、推荐、对比；再次进入不强制登录。",
+          "UI 交付｜欢迎态/会话态必须交付：首次欢迎、会话有消息、历史会话、加载、空结果、意图澄清六种状态。交互：输入框/语音/快捷芯片常驻、键盘避让、时间标签按规则分组。",
+          "AT-01 匿名进入｜首次打开小程序直接进入欢迎态，咨询/推荐/对比可用，不弹登录。",
+          "NFR-03 交互｜所有异步步骤有加载态；空白对话页显示「加载中」；声音开启时文字与语音同步，音量为系统音量 60%；按住说话、页面切换、退出立即停止播报。"
+        ]
+      }
+    ]
+  },
+  "chat": {
+    "title": "白鸽智羽",
+    "anno": [
+      {
+        "s": "CHAT-02 快捷芯片",
+        "q": [
+          "CHAT-02｜默认顺序：帮选保险、帮看保单（保单解读）、对比产品、术语咨询、我要理赔；顺序支持配置。点击后直接进入对应服务，用户已表达的条件不重复问。",
+          "验收｜芯片可横向滑动；不得被键盘或卡片遮挡。",
+          "CHAT-03 意图分流｜投保、理赔、术语、保单解读进入对应流程；跨场景请求可同时处理；意图不清先澄清；无匹配产品明确告知，不强行推荐。验收：至少覆盖四类意图、混合意图、模糊意图、无产品结果四种情形。",
+          "CHAT-04 消息时间｜按用户本地时区显示到分钟。同会话按 5 分钟窗口分组，仅组首显示；满 5 分钟、相邻间隔超过 5 分钟或跨自然日重新分组。当天/昨天显示「今天/昨天 HH:mm」；前天至第 7 天显示「周 X HH:mm」；超过 7 天显示「MM 月 DD 日 HH:mm」。验收：跨午夜首条新消息必须显示新日期；欢迎态不显示时间。",
+          "CHAT-05 回复组件｜后端返回结构化消息类型：text、table、card、carousel、option-card、tip-card、file-preview。组件支持点击、复制、横向滚动；语音只读总结与产品名，过滤特殊符号/序号。验收：组件错误或字段缺失时安全降级；表格横滑不阻塞输入。",
+          "POL-07 保单查看与解读（会话入口）｜解读对象汇集已授权同步订单与手动上传记录；多份保单先让用户选目标；只展示已有的保险公司、关系、保障期和摘要，允许继续提问。验收：不泄露非必要个人信息；无保单不应阻断手动上传与文字描述。",
+          "POL-06 到期提醒｜进入对话页触发站内提醒，同一天最多推一次，同一保单同一节点不重复。长期险>30 天：到期前 30/15/7 天；中期 8–30 天：提前 3 天一次；短期≤7 天：提前 1 天提示可延长，不引导续保；已到期短期保单默认折叠。非本人保单必须带关系称谓。验收：拒绝订阅后继续站内提醒；订阅消息仅用户主动同意后申请一次性授权。",
+          "AT-02 意图分流｜分别发送选保、保单、术语、理赔、混合意图，均进入正确流程；模糊意图先澄清。",
+          "AT-24 语音与时间戳｜开关声音、按住说话、切页、跨午夜、间隔超 5 分钟：声音全局一致、及时打断、时间标签符合分组与日期格式。"
+        ]
+      }
+    ]
+  },
+  "followup": {
+    "title": "白鸽智羽",
+    "anno": [
+      {
+        "s": "REC-01/02 追问上限与年龄筛选",
+        "q": [
+          "REC-01 追问上限｜最多四轮：投保对象→年龄→场景→场景分支。每轮 2–5 个选项并提供「不太清楚」等逃生口；已知维度跳过；任一轮选「不太清楚」按已有信息提前推荐；用户改为自由输入立即停止卡片追问。",
+          "验收｜验证跳题、分支年龄、选项回溯、自由输入打断；旅行分支 8 项与每轮 2–5 项的展示冲突需采用分组/分页/横滑，内容不变。",
+          "REC-02 年龄筛选｜推荐前逐款校验产品库承保年龄，超龄产品必须排除；不得用通用年龄分段推断产品可投。验收：覆盖临界年龄、上下限、未知年龄与产品库年龄字段缺失。",
+          "3.3.1 问卷选项基线｜第 1 轮为谁投保：自己、配偶、父母长辈、孩子、其他；第 2 轮年龄：自己/配偶 18–30/31–45/46–60/61–70/70+，父母 40–50/51–60/61–70/71–80/80+，孩子 0–6/7–17/18+，其他按原版分段；第 3 轮场景：出行旅行、疾病医疗、日常或运动意外、不太清楚；第 4 轮分支：旅行（境内/日韩东南亚/澳新/美加/欧洲申根/全球/泰国/留学打工度假）、医疗（百万医疗/防癌专项/老人防癌/日常医疗）、意外（日常居家/运动健身/高风险运动/体育赛事/航空出行）。",
+          "AT-03 选保上限｜按完整路径逐轮回答：最多四轮；已表达条件不重复问；超龄产品被排除。",
+          "AT-04 自由输入打断｜任一追问轮输入自由文本：立即停止卡片追问，进入自由对话。",
+          "AT-05 不太清楚｜任一轮选择「不太清楚」：基于已收集条件提前推荐，不继续机械追问。",
+          "AT-06 产品无结果｜设置无匹配或全产品超龄：明确告知无匹配，不强行推荐。"
+        ]
+      }
+    ]
+  },
+  "recommend": {
+    "title": "白鸽智羽",
+    "anno": [
+      {
+        "s": "REC-03/04 推荐卡与反馈",
+        "q": [
+          "REC-03 推荐卡｜展示产品名称、适配人群、核心保障、保障期限、保费；有详情时提供详情入口，缺字段隐藏。预算不设独立追问轮，结果后提供调整入口。验收：价格、期限、适配人群均来自有效产品库；不出现下架产品。",
+          "REC-04 反馈｜推荐/对比回复提供赞、踩，互斥，每条回复只提交一次。点踩原因：产品不符合需求、保障内容难理解、保费超预算、想看其他产品、信息不足、其他；选其他需填写≤100 字。验收：提交后显示已反馈；记录回复 ID、类型、原因；不打断对话。",
+          "PROD-01 产品详情｜详情来自有效产品库。符合站内展示条件的产品打开站内详情；「立即投保」只进入已配置并验收的真实投保流程，不得自动跳第三方；需人脸识别且保费超过 200 元的产品按原版约束暂不展示。验收：按钮必须有真实动作；若投保流程未接入，不能显示为可完成的生产能力。",
+          "UI 交付｜产品卡必须交付：正常、缺字段、超龄排除、无结果、复制成功/失败、选择 0/1/2 款；外跳产品不自动跳转；卡片切换不阻塞输入。",
+          "NFR-05 数据正确性｜产品库字段与订单字段有来源；缺失字段隐藏；订单失败/退保/失效不参与保障分析。"
+        ]
+      }
+    ]
+  },
+  "external": {
+    "title": "白鸽智羽",
+    "anno": [
+      {
+        "s": "PROD-02 外跳产品",
+        "q": [
+          "PROD-02｜先在对话内给出完整结构化介绍（承保公司、适用人群、保障期限、核心保障、保费、产品特色），再提供复制链接；不得自动拉起浏览器。复制后提示「链接已复制，请粘贴到浏览器打开」。",
+          "验收｜缺字段隐藏；复制失败有反馈；不得只丢链接。",
+          "3.4.1 产品库字段·访问方式｜维护详情链接、投保链接、是否支持小程序内打开；外跳产品使用复制链接，不得自动跳第三方。",
+          "AT-08 外跳产品｜打开外跳推荐并复制链接：先展示产品完整介绍；不自动跳浏览器；复制结果正确。"
+        ]
+      }
+    ]
+  },
+  "compare": {
+    "title": "白鸽智羽",
+    "anno": [
+      {
+        "s": "PROD-03/04/05 对比选择、结果与产品范围",
+        "q": [
+          "PROD-03 对比选择｜支持险种分类、产品名称/公司搜索；一次最多选两款。少于两款开始按钮禁用；选满后未选项置灰；取消已选后恢复；详情返回时可预选刚看过的产品。验收：不足两款、恰好两款、取消、重复选择、搜索无结果、返回预选均测试。",
+          "PROD-04 对比结果｜输出≤50 字结论 + 对比表，至少包含承保公司、投保年龄、保障期限、免赔额、报销比例、保费、适合人群。列多时横向滚动；点击单元格查看详情。验收：字段缺失应明确省略，不用猜测补齐；语音不朗读链接。",
+          "PROD-05/06 产品范围与分类｜当前有效产品库为唯一可信源；22 款产品按出行旅行 7、医疗健康 8、意外防护 6、责任保障 1 分类。责任保障仅 1 款，不展示该对比分类。验收：下架/无效产品不出现在推荐、追问、搜索和对比中。",
+          "3.4.1 产品库维护字段｜标识与展示（ID、名称、承保公司、类别、场景、排序权重、上架状态）；承保与价格（投保年龄上下限、核心保障、保障期限、价格、保费说明）；追问配置（选项、年龄区间、场景映射与产品适配关系须同步维护，产品库年龄门槛是硬性规则）。",
+          "AT-07 产品对比｜选择两款、取消、搜索、详情返回：≤2 款；少于 2 款按钮禁用；结果含≤50 字总结和规定字段。",
+          "异常·对比少于两款｜提示需选择两款，对比按钮禁用，不得生成单款对比表。"
+        ]
+      }
+    ]
+  },
+  "policies": {
+    "title": "我的保单",
+    "anno": [
+      {
+        "s": "POL-01/02 页面结构与订单同步",
+        "q": [
+          "POL-01 页面结构｜顶部固定展示「专属保险计划书」入口；下方为自动同步和手动上传两区，可独立折叠，空区域收起。自动同步按被保险人关系分组，组头显示成员称谓和保单数；卡片展示产品名、保障期、简介、关系标签。同名成员按出生日期区分。验收：空态、单区有数据、两区有数据、家庭成员同名等均覆盖。",
+          "POL-02 订单同步｜手机号验证 + 独立订单授权后，按绑定手机号查询白鸽平台订单。展示产品、承保公司、保障期、保障状态、被保人及关系；展示更新时间与手动刷新。对话与我的保单共用授权状态。验收：登录或绑号本身不触发订单查询；前端不直连业务系统。",
+          "ACC-04 订单数据授权｜在对话或我的保单发起独立授权；文案说明查询范围、用途、收益；同意后记录时间与协议版本再查询。验收：两个入口共享授权状态；登录、绑号不触发订单查询。",
+          "ACC-05 拒绝授权｜手机号授权拒绝：继续匿名，基础功能可用，自动同步区引导补充手机号，手动上传可用。订单授权拒绝：不查询订单，7 天内不主动再次弹出；用户主动提出相关需求时可说明并提供开启入口。验收：拒绝后无订单查询请求；会话不丢失；仍可使用不依赖订单的功能。"
+        ]
+      },
+      {
+        "s": "POL-03/04 手动上传与状态",
+        "q": [
+          "POL-03 手动上传｜入口位于对话附件菜单和我的保单页。上传前填写产品名称（≤30 字），再选文件。支持 JPG/PNG≤10MB；PDF、Word、Excel≤50MB。上传后显示文件气泡、进度、处理回执与状态；成功后生成含保险公司、保单号、保障期、保障要点的摘要卡及列表记录。验收：格式/大小错误、取消选择、网络中断、重试、OCR 失败、原文件预览。",
+          "POL-04 上传记录与状态｜列表展示产品名、上传时间、保障期、简介、保障状态。保障状态：未生效、保障中、即将到期、已到期；识别中/识别失败是处理状态，不替代保障状态。手动上传可查看原文件；同步保单可查看详情。验收：保障状态依据识别到的保障起止日计算；缺失日期不得推断，直接不展示保障状态。",
+          "POL-08 删除手动上传｜删除前二次确认，明确保单及其解读数据一并删除且不可恢复。取消不变更；确认后从列表和后续分析移除。删除失败保留原记录并提示重试。同步订单不提供删除操作。验收：确认删除、取消删除、删除失败、删除后分析结果刷新。",
+          "AT-15 手动上传｜合法文件、超限文件、错误格式、断网、OCR 失败：进度、失败原因、重试和原文件预览正确。",
+          "AT-16 删除上传保单｜取消删除、确认删除、模拟删除失败：取消不变更；确认后从列表和分析移除；失败保留原记录。"
+        ]
+      },
+      {
+        "s": "POL-05/07 保障分析与解读 · 状态机",
+        "q": [
+          "POL-05 重复保障｜按需识别同一被保险人名下的同类报销型保障；提示依据及优化建议，不替代理赔结论。验收：同一被保人多份同类报销险触发；不同被保险人的同类产品不得判为重复。",
+          "POL-07 保单查看与解读｜解读对象汇集已授权同步订单与手动上传记录；多份保单先选目标；只展示已有的保险公司、关系、保障期和摘要，允许继续提问；无匹配订单仍可上传或描述；信息不足时提示补充，不推断缺失责任/额度。",
+          "4.1 订单状态机｜六态：待支付（显示待支付，不显示为已出单）、出单中（处理中，可提示更新时间）、已出单（展示保单号/产品/承保公司/保障期/被保人关系，参与保障分析）、出单失败（展示失败原因、退款说明和重新投保入口）、已退保、已失效。关键约束：支付成功不等于出单成功，只有业务系统回传「已出单」才能按有效保单展示；订单状态与保单保障状态是两个维度，不得混用。",
+          "4.3 同步机制与安全｜授权后按绑定手机号全量拉取一次建立基线；同一手机号 60 秒内不重复查询，手动刷新可强制；冷启动静默刷新每日最多一次。回调事件 POLICY_ISSUED/FAILED/SURRENDERED/EXPIRED 需验签、防重放，按「订单号+状态」幂等；非 2xx 按 1/5/30 分钟重试三次后人工对账。接口失败时返回缓存快照并标注「更新于 X」，不得清空有效快照或白屏。",
+          "4.2 订单接口字段｜必须：orderNo（幂等键）、policyNo（出单后回填）、productId（须映射小程序产品库 ID）、产品名称/承保公司/险种类别、被保人姓名（脱敏）、与投保人关系（本人/配偶/子女/父母/其他）、被保人出生日期、保障起期/止期、投保/出单时间、保费、订单状态（六态）；出单失败时必须有失败原因。建议：证件类型、脱敏投保人信息、保障方案/责任、支付时间、电子保单 URL、续保信息。",
+          "AT-12 订单同步｜授权并准备六态订单数据：展示状态正确；支付成功不等于已出单；同手机号 60 秒节流。",
+          "AT-14 缓存降级｜业务系统超时或不可用：展示缓存及更新时间；不清空记录；保留手动上传入口。",
+          "AT-17 保障分析｜至少两条有效订单（含本人/家庭成员与无效状态）：按被保人分组；只用有效订单；不混算家庭成员；重复保障只认同一被保人。",
+          "UI 交付·我的保单｜必须交付：自动同步空态/有数据、上传空态/有数据、缓存态、刷新态、查询失败态、识别中/失败；两分区独立折叠；家庭成员分组；更新时间可见。"
+        ]
+      }
+    ]
+  },
+  "report": {
+    "title": "专属保险计划书",
+    "anno": [
+      {
+        "s": "3.6 专属保险计划书（POL-9）场景规则",
+        "q": [
+          "功能定位｜原有「帮选保险」问卷和推荐逻辑保持不变；本次新增的是在「我的保单」中提供固定的专属保险计划书查看入口。不得理解为重新开发一套独立问卷或独立选保算法。",
+          "点击固定入口｜从「我的保单」顶部进入专属保险计划书页面。验收：入口固定存在；返回操作回到「我的保单」。",
+          "匿名/未授权首次查看｜引导用户完成手机号验证（如未绑定）并单独授权查询订单数据，清楚说明数据用途。验收：未授权时不展示保单分析结论（原型表现为锁定态）。",
+          "用户拒绝授权｜返回上一页或保持当前页的未授权状态，不查询订单；用户再次点击入口时显示指定提示。指定文案：「无法获取到用户保单信息，暂无法分析」；提供重新授权入口；不得持续弹窗骚扰。",
+          "已授权且查到保单｜基于已授权的白鸽订单、手动上传保单及有效产品库展示计划书内容；标注生成时间、数据截至时间、AI 生成说明。验收：不编造缺失保单或保障字段；家庭成员与本人分开；原有聊天问卷推荐结果不被替换或丢失。",
+          "已授权但未查到保单｜不展示保单分析结论；默认推荐 3 款保险产品作为替代内容。3 款必须来自当前有效产品库、年龄硬筛选；若现有问卷推荐结果可复用则优先复用，否则使用经产品确认的默认推荐规则。",
+          "订单接口超时/异常｜显示查询失败及重试入口；保留已有缓存与更新时间。不得被当成「已授权但无保单」；不得因接口失败直接推送默认 3 款并暗示已确认无保单。",
+          "未完成问卷｜仍可通过固定入口查看页面；无问卷结果且有保单数据时按现有保单数据与计划书规则生成；无保单数据按默认 3 款规则；未完成问卷不得导致白屏。"
+        ]
+      },
+      {
+        "s": "3.6.1 计划书数据与展示边界",
+        "q": [
+          "计划书生成可复用既有问卷结果、已授权同步订单、手动上传保单与有效产品库；应区分「用户需求推荐」和「基于实际保单数据的保障分析」。",
+          "仅有问卷结果、没有保单数据时，不得把问卷推荐包装成「基于现有保单的缺口分析」。",
+          "默认推荐 3 款产品的排序：健康险 1 个、运动险 1 个、旅行险 1 个（优先选择可以直接在小程序付款的保险产品）。",
+          "计划书应保留数据来源与数据截至时间；接口失败、OCR 失败或数据字段缺失时明确说明，不补造保险责任、保额或保障结论。",
+          "UI 交付｜必须交付：未授权锁定态、拒绝后再次点击提示、已有保单报告、无保单推荐 3 款、接口异常、生成中、生成失败；明确区分「保单分析」与「产品推荐」；返回我的保单；数据截至时间与 AI 说明可见。",
+          "AT-19 专属计划书-拒绝｜匿名用户打开入口并拒绝授权，再次点击显示「无法获取到用户保单信息，暂无法分析」，不查询订单。",
+          "AT-20 专属计划书-有保单｜已授权且有有效订单/上传保单：展示基于实际数据的计划书，标注生成时间和数据截至时间，不编造字段。",
+          "AT-21 专属计划书-无保单｜已授权且查询成功返回 0 条：不展示保单分析结论；默认推荐 3 款有效产品；遵守年龄筛选。",
+          "AT-22 专属计划书-接口异常｜已授权但查询超时/500/断网：显示失败和重试，不误判无保单，不直接推送默认 3 款冒充查询结果。"
+        ]
+      }
+    ]
+  },
+  "drawer": {
+    "title": "白鸽智羽",
+    "anno": [
+      {
+        "s": "SET-01/02 设置入口与资料设置",
+        "q": [
+          "SET-01 设置入口｜从对话页左上角打开抽屉覆盖，不离开当前对话。提供「我的保单」；已登录显示退出登录，匿名显示登录入口。验收：抽屉关闭后回到原会话位置。",
+          "SET-02 资料与设置｜头像、姓名、手机号；未设置显示默认头像/「未填写」；姓名最多 10 字，可编辑保存；手机号显示脱敏号码或「未绑定手机号」；已登录可换号。提供全局声音开关、关于、隐私协议。验收：声音开关跨页面一致；退出登录二次确认；匿名态不显示退出登录。",
+          "ACC-07 退出登录｜二次确认；清除 token、解除手机号绑定并返回匿名状态；保留姓名、历史对话、已上传保单。验收：退出后匿名使用；再次进入不弹登录页。",
+          "ACC-09 更换手机号｜已登录用户在设置中换号；新号码通过短信验证码或微信一键获取验证成功后更新；同步更新理赔匹配号码。换号不等于授权查询新号订单。验收：验证失败不更新旧号码；新号码订单查询仍需单独授权。",
+          "AT-11 换号｜正确验证码、错误验证码、取消、网络失败：只有验证成功才更新；新号订单仍需单独授权。",
+          "UI 交付·登录/换号｜必须交付：默认、未勾协议、验证码倒计时、验证码错误、网络失败、成功、换号取消；60 秒重发倒计时；协议必选；按钮状态明确。"
+        ]
+      }
+    ]
+  },
+  "login": {
+    "title": "登录",
+    "anno": [
+      {
+        "s": "ACC-02/03/08 登录与匿名数据合并",
+        "q": [
+          "ACC-02 手机号获取/登录｜订单匹配所需手机号可通过短信登录/手机号快捷登录；验证成功后才绑定。验收：手机号、验证码、协议校验真实生效。",
+          "ACC-08 短信登录｜手机号 11 位、验证码 6 位；获取验证码后 60 秒倒计时；手机号、验证码、用户协议勾选齐全才可提交；服务端真实校验。验收：错误码、过期码、重复提交、未勾选协议均有反馈。",
+          "ACC-03 匿名数据合并｜验证成功后合并匿名期间历史对话与上传保单，不丢失、不重复；合并后与账户关联。验收：同一文件/会话不出现重复记录；合并失败可重试且不破坏原数据。",
+          "异常·短信验证码错误/过期｜提示验证码无效或登录失败，可修改后重试；保持原匿名状态、不建立绑定、会话/上传记录不丢失。",
+          "异常·换号验证失败｜提示校验失败，允许重试或取消；不提前替换账户手机号或理赔匹配号码。",
+          "AT-10 登录与合并｜匿名期间产生会话/上传记录后登录：验证真实；数据合并不丢不重；登录不自动授权订单。",
+          "2.1 全局规则｜短信登录、微信手机号获取、账户绑定、订单数据授权是不同动作；任何登录或绑定动作均不自动授权查询订单。"
+        ]
+      }
+    ]
+  },
+  "claim": {
+    "title": "白鸽智羽",
+    "anno": [
+      {
+        "s": "CLM-01~05 理赔身份核验",
+        "q": [
+          "CLM-01 先问报案人｜用户发起理赔后先选择「本人报案」或「为他人报案」；完成分支后进入后续流程，不重复核验。验收：本人/他人分支正确。",
+          "CLM-02 本人且已绑定｜用已验证手机号匹配被保险人身份（需能获取到本人的身份证号）；匹配成功后进入后续流程，不重复填写姓名和身份证号；未匹配成功需引导提供并提示原因。验收：匹配失败必须提示原因及下一步，不能默认通过。",
+          "CLM-03 匿名本人或为他人｜填写被保险人姓名和身份证号，完整后才可继续；身份证号原样回显以供核对和修改；格式错误允许重填。验收：明文身份证号不得进入日志/埋点；页面按要求原样回显。",
+          "CLM-04 拒绝或中断｜解释无法继续的原因，保留稍后补充/继续入口，不得静默中断。验收：中断后可返回并补齐，不丢失已输入的非敏感内容。",
+          "CLM-05 后续流程｜沿用既有理赔流程、演示金额和双版本边界；演示身份、保单和受理结果与真实数据明显区分。验收：不得把演示结果展示为真实受理证明。",
+          "CLM-06 AI 与人工边界｜AI 可归纳报案信息、解释材料要求；保险责任判断与赔付决定由保险人或授权人员确认并留痕。验收：测试文案不承诺赔付，不生成最终责任判定。",
+          "ACC-06 隐私处理｜手机号、身份证号加密传输；接口不向前端返回完整手机号；身份证号仅用于理赔核验，日志/埋点/错误信息不得记录明文身份证号。验收：检查接口日志、埋点、异常日志和前端响应。",
+          "AT-23 理赔核验｜本人已绑定、匿名本人、为他人、拒绝填写：分支正确；匿名本人/他人需姓名+身份证；原样回显可改；拒绝可稍后继续。",
+          "UI 交付·理赔核验｜必须交付：本人已绑定、本人匿名、为他人、证件错误、拒绝/稍后继续；身份证号原样回显并可修改，不得出现在日志。"
+        ]
+      }
+    ]
+  }
+};
+function renderAnno(){
+  /* 兜底：浏览器解析差异可能把 #anno 留在 #app 外，强制挂回以保证三栏布局 */
+  const app=document.getElementById('app'),anno=document.getElementById('anno');
+  if(anno&&anno.parentElement!==app)app.appendChild(anno);
+  const list=$('#anno-list');
+  const items=SCREENS[state.screen].anno;
+  let n=0;items.forEach(i=>n+=i.q.length);
+  /* 汇总本屏涉及的需求编号，便于测试/开发检索 */
+  const ids=[];
+  items.forEach(sec=>sec.q.forEach(q=>{
+    const m=q.match(/^((?:ACC|CHAT|REC|PROD|POL|SET|CLM|NFR|AT)[-–]\d+(?:\/\d+)?(?:\s*[、,]\s*(?:ACC|CHAT|REC|PROD|POL|SET|CLM|NFR|AT)[-–]\d+)*|[\d]+(?:\.[\d]+)*)/);
+    if(m){
+      m[1].split(/[、,]/).forEach(x=>{const t=x.trim();if(t&&ids.indexOf(t)<0)ids.push(t);});
+    }
+  }));
+  $('#anno-cnt').textContent=items.length+' 个章节 · '+n+' 条'+(ids.length?' · 编号 '+ids.length:'');
+  if(!state.annoOn){list.innerHTML='<div class="aempty">标注已隐藏<br>点击右上角「显示全部标注」恢复</div>';return;}
+  list.innerHTML='';
+  if(ids.length){
+    const bar=document.createElement('div');bar.className='anno-ids';
+    bar.innerHTML='<span class="lab">涉及编号</span>'+ids.map(x=>'<span class="id">'+x+'</span>').join('');
+    list.appendChild(bar);
+  }
+  items.forEach(sec=>{
+    const d=document.createElement('div');d.className='anno-sec';
+    d.innerHTML='<div class="anno-chip">'+esc(sec.s)+'</div><ul>'+
+      sec.q.map(q=>'<li>'+q.replace(/^((?:ACC|CHAT|REC|PROD|POL|SET|CLM|NFR|AT)[-–][\d\/]+(?:\s*[、,]\s*(?:ACC|CHAT|REC|PROD|POL|SET|CLM|NFR|AT)[-–][\d\/]+)*|[\d]+(?:\.[\d]+)*|验收|异常·[\u4e00-\u9fa5]+|UI 交付|功能定位)/,'<b>$1</b>')+'</li>').join('')+'</ul>';
+    list.appendChild(d);
+  });
+}
+function switchScreen(id,pendingChipText){
+  state.screen=id;
+  $$('.screen').forEach(s=>s.classList.remove('active'));
+  $('#scr-'+id).classList.add('active');
+  $$('#sidenav .navbtn').forEach(b=>b.classList.toggle('active',b.dataset.scr===id));
+  $('#nav-title').textContent=SCREENS[id].title;
+  /* 导航左侧：对话等一级屏恒为设置入口；二级页显示返回——我的保单/登录页回对话，保单解读回我的保单 */
+  const nl=$('#nav-left');
+  if(id==='policies'||id==='login'){nl.innerHTML='‹';nl.onclick=()=>{switchScreen('chat');};}
+  else if(id==='report'){nl.innerHTML='‹';nl.onclick=()=>{switchScreen('policies');};}
+  else{nl.innerHTML=SVG_GEAR;nl.onclick=openDrawer;}
+  closeCmpSheet();closeDrawer();$('#confirm-logout').classList.remove('show');
+  closeClmSheet();closeReadSheet();$('#confirm-del').classList.remove('show');$('#ov-phoneedit').classList.remove('show');
+  $('#ov-policy').classList.remove('show');closeFileView();
+  $('#ov-detail').classList.remove('show');
+  $('#attach-panel').classList.remove('show');
+  $$('.plus-btn').forEach(b=>b.textContent='＋');
+  renderAnno();
+  if(id==='welcome'&&!state.welcomePlayed)playWelcome();
+  if(id==='chat'&&!state.chatStarted){seedChat();}
+  if(id==='followup')fuStartIn($('#chat-fu'),false);
+  if(id==='claim'&&!$('#chat-claim').dataset.init){$('#chat-claim').dataset.init='1';claimReset();}
+  if(id==='compare')setTimeout(openCmpSheet,380); /* 点对比产品自动唤起弹窗 */
+  if(id==='drawer')setTimeout(openDrawer,320); /* 演示左侧抽屉 */
+  if(id==='policies')renderPolicies();
+  if(id==='report')renderReport();
+  if(id==='login')renderLogin();
+  /* 从欢迎态/其他屏点芯片跳转 */
+  if(pendingChipText){
+    setTimeout(()=>{
+      if(id==='chat')chatHandle(pendingChipText);
+    },300);
+  }
+}
+$$('#sidenav .navbtn').forEach(b=>b.onclick=()=>switchScreen(b.dataset.scr));
+
+/* ================================================================
+   控制面板
+   ================================================================ */
+(function(){
+  const box=$('#ctrl-screens');
+  const names={welcome:'1 欢迎态',chat:'2 会话态',followup:'3 引导追问',recommend:'4 站内推荐',external:'5 外跳推荐',compare:'6 产品对比',policies:'7 我的保单',report:'7a 专属保险计划书',drawer:'8 设置抽屉',login:'8b 登录页',claim:'9 理赔核验'};
+  Object.keys(names).forEach(k=>{
+    const b=document.createElement('button');b.className='tg2';b.textContent=names[k];
+    b.onclick=()=>switchScreen(k);box.appendChild(b);
+  });
+  window.__syncCtrlScreens=()=>{
+    box.querySelectorAll('.tg2').forEach(b=>b.classList.toggle('on',b.textContent.startsWith(String(Object.keys(names).indexOf(state.screen)+1)+' ')));
+  };
+})();
+$('#tg-anno').onclick=function(){state.annoOn=!state.annoOn;renderAnno();
+  this.textContent='需求标注：'+(state.annoOn?'开':'关');this.classList.toggle('on',state.annoOn);
+  $('#anno').classList.toggle('off',!state.annoOn);
+  $('#anno-toggle').textContent=state.annoOn?'隐藏全部标注':'显示全部标注';
+};
+$('#anno-toggle').onclick=()=>$('#tg-anno').click();
+$('#tg-anim').onclick=function(){state.animOn=!state.animOn;
+  this.textContent='入场动效：'+(state.animOn?'开':'关');this.classList.toggle('on',state.animOn);
+  if(state.screen==='welcome')playWelcome();
+};
+$('#seg-anon').onclick=()=>{state.identity='anon';renderIdentity();if(state.screen==='claim')claimReset();if(state.screen==='policies')renderPolicies();};
+$('#seg-bound').onclick=()=>{state.identity='bound';renderIdentity();if(state.screen==='claim')claimReset();if(state.screen==='policies')renderPolicies();};
+$('#seg-sndon').onclick=()=>{state.soundOn=true;renderSound();};
+$('#seg-sndoff').onclick=()=>{state.soundOn=false;renderSound();};
+function renderIdentity(){
+  $('#seg-anon').classList.toggle('on',state.identity==='anon');
+  $('#seg-bound').classList.toggle('on',state.identity==='bound');
+  if(state.screen==='policies')renderPolicies();
+  renderDrawer(); /* 抽屉常驻左上角，身份变化即时同步 */
+}
+$('#ctrl-head').onclick=()=>{
+  const c=$('#ctrl');c.classList.toggle('min');
+  $('#ctrl-min').textContent=c.classList.contains('min')?'展开':'收起';
+};
+
+/* ---------- 全局接线：输入栏 / 附件面板 / 各屏芯片 ---------- */
+$$('.voice-btn').forEach(b=>b.innerHTML=SVG_VOICE);
+$$('.voice-btn').forEach(b=>b.onclick=()=>toast('按住说话（演示）'));
+$$('.plus-btn').forEach(b=>b.onclick=()=>{
+  const p=$('#attach-panel');const open=!p.classList.contains('show');
+  p.classList.toggle('show',open);
+  $$('.plus-btn').forEach(x=>x.textContent=open?'✕':'＋');
+});
+$$('.attach-item').forEach(b=>b.onclick=()=>{
+  $('#attach-panel').classList.remove('show');
+  $$('.plus-btn').forEach(x=>x.textContent='＋');
+  toast('已选择上传方式（演示入口）');
+});
+/* 输入有内容时：语音键切换为发送键 */
+document.addEventListener('input',e=>{
+  const inp=e.target;
+  if(inp&&inp.matches&&inp.matches('.pillbar input')){
+    const bar=inp.closest('.pillbar');
+    const has=inp.value.trim().length>0;
+    const sm=bar.querySelector('.send-mini');
+    if(sm)sm.classList.toggle('show',has);
+    const vb=bar.querySelector('.voice-btn');
+    if(vb)vb.style.display=has?'none':'flex';
+  }
+});
+buildChips($('#chips-recommend'),globalChip);
+buildChips($('#chips-external'),globalChip);
+buildChips($('#chips-compare'),globalChip);
+
+/* ---------- 启动 ---------- */
+renderSound();
+renderAnno();
+playWelcome();
+switchScreen('welcome');
+mountFbBars($('#scr-recommend')); /* 站内推荐产品卡的点赞/踩 */
+
+/* ---------- 舞台自适应缩放：窗口不足 900px 高时整机等比缩小，避免手机被裁切导致"划不动/显示不全" ---------- */
+(function(){
+  const st=document.getElementById('stage'),ph=document.getElementById('phone');
+  const W=410,H=864;
+  function fitStage(){
+    const availW=st.clientWidth-36,availH=st.clientHeight-36;
+    let z=Math.min(1,availW/W,availH/H);
+    if(!isFinite(z)||z<=0)z=1;
+    z=Math.max(z,.5);
+    if(typeof CSS!=='undefined'&&CSS.supports&&CSS.supports('zoom','0.5')){
+      ph.style.zoom=z;
+    }else{
+      ph.style.transform='scale('+z+')';ph.style.transformOrigin='top center';
+      ph.style.marginBottom=(-H*(1-z))+'px';
+    }
+  }
+  window.addEventListener('resize',fitStage);
+  setTimeout(fitStage,0);
+  fitStage();
+})();
+</script>
+</body>
+</html>
