@@ -148,6 +148,18 @@ input{font-family:inherit;outline:none;}
 .tracebar{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 10px;}
 .trace-chip{font-size:11px;color:var(--blue);background:var(--blue-soft);border-radius:20px;padding:4px 10px;}
 .trace-chip span{color:var(--ink-3);margin-right:4px;}
+/* 对话页「我的保单」常驻快捷入口：位于输入框上方、快捷芯片之上 */
+.qentry{flex-shrink:0;margin:2px 12px 0;background:#fff;border-radius:14px;padding:10px 14px;
+  display:flex;align-items:center;gap:10px;box-shadow:0 2px 10px rgba(20,40,80,.08);
+  border:1px solid rgba(26,102,255,.14);text-align:left;transition:transform .12s,background .12s;}
+.qentry:active{transform:scale(.985);background:#F6F9FF;}
+.qentry .qe-icn{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#EAF1FF,#DCE8FF);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.qentry .qe-icn svg{width:18px;height:18px;}
+.qentry .qe-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.qentry .qe-t{font-size:13.5px;font-weight:600;color:var(--ink);}
+.qentry .qe-s{font-size:11.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.qentry .qe-arw{color:#C4CBD8;font-size:17px;margin-left:2px;flex-shrink:0;}
 /* 快捷芯片 */
 .chips{flex-shrink:0;display:flex;gap:8px;padding:8px 14px;overflow-x:auto;scrollbar-width:none;}
 .chips::-webkit-scrollbar{display:none;}
@@ -1315,7 +1327,7 @@ function appendLive(el,who,x){
 }
 const CANNED_REPLIES=[
   '收到～已为您记录，我会自动识别您想办的事，直接说就行。',
-  '明白～这个问题涉及您的个人数据，需要先获得您的授权才能答得更准，您可以在「设置-我的保单」里开启自动同步。',
+  '明白～这个问题涉及您的个人数据，需要先获得您的授权才能答得更准，您可以点输入框上方的「我的保单」开启自动同步。',
   '好的～如果需要，我可以帮您：①推荐产品 ②对比产品 ③解读保单 ④解释术语，直接说就行。'
 ];
 let cannedIdx=0;
@@ -1774,6 +1786,7 @@ function renderPolicies(){
         if(p>=100){clearInterval(iv);upDemo.style.display='none';
           UPL_DATA.push({n:clean,t:'刚刚上传',st:['保障中','st-ok'],p:'2026-10-08 至 2027-10-07',intro:'保障责任以保单文件内容为准，可点击查看文件',file:'pdf · 2.4MB'});
           renderUpl();
+          renderQuickEntry();
           $('#upl-name').value='';
           toast('上传成功：'+clean);}
       },220);
@@ -1948,6 +1961,7 @@ $('#del-ok').onclick=()=>{
   UPL_DATA.splice(delIdx,1);delIdx=null;
   $('#confirm-del').classList.remove('show');
   renderPolicies();
+  renderQuickEntry();
   toast('已删除「'+name+'」');
 };
 
@@ -1995,22 +2009,45 @@ function totalPolicies(){
   }
   return n;
 }
+/* ===== 对话页常驻「我的保单」快捷入口 ===== */
+/* 入口常挂在输入框上方（快捷芯片之上），设置抽屉内不再重复提供 */
+const QE_SCREENS=['welcome','chat','followup','recommend','external','compare'];
+const QE_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="#1A66FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3h7.2L18.5 7.8V21a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M13.7 3v4.8h4.8"/><path d="M9 13.5h6M9 17.2h4"/></svg>';
+function mountQuickEntry(){
+  QE_SCREENS.forEach(function(id){
+    const sc=document.getElementById('scr-'+id);
+    if(!sc||sc.querySelector('.qentry'))return;
+    const chips=sc.querySelector('.chips');
+    if(!chips)return;
+    const b=document.createElement('button');
+    b.className='qentry';b.type='button';
+    b.innerHTML='<span class="qe-icn">'+QE_ICON+'</span>'+
+      '<span class="qe-txt"><span class="qe-t">我的保单</span><span class="qe-s"></span></span>'+
+      '<span class="qe-arw">›</span>';
+    b.onclick=function(){switchScreen('policies');};
+    chips.parentNode.insertBefore(b,chips);
+  });
+  renderQuickEntry();
+}
+function renderQuickEntry(){
+  const n=totalPolicies();
+  const s=n>0?('已有 '+n+' 份保单 · 查看 / 上传 / 同步'):'暂无保单 · 可上传或开启自动同步';
+  document.querySelectorAll('.qentry .qe-s').forEach(function(e){e.textContent=s;});
+}
+
 function renderDrawer(){
   const b=$('#drawer-body');
   const bound=state.identity==='bound';
   const nick=accountNick();
   const phone=accountPhone();
-  const cnt=totalPolicies();
   b.innerHTML=
     (bound
       ? '<div class="drow"><span class="lab">姓名</span><input class="ipt" id="dw-name" maxlength="10" placeholder="10 个字以内" value="'+nick+'" style="max-width:150px;"></div>'+
         '<div class="drow" id="dw-phone"><span class="lab">手机号</span><span style="color:var(--ink-2);font-size:13px;">'+phone+'</span><span class="arrow" style="color:var(--blue);">更换 ›</span></div>'
       : '')+
-    '<div class="drow" id="dw-policies" style="cursor:pointer;"><span class="lab">我的保单</span><span style="color:var(--ink-3);font-size:12px;">'+(cnt>0?'已有 '+cnt+' 份保单':'暂无保单')+'</span><span class="arrow">›</span></div>'+
     (bound
       ?'<div class="drow" id="dw-logout" style="color:var(--red);"><span class="lab" style="color:var(--red);">退出登录</span><span class="arrow">›</span></div>'
       :'<div class="drow" id="dw-login"><span class="lab" style="color:var(--blue);font-weight:600;">登录</span><span class="arrow">›</span></div>');
-  $('#dw-policies').onclick=()=>{closeDrawer();switchScreen('policies');};
   const lo=$('#dw-logout');
   if(lo)lo.onclick=()=>{$('#confirm-logout').classList.add('show');};
   const lg=$('#dw-login');
@@ -2392,6 +2429,16 @@ const SCREENS={
     "title": "白鸽智羽",
     "anno": [
       {
+        "s": "对话页「我的保单」常驻入口（本次调整）",
+        "q": [
+          "入口位置｜在输入框上方、快捷芯片之上常驻展示「我的保单」入口卡，包含图标、标题与保单数量副标题。验收：欢迎态与全部对话态页面均可见；不随会话滚动消失；不被键盘、输入栏或卡片遮挡。",
+          "跳转行为｜点击直接一步进入「我的保单」页，承载自动同步、手动上传、保单解读、专属保险计划书等全部能力，与原设置内入口完全一致。验收：点击后一步直达，无二次确认。",
+          "数量同步｜副标题实时显示「已有 N 份保单 · 查看 / 上传 / 同步」，N = 已授权同步订单数 + 手动上传记录数；无保单时显示「暂无保单 · 可上传或开启自动同步」。验收：上传成功、删除保单、切换匿名/已绑定、开启或关闭授权、退出登录后数量立即刷新。",
+          "入口去重｜设置抽屉内不再提供「我的保单」，入口全局唯一。验收：抽屉仅保留姓名、手机号、退出登录（匿名时为登录）。",
+          "返回路径｜「我的保单」页左上角返回键回到对话页；由「我的保单」进入的专属保险计划书，返回回到「我的保单」。"
+        ]
+      },
+      {
         "s": "CHAT-02 快捷芯片",
         "q": [
           "CHAT-02｜默认顺序：帮选保险、帮看保单（保单解读）、对比产品、术语咨询、我要理赔；顺序支持配置。点击后直接进入对应服务，用户已表达的条件不重复问。",
@@ -2546,7 +2593,7 @@ const SCREENS={
       {
         "s": "SET-01/02 设置入口与资料设置",
         "q": [
-          "SET-01 设置入口｜从对话页左上角打开抽屉覆盖，不离开当前对话。提供「我的保单」；已登录显示退出登录，匿名显示登录入口。验收：抽屉关闭后回到原会话位置。",
+          "SET-01 设置入口｜从对话页左上角打开抽屉覆盖，不离开当前对话。已登录显示退出登录，匿名显示登录入口。「我的保单」不再由抽屉提供，改由对话页输入框上方常驻入口进入，避免入口重复。验收：抽屉关闭后回到原会话位置。",
           "SET-02 资料与设置｜头像、姓名、手机号；未设置显示默认头像/「未填写」；姓名最多 10 字，可编辑保存；手机号显示脱敏号码或「未绑定手机号」；已登录可换号。提供全局声音开关、关于、隐私协议。验收：声音开关跨页面一致；退出登录二次确认；匿名态不显示退出登录。",
           "ACC-07 退出登录｜二次确认；清除 token、解除手机号绑定并返回匿名状态；保留姓名、历史对话、已上传保单。验收：退出后匿名使用；再次进入不弹登录页。",
           "ACC-09 更换手机号｜已登录用户在设置中换号；新号码通过短信验证码或微信一键获取验证成功后更新；同步更新理赔匹配号码。换号不等于授权查询新号订单。验收：验证失败不更新旧号码；新号码订单查询仍需单独授权。",
@@ -2692,6 +2739,7 @@ function renderIdentity(){
   $('#seg-bound').classList.toggle('on',state.identity==='bound');
   if(state.screen==='policies')renderPolicies();
   renderDrawer(); /* 抽屉常驻左上角，身份变化即时同步 */
+  renderQuickEntry(); /* 对话页「我的保单」入口数量随身份/授权同步 */
 }
 $('#ctrl-head').onclick=()=>{
   const c=$('#ctrl');c.classList.toggle('min');
@@ -2728,6 +2776,7 @@ buildChips($('#chips-external'),globalChip);
 buildChips($('#chips-compare'),globalChip);
 
 /* ---------- 启动 ---------- */
+mountQuickEntry(); /* 先挂载对话页「我的保单」入口，后续渲染即可同步数量 */
 renderSound();
 renderAnno();
 playWelcome();
